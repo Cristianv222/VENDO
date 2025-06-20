@@ -1,0 +1,489 @@
+vendo/
+├── .env                          # Variables de entorno (credenciales seguras)
+├── .env.example                  # Ejemplo de configuración
+├── .gitignore
+├── requirements.txt              # Dependencias del proyecto
+├── manage.py
+├── README.md
+├── INSTALL.md
+├── API.md
+│
+├── config/                       # Configuración principal de Django
+│   ├── __init__.py
+│   ├── settings/
+│   │   ├── __init__.py
+│   │   ├── base.py              # Configuración base
+│   │   ├── development.py       # Configuración desarrollo
+│   │   ├── production.py        # Configuración producción
+│   │   └── testing.py           # Configuración pruebas
+│   ├── urls.py                  # URLs principales
+│   ├── wsgi.py
+│   ├── asgi.py
+│   ├── celery.py                # Configuración Celery
+│   └── db_router.py             # Router de esquemas PostgreSQL
+│
+├── apps/                         # Aplicaciones Django modulares
+│   ├── __init__.py
+│   │
+│   ├── core/                    # App principal - Base del sistema
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── models.py            # BaseModel, Company, Branch, AuditLog
+│   │   ├── views.py             # Vistas base y error handlers
+│   │   ├── urls.py
+│   │   ├── serializers.py       # Serializers base
+│   │   ├── permissions.py       # Permisos personalizados
+│   │   ├── context_processors.py # Contexto global
+│   │   ├── middleware.py        # Middleware personalizado
+│   │   ├── utils.py             # Utilidades base
+│   │   ├── validators.py        # Validadores personalizados
+│   │   ├── exceptions.py        # Excepciones personalizadas
+│   │   ├── management/
+│   │   │   ├── __init__.py
+│   │   │   └── commands/
+│   │   │       ├── __init__.py
+│   │   │       ├── create_schemas.py    # Comando para crear esquemas
+│   │   │       ├── init_company.py      # Inicializar empresa
+│   │   │       └── backup_schemas.py    # Backup de esquemas
+│   │   ├── templates/core/
+│   │   ├── static/core/
+│   │   ├── migrations/
+│   │   ├── tests/
+│   │   │   ├── __init__.py
+│   │   │   ├── test_models.py
+│   │   │   ├── test_views.py
+│   │   │   └── test_utils.py
+│   │   └── signals.py
+│   │
+│   ├── users/                   # Gestión de usuarios y roles
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── models.py            # User, Role, Permission, UserProfile
+│   │   ├── views.py             # Login, logout, perfil, roles
+│   │   ├── urls.py
+│   │   ├── serializers.py
+│   │   ├── permissions.py       # Permisos basados en roles
+│   │   ├── authentication.py    # Autenticación personalizada
+│   │   ├── utils.py
+│   │   ├── validators.py
+│   │   ├── management/
+│   │   │   └── commands/
+│   │   │       ├── create_superuser.py
+│   │   │       └── assign_roles.py
+│   │   ├── templates/users/
+│   │   ├── static/users/
+│   │   ├── migrations/
+│   │   ├── tests/
+│   │   └── signals.py
+│   │
+│   ├── pos/                     # Punto de Venta (POS)
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── models.py            # POSSession, CashRegister, Sale, Payment
+│   │   ├── views.py             # Dashboard POS, ventas, pagos
+│   │   ├── urls.py
+│   │   ├── serializers.py
+│   │   ├── services.py          # Lógica de negocio POS
+│   │   ├── permissions.py
+│   │   ├── utils.py
+│   │   ├── validators.py
+│   │   ├── consumers.py         # WebSocket para tiempo real
+│   │   ├── routing.py           # Rutas WebSocket
+│   │   ├── tasks.py             # Tareas Celery
+│   │   ├── templates/pos/
+│   │   │   ├── dashboard.html
+│   │   │   ├── sales.html
+│   │   │   ├── cash_register.html
+│   │   │   └── receipt.html
+│   │   ├── static/pos/
+│   │   │   ├── css/
+│   │   │   └── js/
+│   │   ├── migrations/
+│   │   ├── tests/
+│   │   └── signals.py
+│   │
+│   ├── inventory/               # Gestión de Inventario
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── models.py            # Product, Category, Stock, Movement, Supplier
+│   │   ├── views.py             # Productos, categorías, stock, movimientos
+│   │   ├── urls.py
+│   │   ├── serializers.py
+│   │   ├── services.py          # Lógica de inventario
+│   │   ├── permissions.py
+│   │   ├── utils.py
+│   │   ├── validators.py
+│   │   ├── tasks.py             # Alertas de stock, reposición
+│   │   ├── templates/inventory/
+│   │   │   ├── products.html
+│   │   │   ├── categories.html
+│   │   │   ├── stock.html
+│   │   │   └── movements.html
+│   │   ├── static/inventory/
+│   │   ├── migrations/
+│   │   ├── tests/
+│   │   └── signals.py
+│   │
+│   ├── invoicing/               # Facturación Electrónica
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── models.py            # Invoice, CreditNote, DebitNote, Waybill
+│   │   ├── views.py             # Gestión documentos electrónicos
+│   │   ├── urls.py
+│   │   ├── serializers.py
+│   │   ├── services.py          # Lógica de facturación
+│   │   ├── permissions.py
+│   │   ├── utils.py
+│   │   ├── validators.py
+│   │   ├── sri_client.py        # Cliente API SRI
+│   │   ├── xml_generators.py    # Generadores XML
+│   │   ├── pdf_generators.py    # Generadores PDF
+│   │   ├── tasks.py             # Envío automático SRI
+│   │   ├── templates/invoicing/
+│   │   │   ├── invoices.html
+│   │   │   ├── credit_notes.html
+│   │   │   ├── debit_notes.html
+│   │   │   └── waybills.html
+│   │   ├── static/invoicing/
+│   │   ├── migrations/
+│   │   ├── tests/
+│   │   └── signals.py
+│   │
+│   ├── purchases/               # Compras y Proveedores
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── models.py            # Purchase, PurchaseOrder, Supplier, Expense
+│   │   ├── views.py             # Órdenes de compra, proveedores, gastos
+│   │   ├── urls.py
+│   │   ├── serializers.py
+│   │   ├── services.py          # Lógica de compras
+│   │   ├── permissions.py
+│   │   ├── utils.py
+│   │   ├── validators.py
+│   │   ├── tasks.py
+│   │   ├── templates/purchases/
+│   │   │   ├── suppliers.html
+│   │   │   ├── orders.html
+│   │   │   ├── settlements.html
+│   │   │   └── expenses.html
+│   │   ├── static/purchases/
+│   │   ├── migrations/
+│   │   ├── tests/
+│   │   └── signals.py
+│   │
+│   ├── accounting/              # Contabilidad y Cuentas
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── models.py            # Account, Transaction, AccountsReceivable, AccountsPayable
+│   │   ├── views.py             # Cuentas por cobrar/pagar, transacciones
+│   │   ├── urls.py
+│   │   ├── serializers.py
+│   │   ├── services.py          # Lógica contable
+│   │   ├── permissions.py
+│   │   ├── utils.py
+│   │   ├── validators.py
+│   │   ├── tasks.py
+│   │   ├── templates/accounting/
+│   │   │   ├── accounts_receivable.html
+│   │   │   ├── accounts_payable.html
+│   │   │   ├── transactions.html
+│   │   │   └── reports.html
+│   │   ├── static/accounting/
+│   │   ├── migrations/
+│   │   ├── tests/
+│   │   └── signals.py
+│   │
+│   ├── quotations/              # Cotizaciones
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── models.py            # Quotation, QuotationDetail, QuotationTemplate
+│   │   ├── views.py             # Gestión de cotizaciones
+│   │   ├── urls.py
+│   │   ├── serializers.py
+│   │   ├── services.py          # Lógica de cotizaciones
+│   │   ├── permissions.py
+│   │   ├── utils.py
+│   │   ├── validators.py
+│   │   ├── pdf_generators.py    # Generación PDF cotizaciones
+│   │   ├── tasks.py
+│   │   ├── templates/quotations/
+│   │   │   ├── list.html
+│   │   │   ├── create.html
+│   │   │   ├── detail.html
+│   │   │   └── templates.html
+│   │   ├── static/quotations/
+│   │   ├── migrations/
+│   │   ├── tests/
+│   │   └── signals.py
+│   │
+│   ├── reports/                 # Reportes y Analytics
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── models.py            # ReportTemplate, ScheduledReport, ReportData
+│   │   ├── views.py             # Dashboard de reportes
+│   │   ├── urls.py
+│   │   ├── serializers.py
+│   │   ├── services.py          # Lógica de reportes
+│   │   ├── permissions.py
+│   │   ├── utils.py
+│   │   ├── validators.py
+│   │   ├── generators.py        # Generadores de reportes
+│   │   ├── exporters.py         # Exportación Excel, PDF
+│   │   ├── analytics.py         # Analytics y KPIs
+│   │   ├── tasks.py             # Reportes programados
+│   │   ├── templates/reports/
+│   │   │   ├── dashboard.html
+│   │   │   ├── sales_report.html
+│   │   │   ├── inventory_report.html
+│   │   │   ├── financial_report.html
+│   │   │   └── custom_reports.html
+│   │   ├── static/reports/
+│   │   │   ├── css/
+│   │   │   └── js/chart.js
+│   │   ├── migrations/
+│   │   ├── tests/
+│   │   └── signals.py
+│   │
+│   └── settings/                # Configuraciones del Sistema
+│       ├── __init__.py
+│       ├── admin.py
+│       ├── apps.py
+│       ├── models.py            # SystemConfig, TaxConfig, CompanySettings
+│       ├── views.py             # Configuraciones de empresa, impuestos
+│       ├── urls.py
+│       ├── serializers.py
+│       ├── services.py          # Lógica de configuraciones
+│       ├── permissions.py
+│       ├── utils.py
+│       ├── validators.py
+│       ├── templates/settings/
+│       │   ├── company.html
+│       │   ├── taxes.html
+│       │   ├── system.html
+│       │   └── integrations.html
+│       ├── static/settings/
+│       ├── migrations/
+│       ├── tests/
+│       └── signals.py
+│
+├── utils/                       # Utilidades compartidas
+│   ├── __init__.py
+│   ├── decorators.py            # Decoradores personalizados
+│   ├── validators.py            # Validadores globales
+│   ├── helpers.py               # Funciones auxiliares
+│   ├── constants.py             # Constantes del sistema
+│   ├── exceptions.py            # Excepciones personalizadas
+│   ├── mixins.py                # Mixins reutilizables
+│   ├── sri_api.py               # Cliente API SRI
+│   ├── pdf_utils.py             # Utilidades PDF
+│   ├── excel_utils.py           # Utilidades Excel
+│   └── email_utils.py           # Utilidades Email
+│
+├── services/                    # Servicios compartidos
+│   ├── __init__.py
+│   ├── email_service.py         # Servicio de email
+│   ├── sms_service.py           # Servicio SMS
+│   ├── pdf_service.py           # Servicio PDF
+│   ├── export_service.py        # Servicio exportación
+│   ├── cache_service.py         # Servicio cache
+│   ├── notification_service.py  # Servicio notificaciones
+│   └── backup_service.py        # Servicio backup
+│
+├── static/                      # Archivos estáticos
+│   ├── css/
+│   │   ├── base.css
+│   │   ├── pos.css
+│   │   ├── inventory.css
+│   │   ├── invoicing.css
+│   │   ├── purchases.css
+│   │   ├── accounting.css
+│   │   └── reports.css
+│   ├── js/
+│   │   ├── base.js
+│   │   ├── pos.js
+│   │   ├── inventory.js
+│   │   ├── invoicing.js
+│   │   ├── purchases.js
+│   │   ├── accounting.js
+│   │   └── reports.js
+│   ├── img/
+│   │   ├── logos/
+│   │   ├── icons/
+│   │   └── products/
+│   └── vendor/                  # Librerías externas
+│       ├── bootstrap/
+│       ├── jquery/
+│       ├── fontawesome/
+│       ├── datatables/
+│       └── chart.js/
+│
+├── media/                       # Archivos subidos
+│   ├── invoices/               # PDFs de facturas
+│   ├── products/               # Imágenes de productos
+│   ├── reports/                # Reportes generados
+│   ├── documents/              # Documentos varios
+│   └── backups/                # Respaldos
+│
+├── templates/                   # Plantillas HTML
+│   ├── base.html               # Plantilla base
+│   ├── includes/               # Componentes reutilizables
+│   │   ├── header.html
+│   │   ├── sidebar.html
+│   │   ├── footer.html
+│   │   ├── breadcrumbs.html
+│   │   └── messages.html
+│   │
+│   ├── auth/                   # Templates de autenticación
+│   │   ├── login.html
+│   │   ├── logout.html
+│   │   ├── password_reset.html
+│   │   ├── password_reset_done.html
+│   │   ├── password_reset_confirm.html
+│   │   └── password_reset_complete.html
+│   │
+│   ├── core/                   # Templates del módulo core
+│   │   ├── dashboard.html
+│   │   ├── profile.html
+│   │   └── errors/
+│   │       ├── 404.html
+│   │       ├── 500.html
+│   │       └── 403.html
+│   │
+│   ├── pos/                    # Templates del POS
+│   │   ├── dashboard.html
+│   │   ├── sales.html
+│   │   ├── cash_register.html
+│   │   ├── receipt.html
+│   │   └── payments.html
+│   │
+│   ├── inventory/              # Templates de inventario
+│   │   ├── products/
+│   │   │   ├── list.html
+│   │   │   ├── create.html
+│   │   │   ├── edit.html
+│   │   │   └── detail.html
+│   │   ├── categories/
+│   │   ├── stock/
+│   │   └── movements/
+│   │
+│   ├── invoicing/              # Templates de facturación
+│   │   ├── invoices/
+│   │   │   ├── list.html
+│   │   │   ├── create.html
+│   │   │   ├── detail.html
+│   │   │   └── print.html
+│   │   ├── credit_notes/
+│   │   ├── debit_notes/
+│   │   └── waybills/
+│   │
+│   ├── purchases/              # Templates de compras
+│   │   ├── suppliers/
+│   │   ├── orders/
+│   │   ├── settlements/
+│   │   └── expenses/
+│   │
+│   ├── accounting/             # Templates de contabilidad
+│   │   ├── accounts_receivable/
+│   │   ├── accounts_payable/
+│   │   ├── transactions/
+│   │   └── reports/
+│   │
+│   ├── reports/                # Templates de reportes
+│   │   ├── dashboard.html
+│   │   ├── sales/
+│   │   ├── inventory/
+│   │   ├── financial/
+│   │   └── custom/
+│   │
+│   ├── quotations/             # Templates de cotizaciones
+│   │   ├── list.html
+│   │   ├── create.html
+│   │   ├── detail.html
+│   │   └── print.html
+│   │
+│   ├── users/                  # Templates de usuarios
+│   │   ├── profile.html
+│   │   ├── roles.html
+│   │   └── permissions.html
+│   │
+│   └── settings/               # Templates de configuraciones
+│       ├── company.html
+│       ├── taxes.html
+│       ├── system.html
+│       └── integrations.html
+│
+├── locale/                     # Archivos de traducción
+│   ├── es/
+│   │   └── LC_MESSAGES/
+│   │       ├── django.po
+│   │       └── django.mo
+│   └── en/
+│       └── LC_MESSAGES/
+│           ├── django.po
+│           └── django.mo
+│
+├── fixtures/                   # Datos iniciales
+│   ├── initial_data.json
+│   ├── demo_data.json
+│   └── test_data.json
+│
+├── logs/                       # Archivos de log
+│   ├── vendo.log
+│   ├── sri_api.log
+│   ├── celery.log
+│   └── error.log
+│
+├── docs/                       # Documentación
+│   ├── api/
+│   │   ├── endpoints.md
+│   │   └── authentication.md
+│   ├── deployment/
+│   │   ├── production.md
+│   │   └── server_setup.md
+│   └── development/
+│       ├── setup.md
+│       └── contributing.md
+│
+└── tests/                      # Tests de integración
+    ├── __init__.py
+    ├── test_integration.py
+    ├── test_api.py
+    └── test_sri_integration.py
+
+inicializa el proyecto 
+
+1.- crea el entorno virtual 
+instala: python -m venv venv
+activa el entorno virtual: venv\Scripts\activate
+
+2.- actualiza pip 
+python -m pip install --upgrade pip
+
+3.- instala las dependencias desde el archivo requeriments.txt
+pip install -r requirements.txt
+pip freeze > requirements.txt
+
+4.- crea el archivo .env cn las configuraciones de la base de datos y las demas configuraciones que se va a ir utilizando 
+
+5.- crea la base de datos en postgres y configura el archivo .env con las credenciales de la base de datos
+crea un usuario con su contraseña y dale los permisos necesarios a la base de datos creada
+luego crea una base de datos llamada vendo_db
+
+6.- crea los esquemas de la base de datos
+python manage.py create_schemas
+
+7.- inicializa la empresa
+python manage.py init_company
+
+8.- crea las migraciones y aplica los cambios a la base de datos
+python manage.py makemigrations
+python manage.py migrate
