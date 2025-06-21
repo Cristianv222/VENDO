@@ -10,12 +10,7 @@ vendo/
 │
 ├── config/                       # Configuración principal de Django
 │   ├── __init__.py
-│   ├── settings/
-│   │   ├── __init__.py
-│   │   ├── base.py              # Configuración base
-│   │   ├── development.py       # Configuración desarrollo
-│   │   ├── production.py        # Configuración producción
-│   │   └── testing.py           # Configuración pruebas
+│   ├── settings.py
 │   ├── urls.py                  # URLs principales
 │   ├── wsgi.py
 │   ├── asgi.py
