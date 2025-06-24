@@ -50,11 +50,7 @@ DJANGO_APPS = [
 # Third party apps
 THIRD_PARTY_APPS = [
     'rest_framework',
-<<<<<<< Updated upstream
-    'rest_framework.authtoken',
-=======
-    'rest_framework.authtoken',  # ← AGREGADO: Este era el problema principal
->>>>>>> Stashed changes
+    'rest_framework.authtoken',  # CORREGIDO: Sin conflictos de merge
     'corsheaders',
     'django_filters',
     'crispy_forms',
@@ -86,7 +82,7 @@ print(f"INSTALLED_APPS cargadas: {len(INSTALLED_APPS)} apps")
 # CUSTOM USER MODEL
 # ==========================================
 
-# DESCOMENTADO: Necesario para usar el modelo User personalizado
+# Modelo de usuario personalizado
 AUTH_USER_MODEL = 'users.User'
 
 # ==========================================
@@ -130,10 +126,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     
     # VENDO Custom Middlewares (orden importante)
-    'apps.core.middleware.CompanyMiddleware',       # Gestión de empresa
-    'apps.core.middleware.AuditMiddleware',         # Auditoría automática
-    'apps.core.middleware.SecurityMiddleware',      # Seguridad adicional
-    'apps.core.middleware.PerformanceMiddleware',   # Monitoreo rendimiento
+    # 'apps.core.middleware.CompanyMiddleware',       # Gestión de empresa
+    # 'apps.core.middleware.AuditMiddleware',         # Auditoría automática
+    # 'apps.core.middleware.SecurityMiddleware',      # Seguridad adicional
+    # 'apps.core.middleware.PerformanceMiddleware',   # Monitoreo rendimiento
     
     # Messages framework
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -171,14 +167,14 @@ TEMPLATES = [
                 'django.template.context_processors.static',
                 'django.template.context_processors.tz',
                 
-                # VENDO custom context processors
-                'apps.core.context_processors.company_context',
-                'apps.core.context_processors.branch_context',
-                'apps.core.context_processors.user_context',
-                'apps.core.context_processors.system_context',
-                'apps.core.context_processors.navigation_context',
-                'apps.core.context_processors.menu_context',
-                'apps.core.context_processors.notifications_context',
+                # VENDO custom context processors (comentados hasta que se creen)
+                # 'apps.core.context_processors.company_context',
+                # 'apps.core.context_processors.branch_context',
+                # 'apps.core.context_processors.user_context',
+                # 'apps.core.context_processors.system_context',
+                # 'apps.core.context_processors.navigation_context',
+                # 'apps.core.context_processors.menu_context',
+                # 'apps.core.context_processors.notifications_context',
             ],
         },
     },
@@ -204,13 +200,9 @@ try:
             'OPTIONS': {
                 'options': '-c search_path=vendo_core,public',
             },
-<<<<<<< Updated upstream
+            'ATOMIC_REQUESTS': True,  # Para transacciones atómicas
             'CONN_MAX_AGE': 60,  # Reutilizar conexiones por 60 segundos
             'CONN_HEALTH_CHECKS': True,  # Verificar salud de conexiones
-=======
-            'ATOMIC_REQUESTS': True,  # AGREGADO: Para transacciones atómicas
-            'CONN_MAX_AGE': 0,       # AGREGADO: Para conexiones persistentes
->>>>>>> Stashed changes
         },
     }
     print(f"✅ DATABASES configurado exitosamente")
@@ -255,13 +247,6 @@ DATABASE_APPS_MAPPING = {
 }
 
 print("=== DATABASES Y ROUTER CONFIGURADOS ===")
-
-# ==========================================
-# USER MODEL CONFIGURATION
-# ==========================================
-
-# Custom User Model (descomenta cuando esté listo)
-# AUTH_USER_MODEL = 'users.User'
 
 # ==========================================
 # PASSWORD VALIDATION
@@ -358,8 +343,9 @@ try:
             'rest_framework.authentication.SessionAuthentication',
         ],
         'DEFAULT_PERMISSION_CLASSES': [
-            'apps.core.permissions.IsAuthenticatedAndActive',
-            'apps.core.permissions.HasCompanyAccess',
+            'rest_framework.permissions.IsAuthenticated',
+            # 'apps.core.permissions.IsAuthenticatedAndActive',  # Cuando se cree
+            # 'apps.core.permissions.HasCompanyAccess',  # Cuando se cree
         ],
         'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
         'PAGE_SIZE': 25,
@@ -377,14 +363,10 @@ try:
             'rest_framework.parsers.FormParser',
             'rest_framework.parsers.MultiPartParser',
         ],
-<<<<<<< Updated upstream
-        'EXCEPTION_HANDLER': 'apps.core.exceptions.custom_exception_handler',
+        'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',  # Por ahora usar el default
+        'TEST_REQUEST_DEFAULT_FORMAT': 'json',
         'DATETIME_FORMAT': '%d/%m/%Y %H:%M:%S',
         'DATE_FORMAT': '%d/%m/%Y',
-=======
-        'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
-        'TEST_REQUEST_DEFAULT_FORMAT': 'json',
->>>>>>> Stashed changes
     }
     print("✅ REST_FRAMEWORK configurado")
 except Exception as e:
@@ -485,44 +467,12 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
-<<<<<<< Updated upstream
 CELERY_ENABLE_UTC = True
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutos
 CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 minutos
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
-=======
-
-# ==========================================
-# CACHE CONFIGURATION
-# ==========================================
-
-print("=== ANTES DE CACHE ===")
-
-try:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-            'LOCATION': REDIS_URL,
-            'KEY_PREFIX': 'vendo',
-            'TIMEOUT': 300,
-        }
-    }
-    print("✅ CACHES configurado")
-except Exception as e:
-    print(f"❌ Error en CACHES: {e}")
-
-# ==========================================
-# SESSION CONFIGURATION
-# ==========================================
-
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'default'
-SESSION_COOKIE_AGE = 86400  # 24 hours
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-SESSION_SAVE_EVERY_REQUEST = True
->>>>>>> Stashed changes
 
 # ==========================================
 # EMAIL CONFIGURATION
@@ -640,12 +590,9 @@ VENDO_CONFIG = {
     'SESSION_TIMEOUT_MINUTES': 60,
     'MAX_FAILED_LOGIN_ATTEMPTS': 5,
     'PASSWORD_RESET_TIMEOUT_DAYS': 1,
-<<<<<<< Updated upstream
+    'FORCE_PASSWORD_CHANGE_DAYS': 90,
     
     # Document prefixes
-=======
-    'FORCE_PASSWORD_CHANGE_DAYS': 90,  # AGREGADO: Forzar cambio de contraseña
->>>>>>> Stashed changes
     'INVOICE_NUMBER_PREFIX': 'FACT-',
     'CREDIT_NOTE_PREFIX': 'NC-',
     'DEBIT_NOTE_PREFIX': 'ND-',
@@ -671,7 +618,6 @@ VENDO_CONFIG = {
     'MAX_CONCURRENT_USERS': 100,
 }
 
-<<<<<<< Updated upstream
 # ==========================================
 # AUDIT SETTINGS
 # ==========================================
@@ -686,16 +632,13 @@ AUDIT_SETTINGS = {
     'EXCLUDED_USERS': [],  # Usuarios excluidos de auditoría
     'SENSITIVE_FIELDS': ['password', 'token', 'secret', 'key'],
 }
-=======
-# AGREGADO: Configuraciones adicionales para Users
+
+# Configuraciones adicionales para Users
 MAX_FAILED_LOGIN_ATTEMPTS = VENDO_CONFIG['MAX_FAILED_LOGIN_ATTEMPTS']
 PASSWORD_RESET_TIMEOUT_DAYS = VENDO_CONFIG['PASSWORD_RESET_TIMEOUT_DAYS']
 
-print("=== ANTES DE LOGGING ===")
->>>>>>> Stashed changes
-
 # ==========================================
-# LOGGING CONFIGURATION (CORREGIDO)
+# LOGGING CONFIGURATION
 # ==========================================
 
 print("=== CONFIGURANDO LOGGING ===")
@@ -704,9 +647,6 @@ print("=== CONFIGURANDO LOGGING ===")
 os.makedirs(BASE_DIR / 'logs', exist_ok=True)
 
 try:
-    # Crear directorio de logs si no existe
-    (BASE_DIR / 'logs').mkdir(exist_ok=True)
-    
     LOGGING = {
         'version': 1,
         'disable_existing_loggers': False,
@@ -831,8 +771,8 @@ try:
                 'level': 'DEBUG',
                 'propagate': False,
             },
-            'vendo.users': {  # AGREGADO: Logger específico para users
-                'handlers': ['file', 'console'],
+            'vendo.users': {
+                'handlers': ['file_info', 'console'],
                 'level': 'DEBUG',
                 'propagate': False,
             },
@@ -915,21 +855,14 @@ if DEBUG:
         
         # Development email backend
         EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-        
-<<<<<<< Updated upstream
+
         # Allow all origins in development
         CORS_ALLOW_ALL_ORIGINS = True
         
         # Disable template caching in development
         for template_engine in TEMPLATES:
             template_engine['OPTIONS']['debug'] = True
-=======
-        # AGREGADO: Configuraciones adicionales de desarrollo
-        DEBUG_TOOLBAR_CONFIG = {
-            'SHOW_TOOLBAR_CALLBACK': lambda request: DEBUG,
-        }
->>>>>>> Stashed changes
-        
+
         print(f"✅ Configuración de desarrollo aplicada. INSTALLED_APPS: {len(INSTALLED_APPS)} apps")
         
     except Exception as e:
@@ -951,7 +884,6 @@ else:  # Production settings
         SECURE_HSTS_SECONDS = 31536000  # 1 año
         SECURE_HSTS_PRELOAD = True
         SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=True, cast=bool)
-<<<<<<< Updated upstream
         SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
         
         # Cookies security
@@ -978,20 +910,6 @@ else:  # Production settings
         
     except Exception as e:
         print(f"❌ Error en PRODUCTION SETTINGS: {e}")
-=======
-        SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=True, cast=bool)
-        CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=True, cast=bool)
-        X_FRAME_OPTIONS = 'DENY'
-        SECURE_REFERRER_POLICY = 'same-origin'
-        print("✅ Configuraciones de seguridad aplicadas")
-    else:
-        # AGREGADO: Configuraciones de seguridad para desarrollo
-        SESSION_COOKIE_SECURE = False
-        CSRF_COOKIE_SECURE = False
-        SECURE_SSL_REDIRECT = False
-except Exception as e:
-    print(f"❌ Error en SECURITY SETTINGS: {e}")
->>>>>>> Stashed changes
 
 # ==========================================
 # ERROR REPORTING
@@ -1079,14 +997,6 @@ BACKUP_CONFIG = {
     'ENCRYPTION_KEY': config('BACKUP_ENCRYPTION_KEY', default=''),
 }
 
-print("=== CONFIGURACIONES ADICIONALES COMPLETADAS ===")
-print(f"DATABASES final: {list(DATABASES.keys()) if 'DATABASES' in globals() else 'NO DEFINIDO'}")
-<<<<<<< Updated upstream
-print(f"APPS TOTALES: {len(INSTALLED_APPS)}")
-print(f"MIDDLEWARE STACK: {len(MIDDLEWARE)} middlewares")
-print(f"ESQUEMAS CONFIGURADOS: {len(DATABASE_APPS_MAPPING)}")
-print("=== FIN SETTINGS VENDO ===")
-
 # ==========================================
 # CONFIGURACIÓN FUTURA PARA NUEVOS MÓDULOS
 # ==========================================
@@ -1138,11 +1048,16 @@ FEATURE_FLAGS = {
     'OFFLINE_MODE': config('FEATURE_OFFLINE_MODE', default=False, cast=bool),
 }
 
+print("=== CONFIGURACIONES ADICIONALES COMPLETADAS ===")
+print(f"DATABASES final: {list(DATABASES.keys()) if 'DATABASES' in globals() else 'NO DEFINIDO'}")
+print(f"APPS TOTALES: {len(INSTALLED_APPS)}")
+print(f"MIDDLEWARE STACK: {len(MIDDLEWARE)} middlewares")
+print(f"ESQUEMAS CONFIGURADOS: {len(DATABASE_APPS_MAPPING)}")
+
 print(f"✅ CONFIGURACIÓN COMPLETA DE VENDO CARGADA EXITOSAMENTE")
 print(f"🚀 Sistema: {CUSTOM_BRAND_NAME}")
 print(f"🔧 Debug: {DEBUG}")
 print(f"📊 Features habilitadas: {sum(1 for v in FEATURE_FLAGS.values() if v)}/{len(FEATURE_FLAGS)}")
-=======
 print(f"AUTH_USER_MODEL: {AUTH_USER_MODEL}")
 print(f"Apps instaladas: {len(INSTALLED_APPS)}")
 
@@ -1157,4 +1072,5 @@ if DEBUG:
     print(f"✅ LOGIN_URL: {LOGIN_URL}")
     print(f"✅ DATABASES configurado: {'default' in DATABASES}")
     print("=====================================\n")
->>>>>>> Stashed changes
+
+print("=== FIN SETTINGS VENDO ===")
