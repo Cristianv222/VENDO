@@ -1,6 +1,5 @@
 vendo/
 ├── .env                          # Variables de entorno (credenciales seguras)
-├── .env.example                  # Ejemplo de configuración
 ├── .gitignore
 ├── requirements.txt              # Dependencias del proyecto
 ├── manage.py

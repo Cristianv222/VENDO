@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    
+    <title>{% block title %}VENDO - Sistema de Gestión{% endblock %}</title>
+    
+    <!-- Material UI CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mui/material@5.14.20/umd/material-ui.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS for Material UI styling -->
+    <style>
+        :root {
+            --primary-color: #1976d2;
+            --primary-dark: #115293;
+            --secondary-color: #dc004e;
+            --background-color: #f5f5f5;
+            --surface-color: #ffffff;
+            --text-primary: rgba(0, 0, 0, 0.87);
+            --text-secondary: rgba(0, 0, 0, 0.6);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .mdc-top-app-bar {
+            background-color: var(--primary-color);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 4px -1px rgba(0,0,0,.2), 0 4px 5px 0 rgba(0,0,0,.14), 0 1px 10px 0 rgba(0,0,0,.12);
+        }
+
+        .app-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            height: 64px;
+        }
+
+        .app-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .app-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: white;
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 8px;
+            list-style: none;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .mdc-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            text-transform: none;
+            transition: background-color 0.2s;
+        }
+
+        .mdc-button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .mdc-icon-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border: none;
+            border-radius: 50%;
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .mdc-icon-button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .mdc-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 5px 5px -3px rgba(0,0,0,.2), 0 8px 10px 1px rgba(0,0,0,.14), 0 3px 14px 2px rgba(0,0,0,.12);
+            min-width: 200px;
+            z-index: 1001;
+            opacity: 0;
+            transform: translateY(-8px);
+            transition: opacity 0.2s, transform 0.2s;
+            pointer-events: none;
+        }
+
+        .mdc-menu.open {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .mdc-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--text-primary);
+            text-decoration: none;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .mdc-menu-item:hover {
+            background-color: rgba(0, 0, 0, 0.04);
+        }
+
+        .mdc-menu-item.active {
+            background-color: rgba(25, 118, 210, 0.08);
+            color: var(--primary-color);
+        }
+
+        .mdc-menu-divider {
+            height: 1px;
+            background-color: rgba(0, 0, 0, 0.12);
+            margin: 8px 0;
+        }
+
+        .badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background-color: var(--secondary-color);
+            color: white;
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 12px;
+            font-weight: 500;
+            min-width: 16px;
+            text-align: center;
+        }
+
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 16px;
+        }
+
+        .mdc-breadcrumbs {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .breadcrumb-item {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+
+        .breadcrumb-item:hover {
+            text-decoration: underline;
+        }
+
+        .breadcrumb-item.active {
+            color: var(--text-primary);
+        }
+
+        .breadcrumb-separator {
+            color: var(--text-secondary);
+        }
+
+        .mdc-snackbar {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 3px 5px -1px rgba(0,0,0,.2), 0 6px 10px 0 rgba(0,0,0,.14), 0 1px 18px 0 rgba(0,0,0,.12);
+            padding: 16px;
+            z-index: 1002;
+            max-width: 568px;
+            min-width: 344px;
+        }
+
+        .alert {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .alert-success {
+            color: #2e7d32;
+        }
+
+        .alert-error {
+            color: #d32f2f;
+        }
+
+        .alert-warning {
+            color: #ed6c02;
+        }
+
+        .alert-info {
+            color: var(--primary-color);
+        }
+
+        .footer {
+            background: white;
+            border-top: 1px solid rgba(0, 0, 0, 0.12);
+            padding: 16px;
+            text-align: center;
+            color: var(--text-secondary);
+            margin-top: 48px;
+        }
+
+        .mobile-menu {
+            display: none;
+        }
+
+        .mobile-menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1003;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .mobile-menu-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .mobile-drawer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 280px;
+            background: white;
+            z-index: 1004;
+            transform: translateX(-100%);
+            transition: transform 0.2s;
+            overflow-y: auto;
+        }
+
+        .mobile-drawer.open {
+            transform: translateX(0);
+        }
+
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+            }
+
+            .mobile-menu {
+                display: block;
+            }
+
+            .app-bar-right .mdc-button {
+                display: none;
+            }
+
+            .main-content {
+                padding: 16px 8px;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .material-icons {
+            font-size: 20px;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% load static %}
+    
+    <!-- Top App Bar -->
+    {% if user.is_authenticated %}
+    <header class="mdc-top-app-bar">
+        <div class="app-bar">
+            <div class="app-bar-left">
+                <!-- Mobile Menu Button -->
+                <button class="mdc-icon-button mobile-menu" onclick="toggleMobileMenu()">
+                    <span class="material-icons">menu</span>
+                </button>
+                
+                <!-- Logo/Brand -->
+                <a class="logo" href="{% url 'core:dashboard' %}">
+                    {% if current_company and current_company.logo %}
+                        <img src="{{ current_company.logo.url }}" alt="{{ current_company.business_name }}" height="30">
+                    {% else %}
+                        <span class="material-icons">store</span>
+                    {% endif %}
+                    VENDO
+                </a>
+                
+                <!-- Desktop Navigation -->
+                <nav class="nav-menu">
+                    {% for menu_item in menu_items %}
+                    <div class="nav-item">
+                        <a class="nav-link" href="{% url menu_item.url %}">
+                            <span class="material-icons">{{ menu_item.icon }}</span>
+                            {{ menu_item.title }}
+                        </a>
+                    </div>
+                    {% endfor %}
+                </nav>
+            </div>
+            
+            <div class="app-bar-right">
+                <!-- Company Selector -->
+                {% if current_company %}
+                <div class="nav-item">
+                    <button class="mdc-button" onclick="toggleCompanyMenu()">
+                        <span class="material-icons">business</span>
+                        {{ current_company.business_name|truncatechars:20 }}
+                        <span class="material-icons">expand_more</span>
+                    </button>
+                    <div id="companyMenu" class="mdc-menu">
+                        {% for company in available_companies %}
+                        <form method="post" action="{% url 'core:switch_company' company.id %}" style="margin: 0;">
+                            {% csrf_token %}
+                            <button type="submit" class="mdc-menu-item {% if company == current_company %}active{% endif %}">
+                                {{ company.business_name }}
+                            </button>
+                        </form>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Branch Selector -->
+                {% if current_branch and user_branches %}
+                <div class="nav-item">
+                    <button class="mdc-button" onclick="toggleBranchMenu()">
+                        <span class="material-icons">location_on</span>
+                        {{ current_branch.name|truncatechars:15 }}
+                        <span class="material-icons">expand_more</span>
+                    </button>
+                    <div id="branchMenu" class="mdc-menu">
+                        {% for branch in user_branches %}
+                        <form method="post" action="{% url 'core:switch_branch' branch.id %}" style="margin: 0;">
+                            {% csrf_token %}
+                            <button type="submit" class="mdc-menu-item {% if branch == current_branch %}active{% endif %}">
+                                {{ branch.name }}
+                            </button>
+                        </form>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Notifications -->
+                <div class="nav-item">
+                    <button class="mdc-icon-button" onclick="toggleNotificationsMenu()" style="position: relative;">
+                        <span class="material-icons">notifications</span>
+                        {% if unread_notifications > 0 %}
+                        <span class="badge">{{ unread_notifications }}</span>
+                        {% endif %}
+                    </button>
+                    <div id="notificationsMenu" class="mdc-menu">
+                        <div class="mdc-menu-item" style="font-weight: 500; pointer-events: none;">
+                            Notificaciones
+                        </div>
+                        <div class="mdc-menu-divider"></div>
+                        {% if recent_notifications %}
+                            {% for notification in recent_notifications %}
+                            <a class="mdc-menu-item" href="#">
+                                {{ notification.message|truncatechars:50 }}
+                            </a>
+                            {% endfor %}
+                        {% else %}
+                            <div class="mdc-menu-item" style="color: var(--text-secondary); pointer-events: none;">
+                                No hay notificaciones
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- User Menu -->
+                <div class="nav-item">
+                    <button class="mdc-icon-button" onclick="toggleUserMenu()">
+                        <span class="material-icons">account_circle</span>
+                    </button>
+                    <div id="userMenu" class="mdc-menu">
+                        <div class="mdc-menu-item" style="font-weight: 500; pointer-events: none;">
+                            {{ user_full_name|default:user.username }}
+                        </div>
+                        <div class="mdc-menu-divider"></div>
+                        <a class="mdc-menu-item" href="{% url 'core:user_profile' %}">
+                            <span class="material-icons">person</span>
+                            Mi Perfil
+                        </a>
+                        <a class="mdc-menu-item" href="{% url 'admin:logout' %}">
+                            <span class="material-icons">logout</span>
+                            Cerrar Sesión
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobileMenuOverlay" class="mobile-menu-overlay" onclick="toggleMobileMenu()"></div>
+    
+    <!-- Mobile Drawer -->
+    <nav id="mobileDrawer" class="mobile-drawer">
+        <div style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.12);">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="material-icons" style="color: var(--primary-color);">store</span>
+                <span style="font-size: 18px; font-weight: 500; color: var(--primary-color);">VENDO</span>
+            </div>
+        </div>
+        <div style="padding: 8px 0;">
+            {% for menu_item in menu_items %}
+            <a class="mdc-menu-item" href="{% url menu_item.url %}" style="padding: 12px 16px;">
+                <span class="material-icons">{{ menu_item.icon }}</span>
+                {{ menu_item.title }}
+            </a>
+            {% endfor %}
+        </div>
+    </nav>
+    {% endif %}
+    
+    <!-- Main Content -->
+    <main class="{% if user.is_authenticated %}main-content{% else %}main-content{% endif %}">
+        <!-- Breadcrumbs -->
+        {% if user.is_authenticated and breadcrumbs %}
+        <nav class="mdc-breadcrumbs">
+            <a href="{% url 'core:dashboard' %}" class="breadcrumb-item">
+                <span class="material-icons" style="font-size: 16px;">home</span>
+                Inicio
+            </a>
+            {% for breadcrumb in breadcrumbs %}
+                <span class="breadcrumb-separator">›</span>
+                {% if breadcrumb.is_active %}
+                    <span class="breadcrumb-item active">{{ breadcrumb.title }}</span>
+                {% else %}
+                    <a href="{{ breadcrumb.url }}" class="breadcrumb-item">{{ breadcrumb.title }}</a>
+                {% endif %}
+            {% endfor %}
+        </nav>
+        {% endif %}
+        
+        <!-- Messages -->
+        {% if messages %}
+        {% for message in messages %}
+        <div class="mdc-snackbar" id="snackbar-{{ forloop.counter }}">
+            <div class="alert alert-{{ message.tags|default:'info' }}">
+                {% if message.tags == 'error' %}
+                    <span class="material-icons">error</span>
+                {% elif message.tags == 'success' %}
+                    <span class="material-icons">check_circle</span>
+                {% elif message.tags == 'warning' %}
+                    <span class="material-icons">warning</span>
+                {% else %}
+                    <span class="material-icons">info</span>
+                {% endif %}
+                <div>
+                    <div style="font-weight: 500;">
+                        {% if message.tags == 'error' %}Error
+                        {% elif message.tags == 'success' %}Éxito
+                        {% elif message.tags == 'warning' %}Advertencia
+                        {% else %}Información{% endif %}
+                    </div>
+                    <div>{{ message }}</div>
+                </div>
+                <button class="mdc-icon-button" onclick="hideSnackbar('snackbar-{{ forloop.counter }}')" style="margin-left: auto; color: inherit;">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+        
+        <!-- Page Content -->
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    {% if user.is_authenticated %}
+    <footer class="footer">
+        <div>
+            &copy; {{ current_year }} VENDO v{{ system_version }} - 
+            {% if current_company %}{{ current_company.business_name }}{% endif %}
+            {% if debug_mode %} - <span style="color: #ed6c02;">MODO DEBUG</span>{% endif %}
+        </div>
+    </footer>
+    {% endif %}
+    
+    <!-- JavaScript -->
+    <script>
+        // Menu toggle functions
+        function toggleMobileMenu() {
+            const overlay = document.getElementById('mobileMenuOverlay');
+            const drawer = document.getElementById('mobileDrawer');
+            overlay.classList.toggle('open');
+            drawer.classList.toggle('open');
+        }
+
+        function toggleCompanyMenu() {
+            toggleMenu('companyMenu');
+        }
+
+        function toggleBranchMenu() {
+            toggleMenu('branchMenu');
+        }
+
+        function toggleNotificationsMenu() {
+            toggleMenu('notificationsMenu');
+        }
+
+        function toggleUserMenu() {
+            toggleMenu('userMenu');
+        }
+
+        function toggleMenu(menuId) {
+            // Close all other menus
+            const menus = document.querySelectorAll('.mdc-menu');
+            menus.forEach(menu => {
+                if (menu.id !== menuId) {
+                    menu.classList.remove('open');
+                }
+            });
+            
+            // Toggle the target menu
+            const menu = document.getElementById(menuId);
+            menu.classList.toggle('open');
+        }
+
+        // Close menus when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.nav-item')) {
+                const menus = document.querySelectorAll('.mdc-menu');
+                menus.forEach(menu => menu.classList.remove('open'));
+            }
+        });
+
+        // Hide snackbar
+        function hideSnackbar(snackbarId) {
+            const snackbar = document.getElementById(snackbarId);
+            if (snackbar) {
+                snackbar.style.display = 'none';
+            }
+        }
+
+        // Auto-hide snackbars after 5 seconds
+        setTimeout(function() {
+            const snackbars = document.querySelectorAll('.mdc-snackbar');
+            snackbars.forEach(snackbar => {
+                snackbar.style.opacity = '0';
+                snackbar.style.transform = 'translateX(-50%) translateY(-20px)';
+                setTimeout(() => {
+                    snackbar.style.display = 'none';
+                }, 200);
+            });
+        }, 5000);
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

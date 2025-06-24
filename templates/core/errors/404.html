@@ -1,0 +1,11 @@
+<!-- templates/core/errors/400.html -->
+{% extends 'base.html' %}
+{% block title %}Solicitud Incorrecta{% endblock %}
+{% block content %}
+<div class="text-center">
+    <h1 class="display-1">400</h1>
+    <p class="fs-3"><span class="text-danger">Ups!</span> Solicitud incorrecta.</p>
+    <p class="lead">{{ error_message }}</p>
+    <a href="{% url 'core:dashboard' %}" class="btn btn-primary">Volver al Dashboard</a>
+</div>
+{% endblock %}
