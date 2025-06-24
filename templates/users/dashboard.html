@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - VENDO</title>
+    {% load static %}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --sidebar-width: 250px;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-header {
+            padding: 1.5rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-header .logo {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        
+        .sidebar-menu {
+            padding: 1rem 0;
+        }
+        
+        .sidebar-menu .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-menu .nav-link:hover,
+        .sidebar-menu .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-menu .nav-link i {
+            width: 20px;
+            margin-right: 10px;
+        }
+        
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 1rem 2rem;
+        }
+        
+        .content-area {
+            padding: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .welcome-section {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .module-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            border: 2px solid transparent;
+        }
+        
+        .module-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
+            color: inherit;
+        }
+        
+        .module-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <a href="{% url 'users:dashboard' %}" class="logo">
+                <i class="fas fa-cash-register me-2"></i>
+                VENDO
+            </a>
+        </div>
+        
+        <div class="sidebar-menu">
+            <a href="{% url 'users:dashboard' %}" class="nav-link active">
+                <i class="fas fa-tachometer-alt"></i>
+                Dashboard
+            </a>
+            
+            <a href="#" class="nav-link">
+                <i class="fas fa-cash-register"></i>
+                Punto de Venta
+            </a>
+            
+            <a href="#" class="nav-link">
+                <i class="fas fa-boxes"></i>
+                Inventario
+            </a>
+            
+            <a href="#" class="nav-link">
+                <i class="fas fa-file-invoice"></i>
+                Facturación
+            </a>
+            
+            <a href="#" class="nav-link">
+                <i class="fas fa-shopping-cart"></i>
+                Compras
+            </a>
+            
+            <a href="#" class="nav-link">
+                <i class="fas fa-calculator"></i>
+                Contabilidad
+            </a>
+            
+            <a href="#" class="nav-link">
+                <i class="fas fa-file-alt"></i>
+                Cotizaciones
+            </a>
+            
+            <a href="#" class="nav-link">
+                <i class="fas fa-chart-bar"></i>
+                Reportes
+            </a>
+            
+            <a href="{% url 'users:user_list' %}" class="nav-link">
+                <i class="fas fa-users"></i>
+                Usuarios
+            </a>
+            
+            <a href="#" class="nav-link">
+                <i class="fas fa-cog"></i>
+                Configuración
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Navbar -->
+        <nav class="navbar">
+            <div class="d-flex justify-content-between w-100 align-items-center">
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-link d-md-none" id="sidebarToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h4 class="mb-0">Dashboard Principal</h4>
+                </div>
+                
+                <div class="dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                        {% if user.profile.avatar %}
+                            <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="user-avatar me-2">
+                        {% else %}
+                            <div class="user-avatar me-2 bg-primary d-flex align-items-center justify-content-center">
+                                <i class="fas fa-user text-white"></i>
+                            </div>
+                        {% endif %}
+                        <span>{{ user.full_name }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{% url 'users:profile' %}">
+                            <i class="fas fa-user me-2"></i>Mi Perfil
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'users:change_password' %}">
+                            <i class="fas fa-key me-2"></i>Cambiar Contraseña
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'users:logout' %}">
+                            <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- Welcome Section -->
+            <div class="welcome-section">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2>¡Bienvenido, {{ user.first_name }}!</h2>
+                        <p class="mb-0">
+                            Último acceso: {% if user.last_login %}{{ user.last_login|date:"d/m/Y H:i" }}{% else %}Primera vez{% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="d-flex justify-content-end">
+                            <div class="text-center me-3">
+                                <div style="font-size: 1.5rem; font-weight: bold;">{{ active_sessions }}</div>
+                                <small>Sesiones Activas</small>
+                            </div>
+                            <div class="text-center">
+                                <div style="font-size: 1.5rem; font-weight: bold;">{{ user.roles.count }}</div>
+                                <small>Roles Asignados</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h3 class="mb-0">{{ total_users }}</h3>
+                                <p class="text-muted mb-0">Usuarios Activos</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                <i class="fas fa-user-shield"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h3 class="mb-0">{{ total_roles }}</h3>
+                                <p class="text-muted mb-0">Roles Configurados</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                <i class="fas fa-cash-register"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h3 class="mb-0">0</h3>
+                                <p class="text-muted mb-0">Ventas Hoy</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                                <i class="fas fa-boxes"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h3 class="mb-0">0</h3>
+                                <p class="text-muted mb-0">Productos</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Access Modules -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h5 class="mb-3">Acceso Rápido a Módulos</h5>
+                </div>
+                
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <a href="#" class="module-card">
+                        <div class="module-icon">
+                            <i class="fas fa-cash-register"></i>
+                        </div>
+                        <h6>Punto de Venta</h6>
+                        <small class="text-muted">Procesar ventas y pagos</small>
+                    </a>
+                </div>
+                
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <a href="#" class="module-card">
+                        <div class="module-icon">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <h6>Inventario</h6>
+                        <small class="text-muted">Gestionar productos y stock</small>
+                    </a>
+                </div>
+                
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <a href="#" class="module-card">
+                        <div class="module-icon">
+                            <i class="fas fa-file-invoice"></i>
+                        </div>
+                        <h6>Facturación</h6>
+                        <small class="text-muted">Documentos electrónicos</small>
+                    </a>
+                </div>
+                
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <a href="#" class="module-card">
+                        <div class="module-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <h6>Reportes</h6>
+                        <small class="text-muted">Análisis y estadísticas</small>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Recent Users -->
+            {% if recent_users %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-users me-2"></i>
+                                Usuarios Recientes
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Usuario</th>
+                                            <th>Nombre</th>
+                                            <th>Email</th>
+                                            <th>Tipo</th>
+                                            <th>Fecha Registro</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for recent_user in recent_users %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    {% if recent_user.profile.avatar %}
+                                                        <img src="{{ recent_user.profile.avatar.url }}" alt="Avatar" class="user-avatar me-2">
+                                                    {% else %}
+                                                        <div class="user-avatar me-2 bg-secondary d-flex align-items-center justify-content-center">
+                                                            <i class="fas fa-user text-white"></i>
+                                                        </div>
+                                                    {% endif %}
+                                                    {{ recent_user.username }}
+                                                </div>
+                                            </td>
+                                            <td>{{ recent_user.full_name }}</td>
+                                            <td>{{ recent_user.email }}</td>
+                                            <td>
+                                                <span class="badge bg-info">{{ recent_user.get_user_type_display }}</span>
+                                            </td>
+                                            <td>{{ recent_user.created_at|date:"d/m/Y" }}</td>
+                                            <td>
+                                                {% if recent_user.is_active %}
+                                                    <span class="badge bg-success">Activo</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Inactivo</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Sidebar toggle for mobile
+        document.getElementById('sidebarToggle')?.addEventListener('click', function() {
+            document.querySelector('.sidebar').classList.toggle('show');
+        });
+        
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(e) {
+            const sidebar = document.querySelector('.sidebar');
+            const toggle = document.getElementById('sidebarToggle');
+            
+            if (window.innerWidth <= 768 && !sidebar.contains(e.target) && e.target !== toggle) {
+                sidebar.classList.remove('show');
+            }
+        });
+        
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('es-EC', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            const timeElement = document.getElementById('currentTime');
+            if (timeElement) {
+                timeElement.textContent = timeString;
+            }
+        }
+        
+        // Update time every minute
+        updateTime();
+        setInterval(updateTime, 60000);
+    </script>
+</body>
+</html>
