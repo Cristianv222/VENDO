@@ -1,0 +1,302 @@
+{% extends "users/base_users.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Eliminar Rol" %}{% endblock %}
+
+{% block user_breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'users:role_list' %}">{% trans "Roles" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'users:role_detail' object.pk %}">{{ object.name }}</a></li>
+<li class="breadcrumb-item active">{% trans "Eliminar" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>{% trans "¿Eliminar Rol?" %}
+                </h5>
+            </div>
+            
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <div class="mb-3">
+                        <span class="badge badge-lg role-delete-badge" 
+                              data-role-color="{{ object.color|default:'#6c757d' }}">
+                            <i class="fas fa-users-cog me-2"></i>{{ object.name }}
+                        </span>
+                    </div>
+                    
+                    {% if object.description %}
+                        <p class="text-muted">{{ object.description }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>{% trans "¡Advertencia!" %}</strong>
+                    {% trans "Esta acción no se puede deshacer." %}
+                </div>
+
+                <p class="mb-3">
+                    {% trans "Está a punto de eliminar permanentemente el rol" %} 
+                    <strong>{{ object.name }}</strong>.
+                </p>
+
+                <!-- Estadísticas del rol -->
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h4 class="text-primary mb-0">{{ object.permissions.count }}</h4>
+                                <small class="text-muted">{% trans "Permisos asignados" %}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h4 class="text-success mb-0">{{ object.user_companies.count }}</h4>
+                                <small class="text-muted">{% trans "Usuarios con este rol" %}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Verificar si hay usuarios asignados -->
+                {% if object.user_companies.exists %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-users me-2"></i>
+                        <strong>{% trans "¡Atención!" %}</strong>
+                        {% trans "Este rol está asignado a" %} {{ object.user_companies.count }} {% trans "usuario(s)." %}
+                        <br>
+                        {% trans "Al eliminar el rol, estos usuarios perderán los permisos asociados." %}
+                    </div>
+
+                    <!-- Mostrar algunos usuarios afectados -->
+                    <div class="mb-3">
+                        <h6>{% trans "Usuarios que serán afectados:" %}</h6>
+                        <div class="list-group list-group-flush">
+                            {% for user_company in object.user_companies.all|slice:":5" %}
+                                <div class="list-group-item d-flex align-items-center">
+                                    {% if user_company.user.avatar %}
+                                        <img src="{{ user_company.user.avatar.url }}" alt="{{ user_company.user.get_full_name }}" 
+                                             class="avatar-img me-3 rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="avatar-img bg-secondary d-flex align-items-center justify-content-center text-white me-3 rounded-circle" 
+                                             style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="fw-bold">{{ user_company.user.get_full_name }}</div>
+                                        <small class="text-muted">{{ user_company.company.business_name }}</small>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                            {% if object.user_companies.count > 5 %}
+                                <div class="list-group-item text-center text-muted">
+                                    {% trans "... y" %} {{ object.user_companies.count|add:"-5" }} {% trans "más" %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if object.is_system_role %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-cog me-2"></i>
+                        <strong>{% trans "Rol del Sistema" %}</strong><br>
+                        {% trans "Este es un rol del sistema. Eliminarlo puede afectar el funcionamiento normal de la aplicación." %}
+                    </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <h6>{% trans "Al eliminar este rol:" %}</h6>
+                    <ul class="text-muted">
+                        <li>{% trans "Se removerá de todos los usuarios asignados" %}</li>
+                        <li>{% trans "Se perderán todas las configuraciones de permisos" %}</li>
+                        <li>{% trans "Los registros de auditoría se mantendrán para trazabilidad" %}</li>
+                    </ul>
+                </div>
+
+                <form method="post" class="mt-4" data-users-count="{{ object.user_companies.count }}">
+                    {% csrf_token %}
+                    
+                    {% if object.user_companies.exists %}
+                        <div class="mb-3">
+                            <label class="form-label">{% trans "¿Qué hacer con los usuarios asignados?" %}</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="user_action" 
+                                       id="remove_role" value="remove" checked>
+                                <label class="form-check-label" for="remove_role">
+                                    {% trans "Solo remover este rol (recomendado)" %}
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="user_action" 
+                                       id="assign_role" value="assign">
+                                <label class="form-check-label" for="assign_role">
+                                    {% trans "Asignar otro rol automáticamente" %}
+                                </label>
+                            </div>
+                            <select name="replacement_role" id="replacement_role" 
+                                    class="form-select mt-2" style="display: none;">
+                                <option value="">{% trans "Seleccionar rol de reemplazo" %}</option>
+                                {% for role in available_roles %}
+                                    <option value="{{ role.id }}">{{ role.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="confirm-delete" required>
+                            <label class="form-check-label" for="confirm-delete">
+                                {% trans "Confirmo que quiero eliminar este rol permanentemente" %}
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'users:role_detail' object.pk %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>{% trans "Cancelar" %}
+                        </a>
+                        <button type="submit" class="btn btn-danger" id="delete-btn" disabled>
+                            <i class="fas fa-trash me-2"></i>{% trans "Eliminar Rol" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Alternativa de desactivación -->
+        {% if not object.is_system_role %}
+            <div class="card mt-3 border-info">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>{% trans "¿Consideró desactivar en lugar de eliminar?" %}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        {% trans "En lugar de eliminar permanentemente, puede desactivar el rol. Esto:" %}
+                    </p>
+                    <ul class="mb-3">
+                        <li>{% trans "Evita que se asigne a nuevos usuarios" %}</li>
+                        <li>{% trans "Mantiene los usuarios actuales con sus permisos" %}</li>
+                        <li>{% trans "Permite reactivar el rol más tarde" %}</li>
+                        <li>{% trans "Preserva el historial y configuraciones" %}</li>
+                    </ul>
+                    <a href="{% url 'users:role_edit' object.pk %}" class="btn btn-info">
+                        <i class="fas fa-toggle-off me-2"></i>{% trans "Desactivar Rol" %}
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Datos para JavaScript -->
+<script type="application/json" id="template-data">
+{
+    "deleteMessages": {
+        "default": "{% trans 'Está completamente seguro de que desea eliminar este rol? Esta acción NO se puede deshacer.' %}",
+        "withUsers": "{% trans 'Está seguro de eliminar este rol? Afectará a' %} {count} {% trans 'usuario(s) y esta acción NO se puede deshacer.' %}"
+    }
+}
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .role-delete-badge {
+        font-size: 1.2rem !important;
+        padding: 0.75rem 1.5rem !important;
+        color: white !important;
+        background-color: #6c757d;
+    }
+    
+    .avatar-img {
+        flex-shrink: 0;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmCheckbox = document.getElementById('confirm-delete');
+    const deleteBtn = document.getElementById('delete-btn');
+    const assignRoleRadio = document.getElementById('assign_role');
+    const removeRoleRadio = document.getElementById('remove_role');
+    const replacementSelect = document.getElementById('replacement_role');
+    const form = document.querySelector('form[data-users-count]');
+    const roleDeleteBadge = document.querySelector('.role-delete-badge');
+    
+    // Aplicar color del rol al badge
+    if (roleDeleteBadge) {
+        const roleColor = roleDeleteBadge.getAttribute('data-role-color');
+        if (roleColor) {
+            roleDeleteBadge.style.backgroundColor = roleColor;
+        }
+    }
+    
+    // Obtener datos del template
+    let templateData = {};
+    try {
+        const dataElement = document.getElementById('template-data');
+        if (dataElement) {
+            templateData = JSON.parse(dataElement.textContent);
+        }
+    } catch (e) {
+        console.warn('No se pudieron cargar los datos del template');
+    }
+    
+    // Manejar confirmación
+    if (confirmCheckbox && deleteBtn) {
+        confirmCheckbox.addEventListener('change', function() {
+            deleteBtn.disabled = !this.checked;
+        });
+    }
+    
+    // Manejar selección de acción para usuarios
+    if (assignRoleRadio && removeRoleRadio && replacementSelect) {
+        function toggleReplacementRole() {
+            if (assignRoleRadio.checked) {
+                replacementSelect.style.display = 'block';
+                replacementSelect.required = true;
+            } else {
+                replacementSelect.style.display = 'none';
+                replacementSelect.required = false;
+            }
+        }
+        
+        assignRoleRadio.addEventListener('change', toggleReplacementRole);
+        removeRoleRadio.addEventListener('change', toggleReplacementRole);
+        
+        toggleReplacementRole();
+    }
+    
+    // Confirmación adicional al enviar
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const usersCount = parseInt(form.getAttribute('data-users-count')) || 0;
+            let confirmMessage = templateData.deleteMessages?.default || 
+                '¿Está completamente seguro de que desea eliminar este rol? Esta acción NO se puede deshacer.';
+            
+            if (usersCount > 0 && templateData.deleteMessages?.withUsers) {
+                confirmMessage = templateData.deleteMessages.withUsers.replace('{count}', usersCount);
+            }
+            
+            if (!confirm(confirmMessage)) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block extra_css %}
+<link href="{% static 'users/css/users.css' %}" rel="stylesheet">
+<style>
+.avatar-img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+.avatar-lg {
+    width: 80px;
+    height: 80px;
+}
+.role-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+.permission-card {
+    border-left: 4px solid var(--bs-primary);
+}
+.session-active {
+    color: var(--bs-success);
+}
+.session-expired {
+    color: var(--bs-danger);
+}
+.user-status-active {
+    color: var(--bs-success);
+}
+.user-status-inactive {
+    color: var(--bs-danger);
+}
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">{% trans "Inicio" %}</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'users:user_list' %}">{% trans "Usuarios" %}</a></li>
+        {% block user_breadcrumbs %}{% endblock %}
+    </ol>
+</nav>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'users/js/users.js' %}"></script>
+{% endblock %}

@@ -1,80 +1,85 @@
 """
-URL configuration for VENDO project.
-Sistema de Ventas con Integración SRI y Esquemas PostgreSQL
+URLs del módulo Users - SIN IMPORT CIRCULAR
 """
+from django.urls import path
+from django.contrib.auth import views as auth_views
+from . import views
 
-from django.contrib import admin
-from django.urls import path, include
-from django.conf import settings
-from django.conf.urls.static import static
-from django.shortcuts import redirect
-
-# Vista simple para redireccionar la raíz
-def redirect_to_users(request):
-    """Redireccionar la URL raíz al dashboard de usuarios."""
-    return redirect('users:dashboard')
+app_name = 'users'
 
 urlpatterns = [
-    # ==========================================
-    # URLS PRINCIPALES
-    # ==========================================
+    # ===================================
+    # AUTENTICACIÓN
+    # ===================================
+    path('login/', views.CustomLoginView.as_view(), name='login'),
+    path('logout/', views.CustomLogoutView.as_view(), name='logout'),
+    path('password-change/', views.PasswordChangeView.as_view(), name='password_change'),
     
-    # Admin de Django
-    path('admin/', admin.site.urls),
+    # Password Reset URLs
+    path('password_reset/', 
+         auth_views.PasswordResetView.as_view(
+             template_name='users/password_reset.html',
+             email_template_name='users/password_reset_email.html',
+             subject_template_name='users/password_reset_subject.txt'
+         ), 
+         name='password_reset'),
+    path('password_reset/done/', 
+         auth_views.PasswordResetDoneView.as_view(
+             template_name='users/password_reset_done.html'
+         ), 
+         name='password_reset_done'),
+    path('reset/<uidb64>/<token>/', 
+         auth_views.PasswordResetConfirmView.as_view(
+             template_name='users/password_reset_confirm.html'
+         ), 
+         name='password_reset_confirm'),
+    path('reset/done/', 
+         auth_views.PasswordResetCompleteView.as_view(
+             template_name='users/password_reset_complete.html'
+         ), 
+         name='password_reset_complete'),
     
-    # Redirección desde la raíz
-    path('', redirect_to_users, name='home'),
+    # ===================================
+    # GESTIÓN DE USUARIOS
+    # ===================================
+    path('users/', views.UserListView.as_view(), name='user_list'),
+    path('users/create/', views.UserCreateView.as_view(), name='user_create'),
+    path('users/<uuid:pk>/', views.UserDetailView.as_view(), name='user_detail'),
+    path('users/<uuid:pk>/edit/', views.UserUpdateView.as_view(), name='user_edit'),
+    path('users/<uuid:pk>/delete/', views.UserDeleteView.as_view(), name='user_delete'),
     
-    # ==========================================
-    # APPS DEL SISTEMA
-    # ==========================================
+    # ===================================
+    # GESTIÓN DE ACCESOS A EMPRESA
+    # ===================================
+    path('users/<uuid:user_id>/company-access/', views.UserCompanyManageView.as_view(), name='user_company_manage'),
     
-    # Usuarios (autenticación, roles, permisos)
-    path('users/', include('apps.users.urls')),
+    # ===================================
+    # GESTIÓN DE ROLES
+    # ===================================
+    path('roles/', views.RoleListView.as_view(), name='role_list'),
+    path('roles/create/', views.RoleCreateView.as_view(), name='role_create'),
+    path('roles/<uuid:pk>/', views.RoleDetailView.as_view(), name='role_detail'),
+    path('roles/<uuid:pk>/edit/', views.RoleUpdateView.as_view(), name='role_edit'),
+    path('roles/<uuid:pk>/delete/', views.RoleDeleteView.as_view(), name='role_delete'),
     
-    # Apps de negocio (agregar cuando estén listas)
-    # path('pos/', include('apps.pos.urls')),
-    # path('inventory/', include('apps.inventory.urls')),
-    # path('invoicing/', include('apps.invoicing.urls')),
-    # path('purchases/', include('apps.purchases.urls')),
-    # path('accounting/', include('apps.accounting.urls')),
-    # path('quotations/', include('apps.quotations.urls')),
-    # path('reports/', include('apps.reports.urls')),
-    # path('settings/', include('apps.settings.urls')),
+    # ===================================
+    # PERFIL DE USUARIO
+    # ===================================
+    path('profile/', views.UserProfileView.as_view(), name='profile'),
+    path('profile/edit/', views.UserProfileUpdateView.as_view(), name='profile_edit'),
     
-    # ==========================================
-    # API GLOBAL (OPCIONAL)
-    # ==========================================
+    # ===================================
+    # SESIONES DE USUARIO
+    # ===================================
+    path('sessions/', views.UserSessionListView.as_view(), name='session_list'),
     
-    # API general del sistema (si quieres un endpoint unificado)
-    # path('api/', include('apps.core.api_urls')),  # Crear cuando sea necesario
+    # ===================================
+    # API ENDPOINTS
+    # ===================================
+    path('api/users/', views.UserAPIView.as_view(), name='api_users'),
+    path('api/roles/', views.RoleAPIView.as_view(), name='api_roles'),
+    path('api/permissions/', views.PermissionAPIView.as_view(), name='api_permissions'),
 ]
 
-# ==========================================
-# CONFIGURACIONES PARA DESARROLLO
-# ==========================================
-
-if settings.DEBUG:
-    # Django Debug Toolbar
-    try:
-        import debug_toolbar
-        urlpatterns = [
-            path('__debug__/', include(debug_toolbar.urls)),
-        ] + urlpatterns
-    except ImportError:
-        # Debug toolbar no está instalado
-        pass
-    
-    # Servir archivos media en desarrollo
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-
-# ==========================================
-# HANDLERS DE ERROR PERSONALIZADOS (OPCIONAL)
-# ==========================================
-
-# Cuando crees las vistas de error personalizadas, descomenta:
-# handler404 = 'apps.core.views.page_not_found'
-# handler500 = 'apps.core.views.server_error'
-# handler403 = 'apps.core.views.permission_denied'
-# handler400 = 'apps.core.views.bad_request'
+# NOTA: Se eliminó la línea problemática:
+# path('', include('apps.core.urls')) que causaba import circular

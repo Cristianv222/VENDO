@@ -1,0 +1,37 @@
+{% load static %}
+{% load i18n %}
+
+{% if "Chrome" in session.user_agent %}
+    <i class="fab fa-chrome text-warning me-1"></i>Chrome
+{% elif "Firefox" in session.user_agent %}
+    <i class="fab fa-firefox text-danger me-1"></i>Firefox
+{% elif "Safari" in session.user_agent %}
+    <i class="fab fa-safari text-primary me-1"></i>Safari
+{% elif "Edge" in session.user_agent %}
+    <i class="fab fa-edge text-info me-1"></i>Edge
+{% elif "Opera" in session.user_agent %}
+    <i class="fab fa-opera text-danger me-1"></i>Opera
+{% else %}
+    <i class="fas fa-globe me-1"></i>{% trans "Otro" %}
+{% endif %}
+
+{% comment %}
+<!-- Sistema operativo -->
+{% if "Windows" in session.user_agent %}
+    <br><i class="fab fa-windows text-primary me-1"></i>Windows
+{% elif "Mac" in session.user_agent %}
+    <i class="fab fa-apple text-dark me-1"></i>macOS
+{% elif "Linux" in session.user_agent %}
+    <i class="fab fa-linux text-dark me-1"></i>Linux
+{% elif "Android" in session.user_agent %}
+    <i class="fab fa-android text-success me-1"></i>Android
+{% elif "iOS" in session.user_agent %}
+    <i class="fab fa-apple text-dark me-1"></i>iOS
+{% endif %}
+{% endcomment %}
+
+{% if "Mobile" in session.user_agent or "Android" in session.user_agent or "iPhone" in session.user_agent %}
+    <br><i class="fas fa-mobile-alt text-muted me-1"></i>{% trans "Móvil" %}
+{% else %}
+    <br><i class="fas fa-desktop text-muted me-1"></i>{% trans "Escritorio" %}
+{% endif %}

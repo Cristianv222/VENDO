@@ -238,6 +238,8 @@ class AuditLog(BaseModel):
     company = models.ForeignKey(
         Company,
         on_delete=models.CASCADE,
+        null=True,
+        blank=True,
         verbose_name=_('Empresa')
     )
     

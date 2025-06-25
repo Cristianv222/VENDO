@@ -1,0 +1,253 @@
+{% extends "users/base_users.html" %}
+{% load static %}
+{% load i18n %}
+{% load widget_tweaks %}
+
+{% block title %}{% trans "Editar Perfil" %}{% endblock %}
+
+{% block user_breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'users:profile' %}">{% trans "Mi Perfil" %}</a></li>
+<li class="breadcrumb-item active">{% trans "Editar" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-edit me-2"></i>{% trans "Editar Mi Perfil" %}
+                </h5>
+            </div>
+            
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <div class="row">
+                        <!-- Información personal -->
+                        <div class="col-md-6">
+                            <h6 class="border-bottom pb-2 mb-3">
+                                <i class="fas fa-user me-2"></i>{% trans "Información Personal" %}
+                            </h6>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                    {{ form.first_name.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.first_name|add_class:"form-control" }}
+                                {% if form.first_name.errors %}
+                                    <div class="text-danger small">{{ form.first_name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                    {{ form.last_name.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.last_name|add_class:"form-control" }}
+                                {% if form.last_name.errors %}
+                                    <div class="text-danger small">{{ form.last_name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.email.id_for_label }}" class="form-label">
+                                    {{ form.email.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.email|add_class:"form-control" }}
+                                {% if form.email.errors %}
+                                    <div class="text-danger small">{{ form.email.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.phone.id_for_label }}" class="form-label">
+                                            {{ form.phone.label }}
+                                        </label>
+                                        {{ form.phone|add_class:"form-control" }}
+                                        {% if form.phone.errors %}
+                                            <div class="text-danger small">{{ form.phone.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.mobile.id_for_label }}" class="form-label">
+                                            {{ form.mobile.label }}
+                                        </label>
+                                        {{ form.mobile|add_class:"form-control" }}
+                                        {% if form.mobile.errors %}
+                                            <div class="text-danger small">{{ form.mobile.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {% if form.birth_date %}
+                                <div class="mb-3">
+                                    <label for="{{ form.birth_date.id_for_label }}" class="form-label">
+                                        {{ form.birth_date.label }}
+                                    </label>
+                                    {{ form.birth_date|add_class:"form-control" }}
+                                    {% if form.birth_date.errors %}
+                                        <div class="text-danger small">{{ form.birth_date.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+
+                            {% if form.address %}
+                                <div class="mb-3">
+                                    <label for="{{ form.address.id_for_label }}" class="form-label">
+                                        {{ form.address.label }}
+                                    </label>
+                                    {{ form.address|add_class:"form-control" }}
+                                    {% if form.address.errors %}
+                                        <div class="text-danger small">{{ form.address.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Avatar y configuración -->
+                        <div class="col-md-6">
+                            <h6 class="border-bottom pb-2 mb-3">
+                                <i class="fas fa-cog me-2"></i>{% trans "Configuración" %}
+                            </h6>
+
+                            <!-- Avatar -->
+                            {% if form.avatar %}
+                                <div class="mb-3">
+                                    <label for="{{ form.avatar.id_for_label }}" class="form-label">
+                                        {{ form.avatar.label }}
+                                    </label>
+                                    
+                                    <div class="text-center mb-3">
+                                        {% if user.avatar %}
+                                            <img src="{{ user.avatar.url }}" alt="Avatar actual" 
+                                                 class="avatar-img avatar-lg" id="current-avatar">
+                                        {% else %}
+                                            <div class="avatar-img avatar-lg bg-secondary d-flex align-items-center justify-content-center text-white mx-auto" id="current-avatar">
+                                                <i class="fas fa-user fa-2x"></i>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {{ form.avatar|add_class:"form-control" }}
+                                    {% if form.avatar.errors %}
+                                        <div class="text-danger small">{{ form.avatar.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="form-text">{% trans "Formatos permitidos: JPG, PNG. Máximo 2MB." %}</div>
+                                </div>
+                            {% endif %}
+
+                            {% if form.language %}
+                                <div class="mb-3">
+                                    <label for="{{ form.language.id_for_label }}" class="form-label">
+                                        {{ form.language.label }}
+                                    </label>
+                                    {{ form.language|add_class:"form-select" }}
+                                    {% if form.language.errors %}
+                                        <div class="text-danger small">{{ form.language.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+
+                            {% if form.timezone %}
+                                <div class="mb-3">
+                                    <label for="{{ form.timezone.id_for_label }}" class="form-label">
+                                        {{ form.timezone.label }}
+                                    </label>
+                                    {{ form.timezone|add_class:"form-select" }}
+                                    {% if form.timezone.errors %}
+                                        <div class="text-danger small">{{ form.timezone.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+
+                            <!-- Información adicional del perfil -->
+                            <h6 class="border-bottom pb-2 mb-3 mt-4">
+                                <i class="fas fa-briefcase me-2"></i>{% trans "Información Profesional" %}
+                            </h6>
+
+                            <div class="alert alert-info small">
+                                <i class="fas fa-info-circle me-1"></i>
+                                {% trans "Esta información será configurada por el administrador de su empresa." %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">{% trans "Cargo:" %}</label>
+                                <input type="text" class="form-control" 
+                                       value="{% if user.profile.position %}{{ user.profile.position }}{% endif %}" 
+                                       disabled>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">{% trans "Departamento:" %}</label>
+                                <input type="text" class="form-control" 
+                                       value="{% if user.profile.department %}{{ user.profile.department }}{% endif %}" 
+                                       disabled>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <hr>
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'users:profile' %}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>{% trans "Cancelar" %}
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>{% trans "Guardar Cambios" %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Preview de avatar
+    const avatarInput = document.getElementById('{{ form.avatar.id_for_label }}');
+    const currentAvatar = document.getElementById('current-avatar');
+    
+    if (avatarInput && currentAvatar) {
+        avatarInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (currentAvatar.tagName === 'IMG') {
+                        currentAvatar.src = e.target.result;
+                    } else {
+                        // Crear nueva imagen si era un div
+                        const newImg = document.createElement('img');
+                        newImg.src = e.target.result;
+                        newImg.className = 'avatar-img avatar-lg';
+                        newImg.alt = 'Vista previa';
+                        currentAvatar.parentNode.replaceChild(newImg, currentAvatar);
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

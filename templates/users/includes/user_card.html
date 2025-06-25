@@ -1,0 +1,67 @@
+{% load static %}
+{% load i18n %}
+
+<div class="card user-card h-100">
+    <div class="card-body">
+        <div class="d-flex align-items-center mb-2">
+            {% if user.avatar %}
+                <img src="{{ user.avatar.url }}" alt="{{ user.get_full_name }}" 
+                     class="avatar-img me-3">
+            {% else %}
+                <div class="avatar-img bg-secondary d-flex align-items-center justify-content-center text-white me-3">
+                    <i class="fas fa-user"></i>
+                </div>
+            {% endif %}
+            
+            <div class="flex-grow-1">
+                <h6 class="card-title mb-0">{{ user.get_full_name }}</h6>
+                <small class="text-muted">@{{ user.username }}</small>
+            </div>
+            
+            {% if user.is_active %}
+                <span class="badge bg-success">
+                    <i class="fas fa-check"></i>
+                </span>
+            {% else %}
+                <span class="badge bg-danger">
+                    <i class="fas fa-times"></i>
+                </span>
+            {% endif %}
+        </div>
+        
+        <div class="mb-2">
+            <small class="text-muted">
+                <i class="fas fa-envelope me-1"></i>{{ user.email }}
+            </small>
+        </div>
+        
+        {% if show_company and user.companies.exists %}
+            <div class="mb-2">
+                <small class="text-muted">
+                    <i class="fas fa-building me-1"></i>
+                    {{ user.companies.first.business_name }}
+                </small>
+            </div>
+        {% endif %}
+        
+        {% if user.last_activity %}
+            <div class="mb-2">
+                <small class="text-muted">
+                    <i class="fas fa-clock me-1"></i>
+                    {% trans "Última actividad:" %} {{ user.last_activity|timesince }} {% trans "ago" %}
+                </small>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="card-footer bg-transparent">
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'users:user_detail' user.pk %}" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-eye"></i> {% trans "Ver" %}
+            </a>
+            <a href="{% url 'users:user_edit' user.pk %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-edit"></i> {% trans "Editar" %}
+            </a>
+        </div>
+    </div>
+</div>

@@ -1,491 +1,373 @@
 """
-Validadores personalizados para el módulo de usuarios de VENDO.
+Validadores personalizados del módulo Users
 """
-
 import re
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from django.contrib.auth.password_validation import (
-    CommonPasswordValidator,
-    MinimumLengthValidator,
-    NumericPasswordValidator
-)
+from django.contrib.auth import get_user_model
+from django.utils import timezone  
 
 
-class EcuadorianCedulaValidator:
-    """
-    Validador para cédulas ecuatorianas.
-    """
-    
-    def __call__(self, value):
-        if not self.validate_cedula(value):
-            raise ValidationError(
-                _('El número de cédula ingresado no es válido.'),
-                code='invalid_cedula'
-            )
-    
-    def validate_cedula(self, cedula):
-        """
-        Valida una cédula ecuatoriana usando el algoritmo oficial.
-        """
-        if not cedula or len(cedula) != 10:
-            return False
-        
-        if not cedula.isdigit():
-            return False
-        
-        # Los dos primeros dígitos deben corresponder a una provincia válida (01-24)
-        provincia = int(cedula[:2])
-        if provincia < 1 or provincia > 24:
-            return False
-        
-        # Aplicar algoritmo de validación
-        coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2]
-        suma = 0
-        
-        for i in range(9):
-            valor = int(cedula[i]) * coeficientes[i]
-            if valor >= 10:
-                valor = valor - 9
-            suma += valor
-        
-        digito_verificador = (10 - (suma % 10)) % 10
-        
-        return digito_verificador == int(cedula[9])
+User = get_user_model()
 
 
-class EcuadorianRUCValidator:
+def validate_document_number(value):
     """
-    Validador para RUC ecuatoriano.
+    Validador para números de documento ecuatorianos
     """
+    if not value:
+        return
     
-    def __call__(self, value):
-        if not self.validate_ruc(value):
-            raise ValidationError(
-                _('El número de RUC ingresado no es válido.'),
-                code='invalid_ruc'
-            )
+    # Limpiar el valor
+    value = str(value).strip()
     
-    def validate_ruc(self, ruc):
-        """
-        Valida un RUC ecuatoriano.
-        """
-        if not ruc or len(ruc) != 13:
-            return False
+    # Validar cédula (10 dígitos)
+    if len(value) == 10:
+        if not value.isdigit():
+            raise ValidationError(_('La cédula debe contener solo números'))
         
-        if not ruc.isdigit():
-            return False
+        # Algoritmo de validación de cédula ecuatoriana
+        if not _validate_cedula(value):
+            raise ValidationError(_('Número de cédula inválido'))
+    
+    # Validar RUC (13 dígitos)
+    elif len(value) == 13:
+        if not value.isdigit():
+            raise ValidationError(_('El RUC debe contener solo números'))
         
-        # RUC de persona natural (termina en 001)
-        if ruc.endswith('001'):
-            return EcuadorianCedulaValidator().validate_cedula(ruc[:10])
-        
-        # RUC de empresa privada (tercer dígito = 9)
-        if ruc[2] == '9':
-            return self.validate_ruc_juridico(ruc)
-        
-        # RUC de empresa pública (tercer dígito = 6)
-        if ruc[2] == '6':
-            return self.validate_ruc_publico(ruc)
-        
+        # Validar RUC ecuatoriano
+        if not _validate_ruc(value):
+            raise ValidationError(_('Número de RUC inválido'))
+    
+    # Validar pasaporte (formato alfanumérico)
+    elif len(value) >= 6 and len(value) <= 20:
+        if not re.match(r'^[A-Za-z0-9]+$', value):
+            raise ValidationError(_('El pasaporte debe contener solo letras y números'))
+    
+    else:
+        raise ValidationError(_('Formato de documento inválido'))
+
+
+def _validate_cedula(cedula):
+    """
+    Validar cédula ecuatoriana usando el algoritmo oficial
+    """
+    if len(cedula) != 10:
         return False
     
-    def validate_ruc_juridico(self, ruc):
-        """Validar RUC de persona jurídica privada."""
+    # Los primeros dos dígitos deben corresponder a una provincia válida (01-24)
+    provincia = int(cedula[:2])
+    if provincia < 1 or provincia > 24:
+        return False
+    
+    # El tercer dígito debe ser menor a 6 (para personas naturales)
+    tercer_digito = int(cedula[2])
+    if tercer_digito >= 6:
+        return False
+    
+    # Algoritmo de validación
+    coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2]
+    suma = 0
+    
+    for i in range(9):
+        resultado = int(cedula[i]) * coeficientes[i]
+        if resultado >= 10:
+            resultado = resultado - 9
+        suma += resultado
+    
+    residuo = suma % 10
+    digito_verificador = 0 if residuo == 0 else 10 - residuo
+    
+    return digito_verificador == int(cedula[9])
+
+
+def _validate_ruc(ruc):
+    """
+    Validar RUC ecuatoriano
+    """
+    if len(ruc) != 13:
+        return False
+    
+    # Los primeros dos dígitos deben corresponder a una provincia válida (01-24)
+    provincia = int(ruc[:2])
+    if provincia < 1 or provincia > 24:
+        return False
+    
+    tercer_digito = int(ruc[2])
+    
+    # RUC de persona natural (tercer dígito < 6)
+    if tercer_digito < 6:
+        # Debe terminar en 001
+        if ruc[10:] != '001':
+            return False
+        # Validar como cédula los primeros 10 dígitos
+        return _validate_cedula(ruc[:10])
+    
+    # RUC de empresa privada (tercer dígito = 9)
+    elif tercer_digito == 9:
         coeficientes = [4, 3, 2, 7, 6, 5, 4, 3, 2]
         suma = 0
         
         for i in range(9):
             suma += int(ruc[i]) * coeficientes[i]
         
-        digito_verificador = 11 - (suma % 11)
-        if digito_verificador == 11:
-            digito_verificador = 0
-        elif digito_verificador == 10:
-            return False
+        residuo = suma % 11
+        digito_verificador = 0 if residuo == 0 else 11 - residuo
         
         return digito_verificador == int(ruc[9])
     
-    def validate_ruc_publico(self, ruc):
-        """Validar RUC de empresa pública."""
+    # RUC de empresa pública (tercer dígito = 6)
+    elif tercer_digito == 6:
         coeficientes = [3, 2, 7, 6, 5, 4, 3, 2]
         suma = 0
         
         for i in range(8):
             suma += int(ruc[i]) * coeficientes[i]
         
-        digito_verificador = 11 - (suma % 11)
-        if digito_verificador == 11:
-            digito_verificador = 0
-        elif digito_verificador == 10:
-            return False
+        residuo = suma % 11
+        digito_verificador = 0 if residuo == 0 else 11 - residuo
         
         return digito_verificador == int(ruc[8])
-
-
-class EcuadorianPhoneValidator:
-    """
-    Validador para números de teléfono ecuatorianos.
-    """
     
-    def __call__(self, value):
-        if value and not self.validate_phone(value):
-            raise ValidationError(
-                _('El número de teléfono no tiene un formato válido para Ecuador.'),
-                code='invalid_phone'
-            )
-    
-    def validate_phone(self, phone):
-        """
-        Valida números de teléfono ecuatorianos.
-        """
-        if not phone:
-            return True  # Permitir vacío si es opcional
-        
-        # Limpiar el número
-        clean_phone = re.sub(r'[^\d+]', '', phone)
-        
-        # Patrones válidos para Ecuador
-        patterns = [
-            r'^\+593[2-7]\d{7}$',  # Teléfono fijo con código país
-            r'^\+5939\d{8}$',      # Celular con código país
-            r'^0[2-7]\d{7}$',      # Teléfono fijo nacional
-            r'^09\d{8}$',          # Celular nacional
-            r'^[2-7]\d{7}$',       # Teléfono fijo sin prefijo
-            r'^9\d{8}$',           # Celular sin prefijo
-        ]
-        
-        return any(re.match(pattern, clean_phone) for pattern in patterns)
+    return False
 
 
-class StrongPasswordValidator:
+def validate_phone_number(value):
     """
-    Validador de contraseñas fuertes personalizado para VENDO.
+    Validador para números de teléfono ecuatorianos
     """
+    if not value:
+        return
     
-    def __init__(self, min_length=8):
-        self.min_length = min_length
+    # Limpiar espacios y caracteres especiales
+    phone = re.sub(r'[\s\-\(\)]+', '', str(value))
+    
+    # Patrón para teléfonos ecuatorianos
+    # Fijos: 02XXXXXXX, 03XXXXXXX, 04XXXXXXX, 05XXXXXXX, 06XXXXXXX, 07XXXXXXX
+    # Móviles: 09XXXXXXXX, 08XXXXXXXX
+    # Con código de país: +593XXXXXXXXX, 593XXXXXXXXX
+    
+    patterns = [
+        r'^0[2-7]\d{7}$',           # Teléfonos fijos
+        r'^0[89]\d{8}$',            # Teléfonos móviles
+        r'^\+593[2-7]\d{7}$',       # Fijos con código de país
+        r'^\+593[89]\d{8}$',        # Móviles con código de país
+        r'^593[2-7]\d{7}$',         # Fijos con código sin +
+        r'^593[89]\d{8}$',          # Móviles con código sin +
+    ]
+    
+    if not any(re.match(pattern, phone) for pattern in patterns):
+        raise ValidationError(_('Formato de teléfono inválido'))
+
+
+def validate_username_unique(value):
+    """
+    Validador para verificar que el username es único
+    """
+    if User.objects.filter(username=value).exists():
+        raise ValidationError(_('Este nombre de usuario ya está en uso'))
+
+
+def validate_email_unique(value):
+    """
+    Validador para verificar que el email es único
+    """
+    if User.objects.filter(email=value).exists():
+        raise ValidationError(_('Este email ya está en uso'))
+
+
+def validate_strong_password(value):
+    """
+    Validador para contraseñas seguras
+    """
+    if len(value) < 8:
+        raise ValidationError(_('La contraseña debe tener al menos 8 caracteres'))
+    
+    if not re.search(r'[a-z]', value):
+        raise ValidationError(_('La contraseña debe contener al menos una letra minúscula'))
+    
+    if not re.search(r'[A-Z]', value):
+        raise ValidationError(_('La contraseña debe contener al menos una letra mayúscula'))
+    
+    if not re.search(r'\d', value):
+        raise ValidationError(_('La contraseña debe contener al menos un número'))
+    
+    if not re.search(r'[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]', value):
+        raise ValidationError(_('La contraseña debe contener al menos un carácter especial'))
+    
+    # Verificar patrones comunes
+    common_passwords = [
+        'password', '12345678', 'qwerty', 'abc123', 'admin',
+        'welcome', 'login', 'user', '11111111', '00000000'
+    ]
+    
+    if value.lower() in common_passwords:
+        raise ValidationError(_('No se permite usar contraseñas comunes'))
+
+
+def validate_role_name(value):
+    """
+    Validador para nombres de roles
+    """
+    if not value:
+        raise ValidationError(_('El nombre del rol es requerido'))
+    
+    # No permitir nombres de roles del sistema si no es admin
+    system_roles = ['Super Administrador', 'Administrador del Sistema']
+    if value in system_roles:
+        raise ValidationError(_('No se puede usar nombres de roles del sistema'))
+    
+    # Validar longitud
+    if len(value) < 3:
+        raise ValidationError(_('El nombre del rol debe tener al menos 3 caracteres'))
+    
+    if len(value) > 50:
+        raise ValidationError(_('El nombre del rol no puede tener más de 50 caracteres'))
+
+
+def validate_employee_code(value):
+    """
+    Validador para códigos de empleado
+    """
+    if not value:
+        return
+    
+    # Solo letras, números y guiones
+    if not re.match(r'^[A-Za-z0-9\-]+$', value):
+        raise ValidationError(_('El código de empleado solo puede contener letras, números y guiones'))
+    
+    # Longitud entre 3 y 20 caracteres
+    if len(value) < 3 or len(value) > 20:
+        raise ValidationError(_('El código de empleado debe tener entre 3 y 20 caracteres'))
+
+
+def validate_timezone(value):
+    """
+    Validador para zonas horarias
+    """
+    import pytz
+    
+    if value not in pytz.all_timezones:
+        raise ValidationError(_('Zona horaria inválida'))
+
+
+def validate_language_code(value):
+    """
+    Validador para códigos de idioma
+    """
+    from django.conf import settings
+    
+    valid_languages = [lang[0] for lang in settings.LANGUAGES]
+    
+    if value not in valid_languages:
+        raise ValidationError(_('Código de idioma inválido'))
+
+
+def validate_color_hex(value):
+    """
+    Validador para códigos de color hexadecimal
+    """
+    if not value:
+        return
+    
+    if not re.match(r'^#[0-9A-Fa-f]{6}$', value):
+        raise ValidationError(_('Código de color inválido. Use formato #RRGGBB'))
+
+
+def validate_permission_codename(value):
+    """
+    Validador para códigos de permisos
+    """
+    if not value:
+        raise ValidationError(_('El código del permiso es requerido'))
+    
+    # Solo letras minúsculas, números, puntos y guiones bajos
+    if not re.match(r'^[a-z0-9._]+$', value):
+        raise ValidationError(
+            _('El código del permiso solo puede contener letras minúsculas, números, puntos y guiones bajos')
+        )
+    
+    # Debe tener el formato módulo.acción
+    if '.' not in value:
+        raise ValidationError(_('El código del permiso debe tener el formato módulo.acción'))
+    
+    parts = value.split('.')
+    if len(parts) != 2:
+        raise ValidationError(_('El código del permiso debe tener exactamente un punto'))
+    
+    module, action = parts
+    
+    # Validar módulo
+    valid_modules = [
+        'core', 'users', 'pos', 'inventory', 'invoicing',
+        'purchases', 'accounting', 'quotations', 'reports', 'settings'
+    ]
+    
+    if module not in valid_modules:
+        raise ValidationError(
+            _('Módulo inválido. Los módulos válidos son: %(modules)s') % {
+                'modules': ', '.join(valid_modules)
+            }
+        )
+    
+    # Validar acción
+    valid_actions = [
+        'view', 'add', 'change', 'delete', 'manage', 'approve',
+        'void', 'authorize', 'export', 'generate', 'adjust'
+    ]
+    
+    if action not in valid_actions:
+        raise ValidationError(
+            _('Acción inválida. Las acciones válidas son: %(actions)s') % {
+                'actions': ', '.join(valid_actions)
+            }
+        )
+
+
+class PasswordHistoryValidator:
+    """
+    Validador para evitar reutilización de contraseñas
+    """
+    def __init__(self, history_length=5):
+        self.history_length = history_length
     
     def validate(self, password, user=None):
-        """
-        Validar que la contraseña cumpla con los requisitos de seguridad.
-        """
-        errors = []
+        if not user or not user.pk:
+            return
         
-        # Longitud mínima
-        if len(password) < self.min_length:
-            errors.append(
-                ValidationError(
-                    _('La contraseña debe tener al menos %(min_length)d caracteres.'),
-                    params={'min_length': self.min_length},
-                    code='password_too_short'
-                )
-            )
-        
-        # Debe contener al menos una letra minúscula
-        if not re.search(r'[a-z]', password):
-            errors.append(
-                ValidationError(
-                    _('La contraseña debe contener al menos una letra minúscula.'),
-                    code='password_no_lower'
-                )
-            )
-        
-        # Debe contener al menos una letra mayúscula
-        if not re.search(r'[A-Z]', password):
-            errors.append(
-                ValidationError(
-                    _('La contraseña debe contener al menos una letra mayúscula.'),
-                    code='password_no_upper'
-                )
-            )
-        
-        # Debe contener al menos un número
-        if not re.search(r'\d', password):
-            errors.append(
-                ValidationError(
-                    _('La contraseña debe contener al menos un número.'),
-                    code='password_no_number'
-                )
-            )
-        
-        # Debe contener al menos un carácter especial
-        if not re.search(r'[!@#$%^&*()_+\-=\[\]{};:"\\|,.<>\?]', password):
-            errors.append(
-                ValidationError(
-                    _('La contraseña debe contener al menos un carácter especial (!@#$%^&*).'),
-                    code='password_no_special'
-                )
-            )
-        
-        # No debe contener información del usuario
-        if user:
-            user_data = [
-                user.username.lower() if hasattr(user, 'username') else '',
-                user.first_name.lower() if hasattr(user, 'first_name') else '',
-                user.last_name.lower() if hasattr(user, 'last_name') else '',
-                user.email.lower().split('@')[0] if hasattr(user, 'email') and user.email else '',
-            ]
-            
-            password_lower = password.lower()
-            for data in user_data:
-                if data and len(data) > 2 and data in password_lower:
-                    errors.append(
-                        ValidationError(
-                            _('La contraseña no debe contener información personal.'),
-                            code='password_too_similar'
-                        )
-                    )
-                    break
-        
-        # No debe ser una secuencia común
-        sequences = ['123456', 'abcdef', 'qwerty', 'asdfgh']
-        password_lower = password.lower()
-        for sequence in sequences:
-            if sequence in password_lower:
-                errors.append(
-                    ValidationError(
-                        _('La contraseña no debe contener secuencias comunes.'),
-                        code='password_common_sequence'
-                    )
-                )
-                break
-        
-        if errors:
-            raise ValidationError(errors)
+        # Aquí podrías implementar un modelo PasswordHistory
+        # para guardar las últimas contraseñas del usuario
+        pass
     
     def get_help_text(self):
         return _(
-            'Su contraseña debe tener al menos %(min_length)d caracteres, '
-            'incluyendo mayúsculas, minúsculas, números y caracteres especiales.'
-        ) % {'min_length': self.min_length}
-
-
-class UsernameValidator:
-    """
-    Validador personalizado para nombres de usuario.
-    """
-    
-    def __call__(self, value):
-        if not self.validate_username(value):
-            raise ValidationError(
-                _('El nombre de usuario solo puede contener letras, números, puntos y guiones bajos.'),
-                code='invalid_username'
-            )
-    
-    def validate_username(self, username):
-        """
-        Validar formato del nombre de usuario.
-        """
-        if not username:
-            return False
-        
-        # Solo permitir letras, números, puntos y guiones bajos
-        pattern = r'^[a-zA-Z0-9._]+$'
-        if not re.match(pattern, username):
-            return False
-        
-        # No puede empezar o terminar con punto o guión bajo
-        if username.startswith('.') or username.startswith('_'):
-            return False
-        
-        if username.endswith('.') or username.endswith('_'):
-            return False
-        
-        # No puede tener puntos o guiones bajos consecutivos
-        if '..' in username or '__' in username:
-            return False
-        
-        # Longitud mínima y máxima
-        if len(username) < 3 or len(username) > 30:
-            return False
-        
-        return True
-
-
-class DocumentTypeValidator:
-    """
-    Validador que selecciona el validador apropiado según el tipo de documento.
-    """
-    
-    def __init__(self, document_type_field='document_type'):
-        self.document_type_field = document_type_field
-    
-    def __call__(self, value):
-        # Este validador debe ser usado en el nivel del formulario o serializer
-        # donde tenemos acceso al tipo de documento
-        pass
-    
-    def validate(self, document_number, document_type):
-        """
-        Validar según el tipo de documento.
-        """
-        if not document_number:
-            return True
-        
-        if document_type == 'cedula':
-            validator = EcuadorianCedulaValidator()
-            try:
-                validator(document_number)
-                return True
-            except ValidationError:
-                return False
-        
-        elif document_type == 'ruc':
-            validator = EcuadorianRUCValidator()
-            try:
-                validator(document_number)
-                return True
-            except ValidationError:
-                return False
-        
-        elif document_type == 'passport':
-            # Validación básica para pasaporte
-            if len(document_number) < 6 or len(document_number) > 12:
-                return False
-            
-            # Debe contener letras y números
-            if not re.match(r'^[A-Z0-9]+$', document_number.upper()):
-                return False
-        
-        return True
-
-
-class EmployeeCodeValidator:
-    """
-    Validador para códigos de empleado.
-    """
-    
-    def __call__(self, value):
-        if value and not self.validate_employee_code(value):
-            raise ValidationError(
-                _('El código de empleado debe tener el formato: ABC1234 (3 letras + 4 números).'),
-                code='invalid_employee_code'
-            )
-    
-    def validate_employee_code(self, code):
-        """
-        Validar formato del código de empleado.
-        """
-        if not code:
-            return True  # Permitir vacío si es opcional
-        
-        # Formato: 3-4 letras + 4 números (ej: EMP2024, ADMIN001)
-        pattern = r'^[A-Z]{3,4}\d{4}$'
-        return re.match(pattern, code.upper()) is not None
-
-
-class EmailDomainValidator:
-    """
-    Validador que verifica dominios de email permitidos.
-    """
-    
-    def __init__(self, allowed_domains=None, blocked_domains=None):
-        self.allowed_domains = allowed_domains or []
-        self.blocked_domains = blocked_domains or ['temp-mail.org', '10minutemail.com']
-    
-    def __call__(self, value):
-        if not value:
-            return True
-        
-        domain = value.split('@')[-1].lower()
-        
-        # Verificar dominios bloqueados
-        if domain in self.blocked_domains:
-            raise ValidationError(
-                _('No se permiten emails de este dominio.'),
-                code='blocked_domain'
-            )
-        
-        # Verificar dominios permitidos (si se especificaron)
-        if self.allowed_domains and domain not in self.allowed_domains:
-            raise ValidationError(
-                _('Solo se permiten emails de los dominios autorizados.'),
-                code='domain_not_allowed'
-            )
-        
-        return True
-
-
-def validate_age(birth_date):
-    """
-    Validar que la edad sea apropiada para trabajar.
-    """
-    if not birth_date:
-        return True
-    
-    from datetime import date
-    today = date.today()
-    age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
-    
-    if age < 18:
-        raise ValidationError(
-            _('El empleado debe ser mayor de edad.'),
-            code='underage'
+            f'Su contraseña no puede ser igual a las últimas {self.history_length} contraseñas utilizadas.'
         )
-    
-    if age > 100:
-        raise ValidationError(
-            _('Por favor verifique la fecha de nacimiento.'),
-            code='invalid_age'
-        )
-    
-    return True
 
 
-def validate_hire_date(hire_date):
+class SimilarityPasswordValidator:
     """
-    Validar que la fecha de contratación sea válida.
+    Validador para evitar contraseñas similares a información del usuario
     """
-    if not hire_date:
-        return True
+    def validate(self, password, user=None):
+        if not user:
+            return
+        
+        # Verificar similitud con información del usuario
+        user_info = [
+            user.username,
+            user.first_name,
+            user.last_name,
+            user.email.split('@')[0] if user.email else '',
+            user.document_number,
+        ]
+        
+        for info in user_info:
+            if info and len(info) >= 3:
+                if info.lower() in password.lower():
+                    raise ValidationError(
+                        _('La contraseña no puede contener información personal del usuario.')
+                    )
     
-    from datetime import date, timedelta
-    today = date.today()
-    
-    # No puede ser una fecha futura (permitir hasta 1 día en el futuro por zona horaria)
-    if hire_date > today + timedelta(days=1):
-        raise ValidationError(
-            _('La fecha de contratación no puede ser futura.'),
-            code='future_hire_date'
-        )
-    
-    # No puede ser muy antigua (más de 50 años)
-    if hire_date < today - timedelta(days=365 * 50):
-        raise ValidationError(
-            _('La fecha de contratación parece muy antigua. Por favor verifique.'),
-            code='very_old_hire_date'
-        )
-    
-    return True
-
-
-# Conjunto de validadores para usar en models y forms
-VALIDATORS = {
-    'cedula': EcuadorianCedulaValidator(),
-    'ruc': EcuadorianRUCValidator(),
-    'phone': EcuadorianPhoneValidator(),
-    'username': UsernameValidator(),
-    'employee_code': EmployeeCodeValidator(),
-    'email_domain': EmailDomainValidator(),
-}
-
-
-# Lista de validadores de contraseña para settings.py
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'apps.users.validators.StrongPasswordValidator',
-        'OPTIONS': {
-            'min_length': 8,
-        }
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
+    def get_help_text(self):
+        return _('Su contraseña no puede contener su información personal.')

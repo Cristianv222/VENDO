@@ -1,253 +1,385 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Perfil - VENDO</title>
-    {% load static %}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-</head>
-<body>
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-12">
-                <!-- Header -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2><i class="fas fa-user-circle me-2"></i>Mi Perfil</h2>
-                    <a href="{% url 'users:dashboard' %}" class="btn btn-primary">
-                        <i class="fas fa-tachometer-alt me-2"></i>Volver al Dashboard
+{% extends "users/base_users.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Mi Perfil" %}{% endblock %}
+
+{% block user_breadcrumbs %}
+<li class="breadcrumb-item active">{% trans "Mi Perfil" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Información del perfil -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body text-center">
+                {% if user.avatar %}
+                    <img src="{{ user.avatar.url }}" alt="{{ user.get_full_name }}" 
+                         class="avatar-img avatar-lg mb-3">
+                {% else %}
+                    <div class="avatar-img avatar-lg bg-primary d-flex align-items-center justify-content-center text-white mb-3 mx-auto">
+                        <i class="fas fa-user fa-2x"></i>
+                    </div>
+                {% endif %}
+                
+                <h4 class="card-title">{{ user.get_full_name }}</h4>
+                <p class="text-muted">@{{ user.username }}</p>
+                
+                <div class="mb-3">
+                    {% if user.is_active %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-check"></i> {% trans "Activo" %}
+                        </span>
+                    {% endif %}
+                    
+                    {% if user.is_system_admin %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="fas fa-crown"></i> {% trans "Admin Sistema" %}
+                        </span>
+                    {% endif %}
+                    
+                    {% if user.is_staff %}
+                        <span class="badge bg-info">
+                            <i class="fas fa-user-cog"></i> {% trans "Staff" %}
+                        </span>
+                    {% endif %}
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <a href="{% url 'users:profile_edit' %}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> {% trans "Editar Perfil" %}
+                    </a>
+                    <a href="{% url 'users:password_change' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-key"></i> {% trans "Cambiar Contraseña" %}
                     </a>
                 </div>
+            </div>
+        </div>
 
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            <i class="fas fa-{% if message.tags == 'error' %}exclamation-triangle{% elif message.tags == 'success' %}check-circle{% else %}info-circle{% endif %} me-2"></i>
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-
-                <div class="row">
-                    <!-- Información Personal -->
-                    <div class="col-md-4">
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="fas fa-user me-2"></i>Información Personal</h5>
-                            </div>
-                            <div class="card-body text-center">
-                                {% if profile.avatar %}
-                                    <img src="{{ profile.avatar.url }}" alt="Avatar" 
-                                         class="rounded-circle mb-3" width="120" height="120">
-                                {% else %}
-                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" 
-                                         style="width: 120px; height: 120px;">
-                                        <i class="fas fa-user text-white fa-3x"></i>
-                                    </div>
-                                {% endif %}
-                                
-                                <h4>{{ user.full_name }}</h4>
-                                <p class="text-muted">@{{ user.username }}</p>
-                                
-                                <div class="row text-start">
-                                    <div class="col-12 mb-2">
-                                        <strong>Email:</strong><br>
-                                        {{ user.email }}
-                                    </div>
-                                    <div class="col-12 mb-2">
-                                        <strong>Teléfono:</strong><br>
-                                        {{ user.phone|default:"No especificado" }}
-                                    </div>
-                                    <div class="col-12 mb-2">
-                                        <strong>Documento:</strong><br>
-                                        {{ user.get_document_type_display }}: {{ user.document_number }}
-                                    </div>
-                                    <div class="col-12 mb-2">
-                                        <strong>Tipo:</strong><br>
-                                        <span class="badge bg-info">{{ user.get_user_type_display }}</span>
-                                    </div>
-                                    {% if profile.birth_date %}
-                                    <div class="col-12 mb-2">
-                                        <strong>Edad:</strong><br>
-                                        {{ profile.age }} años
-                                    </div>
-                                    {% endif %}
-                                </div>
-
-                                <hr>
-                                
-                                <div class="d-grid gap-2">
-                                    <button class="btn btn-primary" onclick="editProfile()">
-                                        <i class="fas fa-edit me-2"></i>Editar Perfil
-                                    </button>
-                                    <a href="{% url 'users:change_password' %}" class="btn btn-outline-warning">
-                                        <i class="fas fa-key me-2"></i>Cambiar Contraseña
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
+        <!-- Información de contacto -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-address-card me-2"></i>{% trans "Contacto" %}</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <i class="fas fa-envelope text-muted me-2"></i>
+                    <a href="mailto:{{ user.email }}">{{ user.email }}</a>
+                </div>
+                
+                {% if user.phone %}
+                    <div class="mb-2">
+                        <i class="fas fa-phone text-muted me-2"></i>
+                        <a href="tel:{{ user.phone }}">{{ user.phone }}</a>
                     </div>
+                {% endif %}
+                
+                {% if user.mobile %}
+                    <div class="mb-2">
+                        <i class="fas fa-mobile-alt text-muted me-2"></i>
+                        <a href="tel:{{ user.mobile }}">{{ user.mobile }}</a>
+                    </div>
+                {% endif %}
+                
+                <div class="mb-2">
+                    <i class="fas fa-id-card text-muted me-2"></i>
+                    {{ user.get_document_type_display }}: {{ user.document_number }}
+                </div>
+                
+                {% if user.address %}
+                    <div class="mb-2">
+                        <i class="fas fa-map-marker-alt text-muted me-2"></i>
+                        {{ user.address }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 
-                    <!-- Información Detallada -->
-                    <div class="col-md-8">
-                        <!-- Preferencias -->
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Preferencias</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <strong>Tema:</strong><br>
-                                        <span class="badge bg-secondary">{{ profile.get_theme_display }}</span>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <strong>Idioma:</strong><br>
-                                        <span class="badge bg-secondary">{{ profile.get_language_display }}</span>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <strong>Zona Horaria:</strong><br>
-                                        {{ profile.timezone }}
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <strong>Timeout POS:</strong><br>
-                                        {{ profile.default_pos_session_timeout }} minutos
-                                    </div>
-                                </div>
-                                
-                                {% if profile.bio %}
-                                <div class="mt-3">
-                                    <strong>Biografía:</strong><br>
-                                    <p class="text-muted">{{ profile.bio }}</p>
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <!-- Notificaciones -->
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="fas fa-bell me-2"></i>Configuración de Notificaciones</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" 
-                                                   {% if profile.email_notifications %}checked{% endif %} disabled>
-                                            <label class="form-check-label">
-                                                <i class="fas fa-envelope me-2"></i>Notificaciones por Email
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" 
-                                                   {% if profile.sms_notifications %}checked{% endif %} disabled>
-                                            <label class="form-check-label">
-                                                <i class="fas fa-sms me-2"></i>Notificaciones por SMS
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" 
-                                                   {% if profile.push_notifications %}checked{% endif %} disabled>
-                                            <label class="form-check-label">
-                                                <i class="fas fa-bell me-2"></i>Notificaciones Push
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Roles Asignados -->
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="fas fa-user-shield me-2"></i>Mis Roles</h5>
-                            </div>
-                            <div class="card-body">
-                                {% if user_roles %}
-                                    <div class="row">
-                                        {% for user_role in user_roles %}
-                                        <div class="col-md-6 mb-3">
-                                            <div class="border rounded p-3">
-                                                <h6 class="mb-1">{{ user_role.role.name }}</h6>
-                                                <p class="text-muted small mb-2">{{ user_role.role.description }}</p>
-                                                <small class="text-muted">
-                                                    Asignado: {{ user_role.assigned_at|date:"d/m/Y" }}
-                                                </small>
-                                            </div>
-                                        </div>
+    <!-- Configuración y accesos -->
+    <div class="col-lg-8">
+        <!-- Mis empresas -->
+        {% if user_companies %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-building me-2"></i>{% trans "Mis Empresas" %}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for user_company in user_companies %}
+                        <div class="border rounded p-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ user_company.company.business_name }}</h6>
+                                    <p class="text-muted mb-2">{{ user_company.company.trade_name }}</p>
+                                    
+                                    <!-- Roles -->
+                                    <div class="mb-2">
+                                        <strong>{% trans "Roles:" %}</strong>
+                                        {% for role in user_company.roles.all %}
+                                            <span class="badge me-1 role-badge" data-role-color="{{ role.color|default:'#6c757d' }}">
+                                                {{ role.name }}
+                                            </span>
+                                        {% empty %}
+                                            <span class="text-muted">{% trans "Sin roles asignados" %}</span>
                                         {% endfor %}
                                     </div>
-                                {% else %}
-                                    <div class="text-center py-3">
-                                        <i class="fas fa-user-shield fa-3x text-muted mb-3"></i>
-                                        <p class="text-muted">No tienes roles asignados</p>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <!-- Información del Sistema -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información del Sistema</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <strong>Fecha de Registro:</strong><br>
-                                        {{ user.created_at|date:"d/m/Y H:i" }}
-                                    </div>
-                                    <div class="col-md-6">
-                                        <strong>Último Acceso:</strong><br>
-                                        {% if user.last_login %}
-                                            {{ user.last_login|date:"d/m/Y H:i" }}
-                                        {% else %}
-                                            <span class="text-muted">Nunca</span>
-                                        {% endif %}
-                                    </div>
+                                    
+                                    <!-- Sucursales -->
+                                    {% if user_company.branches.exists %}
+                                        <div class="mb-2">
+                                            <strong>{% trans "Sucursales:" %}</strong>
+                                            {% for branch in user_company.branches.all %}
+                                                <span class="badge bg-secondary me-1">{{ branch.name }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {% if user_company.is_admin %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-star"></i> {% trans "Administrador" %}
+                                        </span>
+                                    {% endif %}
                                 </div>
                                 
-                                {% if user.user_type == 'employee' %}
-                                <hr>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <strong>Código de Empleado:</strong><br>
-                                        {{ user.employee_code|default:"No asignado" }}
-                                    </div>
-                                    <div class="col-md-6">
-                                        <strong>Departamento:</strong><br>
-                                        {{ user.department|default:"No especificado" }}
-                                    </div>
-                                    <div class="col-md-6">
-                                        <strong>Cargo:</strong><br>
-                                        {{ user.position|default:"No especificado" }}
-                                    </div>
-                                    <div class="col-md-6">
-                                        <strong>Fecha de Contratación:</strong><br>
-                                        {{ user.hire_date|date:"d/m/Y"|default:"No especificada" }}
-                                    </div>
+                                <div>
+                                    {% if user_company.company == request.company %}
+                                        <span class="badge bg-primary">
+                                            <i class="fas fa-check"></i> {% trans "Actual" %}
+                                        </span>
+                                    {% else %}
+                                        <a href="{% url 'core:switch_company' user_company.company.id %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            {% trans "Cambiar" %}
+                                        </a>
+                                    {% endif %}
                                 </div>
-                                {% endif %}
                             </div>
                         </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Configuración personal -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-cog me-2"></i>{% trans "Configuración Personal" %}
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <strong>{% trans "Idioma:" %}</strong><br>
+                            {{ user.get_language_display }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>{% trans "Zona horaria:" %}</strong><br>
+                            {{ user.timezone }}
+                        </div>
+                        
+                        {% if profile %}
+                            <div class="mb-3">
+                                <strong>{% trans "Tema:" %}</strong><br>
+                                {{ profile.get_theme_display }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        {% if profile %}
+                            <div class="mb-3">
+                                <strong>{% trans "Notificaciones:" %}</strong><br>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" 
+                                           {% if profile.email_notifications %}checked{% endif %} disabled>
+                                    <label class="form-check-label">{% trans "Email" %}</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" 
+                                           {% if profile.sms_notifications %}checked{% endif %} disabled>
+                                    <label class="form-check-label">{% trans "SMS" %}</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" 
+                                           {% if profile.system_notifications %}checked{% endif %} disabled>
+                                    <label class="form-check-label">{% trans "Sistema" %}</label>
+                                </div>
+                            </div>
+                            
+                            {% if profile.position or profile.department %}
+                                <div class="mb-3">
+                                    <strong>{% trans "Posición:" %}</strong><br>
+                                    {% if profile.position %}{{ profile.position }}{% endif %}
+                                    {% if profile.department %} - {{ profile.department }}{% endif %}
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                        
+                        {% if user.birth_date %}
+                            <div class="mb-3">
+                                <strong>{% trans "Fecha de nacimiento:" %}</strong><br>
+                                {{ user.birth_date|date:"d/m/Y" }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sesiones recientes -->
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="fas fa-history me-2"></i>{% trans "Sesiones Recientes" %}
+                </h6>
+                <a href="{% url 'users:session_list' %}" class="btn btn-sm btn-outline-primary">
+                    {% trans "Ver todas" %}
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_sessions %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "Fecha/Hora" %}</th>
+                                    <th>{% trans "IP" %}</th>
+                                    <th>{% trans "Navegador" %}</th>
+                                    <th>{% trans "Estado" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in recent_sessions %}
+                                    <tr>
+                                        <td>{{ session.login_at|date:"d/m/Y H:i" }}</td>
+                                        <td>{{ session.ip_address }}</td>
+                                        <td>
+                                            <small>
+                                                {% if "Chrome" in session.user_agent %}
+                                                    <i class="fab fa-chrome text-warning"></i> Chrome
+                                                {% elif "Firefox" in session.user_agent %}
+                                                    <i class="fab fa-firefox text-orange"></i> Firefox
+                                                {% elif "Safari" in session.user_agent %}
+                                                    <i class="fab fa-safari text-primary"></i> Safari
+                                                {% elif "Edge" in session.user_agent %}
+                                                    <i class="fab fa-edge text-info"></i> Edge
+                                                {% else %}
+                                                    <i class="fas fa-globe"></i> {% trans "Otro" %}
+                                                {% endif %}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            {% if session.logout_at %}
+                                                <span class="badge bg-secondary">{% trans "Cerrada" %}</span>
+                                            {% elif session.is_expired %}
+                                                <span class="badge bg-danger">{% trans "Expirada" %}</span>
+                                            {% else %}
+                                                <span class="badge bg-success">{% trans "Activa" %}</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-history fa-2x mb-2"></i><br>
+                        {% trans "No hay sesiones registradas" %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Información del sistema -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>{% trans "Información del Sistema" %}
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-2">
+                            <strong>{% trans "Miembro desde:" %}</strong><br>
+                            {{ user.date_joined|date:"d/m/Y" }}
+                        </div>
+                        
+                        <div class="mb-2">
+                            <strong>{% trans "Último login:" %}</strong><br>
+                            {% if user.last_login %}
+                                {{ user.last_login|date:"d/m/Y H:i" }}
+                            {% else %}
+                                <span class="text-muted">{% trans "Nunca" %}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-2">
+                            <strong>{% trans "Última actividad:" %}</strong><br>
+                            {% if user.last_activity %}
+                                {{ user.last_activity|date:"d/m/Y H:i" }}
+                            {% else %}
+                                <span class="text-muted">{% trans "No registrada" %}</span>
+                            {% endif %}
+                        </div>
+                        
+                        {% if user.password_changed_at %}
+                            <div class="mb-2">
+                                <strong>{% trans "Contraseña cambiada:" %}</strong><br>
+                                {{ user.password_changed_at|date:"d/m/Y H:i" }}
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
+{% endblock %}
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function editProfile() {
-            alert('Funcionalidad de edición de perfil en desarrollo.\nPor ahora puedes contactar al administrador para hacer cambios.');
+{% block extra_css %}
+<style>
+    .role-badge {
+        color: white !important;
+    }
+    
+    .avatar-img {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    
+    .avatar-lg {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .text-orange {
+        color: #ff6600 !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Aplicar colores dinámicos a los badges de roles
+    document.querySelectorAll('.role-badge').forEach(badge => {
+        const color = badge.getAttribute('data-role-color');
+        if (color) {
+            badge.style.backgroundColor = color;
         }
-    </script>
-</body>
-</html>
+    });
+});
+</script>
+{% endblock %}

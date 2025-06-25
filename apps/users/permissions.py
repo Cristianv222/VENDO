@@ -1,391 +1,270 @@
 """
-Permisos personalizados para el módulo de usuarios de VENDO.
+Permisos personalizados del módulo Users
 """
-
+from django.contrib.auth.mixins import UserPassesTestMixin
+from django.contrib.auth.decorators import user_passes_test
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import redirect
+from django.contrib import messages
+from django.utils.translation import gettext_lazy as _
 from rest_framework import permissions
-from django.contrib.auth.models import Permission as DjangoPermission
+
+from .models import User, Role, Permission
+
+
+class RoleRequiredMixin(UserPassesTestMixin):
+    """
+    Mixin que requiere que el usuario tenga un rol específico
+    """
+    required_role = None
+    company_required = True
+    
+    def test_func(self):
+        if not self.request.user.is_authenticated:
+            return False
+        
+        if self.request.user.is_system_admin:
+            return True
+        
+        if self.company_required and not hasattr(self.request, 'company'):
+            return False
+        
+        if self.required_role:
+            return self.request.user.has_permission_in_company(
+                self.required_role,
+                getattr(self.request, 'company', None)
+            )
+        
+        return True
+    
+    def handle_no_permission(self):
+        messages.error(
+            self.request,
+            _('No tiene permisos para acceder a esta página.')
+        )
+        return redirect('core:dashboard')
+
+
+class PermissionRequiredMixin(UserPassesTestMixin):
+    """
+    Mixin que requiere que el usuario tenga un permiso específico
+    """
+    required_permission = None
+    company_required = True
+    
+    def test_func(self):
+        if not self.request.user.is_authenticated:
+            return False
+        
+        if self.request.user.is_system_admin:
+            return True
+        
+        if self.company_required and not hasattr(self.request, 'company'):
+            return False
+        
+        if self.required_permission:
+            return self.request.user.has_permission_in_company(
+                self.required_permission,
+                getattr(self.request, 'company', None)
+            )
+        
+        return True
+    
+    def handle_no_permission(self):
+        messages.error(
+            self.request,
+            _('No tiene permisos para realizar esta acción.')
+        )
+        return redirect('core:dashboard')
+
+
+class UserManagementPermissionMixin(PermissionRequiredMixin):
+    """
+    Mixin para permisos de gestión de usuarios
+    """
+    required_permission = 'users.manage_users'
+
+
+class RoleManagementPermissionMixin(PermissionRequiredMixin):
+    """
+    Mixin para permisos de gestión de roles
+    """
+    required_permission = 'users.manage_roles'
+
+
+class SystemAdminRequiredMixin(UserPassesTestMixin):
+    """
+    Mixin que requiere ser administrador del sistema
+    """
+    def test_func(self):
+        return (
+            self.request.user.is_authenticated and 
+            self.request.user.is_system_admin
+        )
+    
+    def handle_no_permission(self):
+        messages.error(
+            self.request,
+            _('Solo los administradores del sistema pueden acceder a esta página.')
+        )
+        return redirect('core:dashboard')
+
+
+class OwnProfileOrAdminMixin(UserPassesTestMixin):
+    """
+    Mixin que permite acceso solo al propio perfil o a administradores
+    """
+    def test_func(self):
+        if not self.request.user.is_authenticated:
+            return False
+        
+        if self.request.user.is_system_admin:
+            return True
+        
+        # Verificar si es su propio perfil
+        user_id = self.kwargs.get('pk')
+        if user_id:
+            return str(self.request.user.id) == str(user_id)
+        
+        return True
+    
+    def handle_no_permission(self):
+        messages.error(
+            self.request,
+            _('Solo puede acceder a su propio perfil.')
+        )
+        return redirect('users:profile')
+
+
+# Decoradores de función
+def role_required(role_name, company_required=True):
+    """
+    Decorador que requiere un rol específico
+    """
+    def check_role(user):
+        if not user.is_authenticated:
+            return False
+        
+        if user.is_system_admin:
+            return True
+        
+        if company_required and not hasattr(user, 'company'):
+            return False
+        
+        return user.has_permission_in_company(
+            role_name,
+            getattr(user, 'company', None)
+        )
+    
+    return user_passes_test(check_role)
+
+
+def permission_required(permission_name, company_required=True):
+    """
+    Decorador que requiere un permiso específico
+    """
+    def check_permission(user):
+        if not user.is_authenticated:
+            return False
+        
+        if user.is_system_admin:
+            return True
+        
+        if company_required and not hasattr(user, 'company'):
+            return False
+        
+        return user.has_permission_in_company(
+            permission_name,
+            getattr(user, 'company', None)
+        )
+    
+    return user_passes_test(check_permission)
+
+
+def system_admin_required(user):
+    """
+    Decorador que requiere ser administrador del sistema
+    """
+    return user.is_authenticated and user.is_system_admin
+
+
+def own_profile_or_admin_required(user):
+    """
+    Decorador para acceso a perfil propio o admin
+    """
+    return user.is_authenticated and (user.is_system_admin or user == user)
+
+
+# Permisos para DRF
+class IsSystemAdmin(permissions.BasePermission):
+    """
+    Permiso que solo permite acceso a administradores del sistema
+    """
+    def has_permission(self, request, view):
+        return (
+            request.user and 
+            request.user.is_authenticated and 
+            request.user.is_system_admin
+        )
+
+
+class HasCompanyAccess(permissions.BasePermission):
+    """
+    Permiso que verifica acceso a la empresa actual
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        if request.user.is_system_admin:
+            return True
+        
+        if not hasattr(request, 'company'):
+            return False
+        
+        return request.user.has_company_access(request.company)
+
+
+class HasModulePermission(permissions.BasePermission):
+    """
+    Permiso que verifica permisos específicos del módulo
+    """
+    required_permission = None
+    
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        if request.user.is_system_admin:
+            return True
+        
+        if not hasattr(request, 'company'):
+            return False
+        
+        permission = getattr(view, 'required_permission', self.required_permission)
+        if permission:
+            return request.user.has_permission_in_company(
+                permission,
+                request.company
+            )
+        
+        return True
 
 
 class IsOwnerOrAdmin(permissions.BasePermission):
     """
-    Permiso que permite acceso solo al propietario del objeto o administradores.
+    Permiso que permite acceso solo al propietario del objeto o admin
     """
-    
     def has_object_permission(self, request, view, obj):
-        # Permisos de lectura para cualquier usuario autenticado
-        if request.method in permissions.SAFE_METHODS:
+        if request.user.is_system_admin:
             return True
         
-        # Permisos de escritura solo para el propietario o administradores
-        return obj == request.user or request.user.is_staff or request.user.is_superuser
-
-
-class CanManageUsers(permissions.BasePermission):
-    """
-    Permiso para gestionar usuarios.
-    Solo administradores o usuarios con permisos específicos.
-    """
-    
-    def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
-            return False
-        
-        # Superusuarios siempre tienen acceso
-        if request.user.is_superuser:
-            return True
-        
-        # Verificar si tiene el permiso específico
-        if request.user.has_permission('admin_users'):
-            return True
-        
-        # Verificar permisos Django tradicionales
-        if request.method in permissions.SAFE_METHODS:
-            return request.user.has_perm('users.view_user')
-        
-        if request.method == 'POST':
-            return request.user.has_perm('users.add_user')
-        
-        if request.method in ['PUT', 'PATCH']:
-            return request.user.has_perm('users.change_user')
-        
-        if request.method == 'DELETE':
-            return request.user.has_perm('users.delete_user')
-        
-        return False
-
-    def has_object_permission(self, request, view, obj):
-        # Los usuarios pueden ver y editar su propio perfil
-        if obj == request.user:
-            return True
-        
-        return self.has_permission(request, view)
-
-
-class CanManageRoles(permissions.BasePermission):
-    """
-    Permiso para gestionar roles.
-    """
-    
-    def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
-            return False
-        
-        # Superusuarios siempre tienen acceso
-        if request.user.is_superuser:
-            return True
-        
-        # Verificar si tiene rol de administrador
-        if request.user.has_role('admin'):
-            return True
-        
-        # Verificar permisos específicos
-        return request.user.has_permission('admin_users')
-
-
-class CanViewReports(permissions.BasePermission):
-    """
-    Permiso para ver reportes.
-    """
-    
-    def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
-            return False
-        
-        # Superusuarios siempre tienen acceso
-        if request.user.is_superuser:
-            return True
-        
-        # Verificar permisos de reportes
-        return request.user.has_permission('reports_view')
-
-
-class CanAccessPOS(permissions.BasePermission):
-    """
-    Permiso para acceder al módulo POS.
-    """
-    
-    def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
-            return False
-        
-        # Verificar permisos POS
-        return (
-            request.user.is_superuser or
-            request.user.has_permission('pos_view') or
-            request.user.has_role('cashier') or
-            request.user.has_role('admin') or
-            request.user.has_role('manager')
-        )
-
-
-class CanManageInventory(permissions.BasePermission):
-    """
-    Permiso para gestionar inventario.
-    """
-    
-    def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
-            return False
-        
-        # Superusuarios siempre tienen acceso
-        if request.user.is_superuser:
-            return True
-        
-        # Verificar roles específicos
-        if request.user.has_role('inventory_manager') or request.user.has_role('admin'):
-            return True
-        
-        # Verificar permisos específicos según el método
-        if request.method in permissions.SAFE_METHODS:
-            return request.user.has_permission('inventory_view')
-        
-        if request.method == 'POST':
-            return request.user.has_permission('inventory_create')
-        
-        if request.method in ['PUT', 'PATCH']:
-            return request.user.has_permission('inventory_edit')
-        
-        if request.method == 'DELETE':
-            return request.user.has_permission('inventory_delete')
-        
-        return False
-
-
-class CanManageInvoicing(permissions.BasePermission):
-    """
-    Permiso para gestionar facturación.
-    """
-    
-    def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
-            return False
-        
-        # Superusuarios siempre tienen acceso
-        if request.user.is_superuser:
-            return True
-        
-        # Verificar roles específicos
-        if (request.user.has_role('admin') or 
-            request.user.has_role('accountant') or
-            request.user.has_role('manager')):
-            return True
-        
-        # Verificar permisos específicos según el método
-        if request.method in permissions.SAFE_METHODS:
-            return request.user.has_permission('invoice_view')
-        
-        if request.method == 'POST':
-            return request.user.has_permission('invoice_create')
-        
-        if request.method in ['PUT', 'PATCH']:
-            return request.user.has_permission('invoice_edit')
-        
-        return False
-
-
-class CanAccessAccounting(permissions.BasePermission):
-    """
-    Permiso para acceder al módulo de contabilidad.
-    """
-    
-    def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
-            return False
-        
-        # Superusuarios siempre tienen acceso
-        if request.user.is_superuser:
-            return True
-        
-        # Solo contadores, administradores y gerentes
-        return (
-            request.user.has_role('accountant') or
-            request.user.has_role('admin') or
-            request.user.has_role('manager')
-        )
-
-
-class CanManageSettings(permissions.BasePermission):
-    """
-    Permiso para gestionar configuraciones del sistema.
-    """
-    
-    def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
-            return False
-        
-        # Solo superusuarios y administradores
-        return (
-            request.user.is_superuser or
-            request.user.has_role('admin') or
-            request.user.has_permission('admin_settings')
-        )
-
-
-class IsActiveUser(permissions.BasePermission):
-    """
-    Permiso que verifica que el usuario esté activo.
-    """
-    
-    def has_permission(self, request, view):
-        return (
-            request.user and
-            request.user.is_authenticated and
-            request.user.is_active
-        )
-
-
-class DepartmentBasedPermission(permissions.BasePermission):
-    """
-    Permiso basado en departamento del usuario.
-    Los usuarios solo pueden ver/editar datos de su departamento.
-    """
-    
-    def has_object_permission(self, request, view, obj):
-        if not request.user or not request.user.is_authenticated:
-            return False
-        
-        # Superusuarios y administradores tienen acceso total
-        if request.user.is_superuser or request.user.has_role('admin'):
-            return True
-        
-        # Verificar si el objeto pertenece al mismo departamento
-        if hasattr(obj, 'department') and hasattr(request.user, 'department'):
-            return obj.department == request.user.department
-        
-        # Si no tiene departamento definido, verificar si es el propietario
+        # Verificar si el objeto tiene un campo 'user'
         if hasattr(obj, 'user'):
             return obj.user == request.user
         
-        return False
-
-
-class BranchBasedPermission(permissions.BasePermission):
-    """
-    Permiso basado en sucursal del usuario.
-    Los usuarios solo pueden ver/editar datos de su sucursal.
-    """
-    
-    def has_object_permission(self, request, view, obj):
-        if not request.user or not request.user.is_authenticated:
-            return False
-        
-        # Superusuarios y administradores tienen acceso total
-        if request.user.is_superuser or request.user.has_role('admin'):
-            return True
-        
-        # Verificar si el objeto pertenece a la misma sucursal
-        if hasattr(obj, 'branch') and hasattr(request.user, 'branch'):
-            return obj.branch == request.user.branch
+        # Si el objeto es un usuario, verificar si es el mismo
+        if isinstance(obj, User):
+            return obj == request.user
         
         return False
-
-
-class TimeBasedPermission(permissions.BasePermission):
-    """
-    Permiso basado en horarios de trabajo.
-    """
-    
-    def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
-            return False
-        
-        # Superusuarios siempre tienen acceso
-        if request.user.is_superuser:
-            return True
-        
-        # Aquí podrías implementar lógica de horarios
-        # Por ahora, siempre permitir acceso
-        return True
-
-
-def check_module_permission(user, module_name, action='view'):
-    """
-    Función auxiliar para verificar permisos de módulo.
-    
-    Args:
-        user: Usuario a verificar
-        module_name: Nombre del módulo (pos, inventory, invoicing, etc.)
-        action: Acción a verificar (view, create, edit, delete)
-    
-    Returns:
-        bool: True si tiene permiso, False caso contrario
-    """
-    if not user or not user.is_authenticated:
-        return False
-    
-    # Superusuarios siempre tienen acceso
-    if user.is_superuser:
-        return True
-    
-    # Verificar permiso específico
-    permission_code = f"{module_name}_{action}"
-    return user.has_permission(permission_code)
-
-
-def get_user_modules(user):
-    """
-    Obtiene la lista de módulos a los que el usuario tiene acceso.
-    
-    Args:
-        user: Usuario
-    
-    Returns:
-        list: Lista de módulos accesibles
-    """
-    if not user or not user.is_authenticated:
-        return []
-    
-    modules = []
-    
-    # Verificar acceso a cada módulo
-    if check_module_permission(user, 'pos'):
-        modules.append('pos')
-    
-    if check_module_permission(user, 'inventory'):
-        modules.append('inventory')
-    
-    if check_module_permission(user, 'invoice'):
-        modules.append('invoicing')
-    
-    if check_module_permission(user, 'reports'):
-        modules.append('reports')
-    
-    if user.has_role('admin') or user.has_permission('admin_users'):
-        modules.append('users')
-    
-    if user.has_role('admin') or user.has_permission('admin_settings'):
-        modules.append('settings')
-    
-    return modules
-
-
-def get_user_permissions_summary(user):
-    """
-    Obtiene un resumen de todos los permisos del usuario.
-    
-    Args:
-        user: Usuario
-    
-    Returns:
-        dict: Diccionario con permisos organizados por módulo
-    """
-    if not user or not user.is_authenticated:
-        return {}
-    
-    summary = {
-        'is_superuser': user.is_superuser,
-        'is_staff': user.is_staff,
-        'roles': [role.code for role in user.roles.filter(is_active=True)],
-        'modules': {}
-    }
-    
-    # Permisos por módulo
-    modules = ['pos', 'inventory', 'invoicing', 'accounting', 'reports', 'users', 'settings']
-    actions = ['view', 'create', 'edit', 'delete']
-    
-    for module in modules:
-        summary['modules'][module] = {}
-        for action in actions:
-            summary['modules'][module][action] = check_module_permission(user, module, action)
-    
-    return summary

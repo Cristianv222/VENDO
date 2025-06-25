@@ -1,0 +1,425 @@
+{% extends "users/base_users.html" %}
+{% load static %}
+{% load i18n %}
+{% load widget_tweaks %}
+
+{% block title %}
+    {% if object %}
+        {% trans "Editar Rol" %}: {{ object.name }}
+    {% else %}
+        {% trans "Nuevo Rol" %}
+    {% endif %}
+{% endblock %}
+
+{% block user_breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'users:role_list' %}">{% trans "Roles" %}</a></li>
+{% if object %}
+    <li class="breadcrumb-item"><a href="{% url 'users:role_detail' object.pk %}">{{ object.name }}</a></li>
+    <li class="breadcrumb-item active">{% trans "Editar" %}</li>
+{% else %}
+    <li class="breadcrumb-item active">{% trans "Nuevo" %}</li>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-users-cog me-2"></i>
+                    {% if object %}
+                        {% trans "Editar Rol" %}: {{ object.name }}
+                    {% else %}
+                        {% trans "Nuevo Rol" %}
+                    {% endif %}
+                </h5>
+            </div>
+            
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <div class="row">
+                        <!-- Información básica -->
+                        <div class="col-md-6">
+                            <h6 class="border-bottom pb-2 mb-3">
+                                <i class="fas fa-info-circle me-2"></i>{% trans "Información Básica" %}
+                            </h6>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.name.id_for_label }}" class="form-label">
+                                    {{ form.name.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.name|add_class:"form-control" }}
+                                {% if form.name.errors %}
+                                    <div class="text-danger small">{{ form.name.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">{% trans "Nombre único del rol en el sistema" %}</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">
+                                    {{ form.description.label }}
+                                </label>
+                                {{ form.description|add_class:"form-control" }}
+                                {% if form.description.errors %}
+                                    <div class="text-danger small">{{ form.description.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">{% trans "Descripción del rol y sus responsabilidades" %}</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.color.id_for_label }}" class="form-label">
+                                    {{ form.color.label }}
+                                </label>
+                                <div class="input-group">
+                                    {{ form.color|add_class:"form-control" }}
+                                    <div class="input-group-text color-preview" 
+                                         data-initial-color="{{ form.color.value|default:'#007bff' }}">
+                                    </div>
+                                </div>
+                                {% if form.color.errors %}
+                                    <div class="text-danger small">{{ form.color.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">{% trans "Color para identificar visualmente el rol" %}</div>
+                            </div>
+
+                            <!-- Vista previa del rol -->
+                            <div class="mb-3">
+                                <label class="form-label">{% trans "Vista previa:" %}</label>
+                                <div>
+                                    <span id="role-preview" class="badge role-preview-badge" 
+                                          data-initial-color="{{ form.color.value|default:'#007bff' }}"
+                                          data-initial-name="{{ form.name.value|default:'Nuevo Rol' }}">
+                                        {{ form.name.value|default:"Nuevo Rol" }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configuración adicional -->
+                        <div class="col-md-6">
+                            <h6 class="border-bottom pb-2 mb-3">
+                                <i class="fas fa-cog me-2"></i>{% trans "Configuración" %}
+                            </h6>
+
+                            {% if user.is_superuser %}
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        {{ form.is_system_role|add_class:"form-check-input" }}
+                                        <label class="form-check-label" for="{{ form.is_system_role.id_for_label }}">
+                                            {{ form.is_system_role.label }}
+                                        </label>
+                                        {% if form.is_system_role.errors %}
+                                            <div class="text-danger small">{{ form.is_system_role.errors.0 }}</div>
+                                        {% endif %}
+                                        <div class="form-text">
+                                            {% trans "Los roles del sistema no pueden ser eliminados por usuarios normales" %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    {{ form.is_active|add_class:"form-check-input" }}
+                                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                        {{ form.is_active.label }}
+                                    </label>
+                                    {% if form.is_active.errors %}
+                                        <div class="text-danger small">{{ form.is_active.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        {% trans "Solo los roles activos pueden ser asignados a usuarios" %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Estadísticas si es edición -->
+                            {% if object %}
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{% trans "Estadísticas" %}</h6>
+                                        <div class="row text-center">
+                                            <div class="col-6">
+                                                <h5 class="text-primary mb-0">{{ object.permissions.count }}</h5>
+                                                <small class="text-muted">{% trans "Permisos" %}</small>
+                                            </div>
+                                            <div class="col-6">
+                                                <h5 class="text-success mb-0">{{ object.user_companies.count }}</h5>
+                                                <small class="text-muted">{% trans "Usuarios" %}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Permisos -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6 class="border-bottom pb-2 mb-3">
+                                <i class="fas fa-key me-2"></i>{% trans "Permisos" %}
+                            </h6>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <p class="text-muted mb-0">
+                                        {% trans "Seleccione los permisos que tendrá este rol:" %}
+                                    </p>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-primary" id="select-all">
+                                            {% trans "Seleccionar todo" %}
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" id="deselect-all">
+                                            {% trans "Deseleccionar todo" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {% if form.permissions.field.queryset %}
+                                {% regroup form.permissions.field.queryset by module as permission_modules %}
+                                <div class="row">
+                                    {% for module in permission_modules %}
+                                        <div class="col-lg-6 mb-4">
+                                            <div class="card">
+                                                <div class="card-header bg-light">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <h6 class="mb-0 text-capitalize">
+                                                            <i class="fas fa-cube me-2"></i>{{ module.grouper }}
+                                                        </h6>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input module-checkbox" 
+                                                                   type="checkbox" 
+                                                                   id="module_{{ module.grouper }}">
+                                                            <label class="form-check-label small" for="module_{{ module.grouper }}">
+                                                                {% trans "Todo" %}
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body">
+                                                    {% for permission in module.list %}
+                                                        <div class="form-check mb-2">
+                                                            <input class="form-check-input permission-checkbox" 
+                                                                   type="checkbox" 
+                                                                   name="{{ form.permissions.name }}" 
+                                                                   value="{{ permission.id }}" 
+                                                                   id="permission_{{ permission.id }}"
+                                                                   data-module="{{ module.grouper }}"
+                                                                   {% if permission in form.permissions.value %}checked{% endif %}>
+                                                            <label class="form-check-label" for="permission_{{ permission.id }}">
+                                                                <strong>{{ permission.name }}</strong>
+                                                                {% if permission.description %}
+                                                                    <br><small class="text-muted">{{ permission.description }}</small>
+                                                                {% endif %}
+                                                            </label>
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                {% if form.permissions.errors %}
+                                    <div class="text-danger small">{{ form.permissions.errors.0 }}</div>
+                                {% endif %}
+
+                                <!-- Contador de permisos seleccionados -->
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <span id="permissions-count">0</span> {% trans "permisos seleccionados" %}
+                                </div>
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    {% trans "No hay permisos disponibles en el sistema." %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <hr>
+                            <div class="d-flex justify-content-between">
+                                <a href="{% if object %}{% url 'users:role_detail' object.pk %}{% else %}{% url 'users:role_list' %}{% endif %}" 
+                                   class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>{% trans "Cancelar" %}
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>
+                                    {% if object %}{% trans "Actualizar Rol" %}{% else %}{% trans "Crear Rol" %}{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .color-preview {
+        width: 50px;
+        background-color: #007bff;
+    }
+    
+    .role-preview-badge {
+        color: white !important;
+        background-color: #007bff;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nameField = document.getElementById('{{ form.name.id_for_label }}');
+    const colorField = document.getElementById('{{ form.color.id_for_label }}');
+    const colorPreview = document.querySelector('.color-preview');
+    const rolePreview = document.getElementById('role-preview');
+    const permissionCheckboxes = document.querySelectorAll('.permission-checkbox');
+    const moduleCheckboxes = document.querySelectorAll('.module-checkbox');
+    const permissionsCount = document.getElementById('permissions-count');
+    const selectAllBtn = document.getElementById('select-all');
+    const deselectAllBtn = document.getElementById('deselect-all');
+
+    // Inicializar colores desde los datos
+    function initializeColors() {
+        if (colorPreview) {
+            const initialColor = colorPreview.getAttribute('data-initial-color') || '#007bff';
+            colorPreview.style.backgroundColor = initialColor;
+        }
+        
+        if (rolePreview) {
+            const initialColor = rolePreview.getAttribute('data-initial-color') || '#007bff';
+            const initialName = rolePreview.getAttribute('data-initial-name') || 'Nuevo Rol';
+            rolePreview.style.backgroundColor = initialColor;
+            rolePreview.textContent = initialName;
+        }
+    }
+
+    // Actualizar vista previa del color
+    function updateColorPreview() {
+        const color = colorField.value || '#007bff';
+        if (colorPreview) {
+            colorPreview.style.backgroundColor = color;
+        }
+        if (rolePreview) {
+            rolePreview.style.backgroundColor = color;
+        }
+    }
+
+    // Actualizar vista previa del nombre
+    function updateNamePreview() {
+        const name = nameField.value || 'Nuevo Rol';
+        if (rolePreview) {
+            rolePreview.textContent = name;
+        }
+    }
+
+    // Contar permisos seleccionados
+    function updatePermissionsCount() {
+        const checked = document.querySelectorAll('.permission-checkbox:checked').length;
+        if (permissionsCount) {
+            permissionsCount.textContent = checked;
+        }
+    }
+
+    // Manejar checkboxes de módulo
+    function updateModuleCheckbox(module) {
+        const moduleCheckbox = document.getElementById(`module_${module}`);
+        if (!moduleCheckbox) return;
+        
+        const modulePermissions = document.querySelectorAll(`input[data-module="${module}"]`);
+        const checkedPermissions = document.querySelectorAll(`input[data-module="${module}"]:checked`);
+        
+        if (checkedPermissions.length === modulePermissions.length) {
+            moduleCheckbox.checked = true;
+            moduleCheckbox.indeterminate = false;
+        } else if (checkedPermissions.length > 0) {
+            moduleCheckbox.checked = false;
+            moduleCheckbox.indeterminate = true;
+        } else {
+            moduleCheckbox.checked = false;
+            moduleCheckbox.indeterminate = false;
+        }
+    }
+
+    // Event listeners
+    if (colorField) {
+        colorField.addEventListener('input', updateColorPreview);
+    }
+    
+    if (nameField) {
+        nameField.addEventListener('input', updateNamePreview);
+    }
+
+    // Inicializar
+    initializeColors();
+    updatePermissionsCount();
+
+    // Manejar selección de permisos
+    permissionCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updatePermissionsCount();
+            updateModuleCheckbox(this.dataset.module);
+        });
+    });
+
+    // Manejar checkboxes de módulo
+    moduleCheckboxes.forEach(checkbox => {
+        const module = checkbox.id.replace('module_', '');
+        
+        checkbox.addEventListener('change', function() {
+            const modulePermissions = document.querySelectorAll(`input[data-module="${module}"]`);
+            modulePermissions.forEach(permissionCheckbox => {
+                permissionCheckbox.checked = this.checked;
+            });
+            updatePermissionsCount();
+        });
+        
+        // Inicializar estado
+        updateModuleCheckbox(module);
+    });
+
+    // Botones de selección masiva
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', function() {
+            permissionCheckboxes.forEach(checkbox => checkbox.checked = true);
+            moduleCheckboxes.forEach(checkbox => {
+                checkbox.checked = true;
+                checkbox.indeterminate = false;
+            });
+            updatePermissionsCount();
+        });
+    }
+
+    if (deselectAllBtn) {
+        deselectAllBtn.addEventListener('click', function() {
+            permissionCheckboxes.forEach(checkbox => checkbox.checked = false);
+            moduleCheckboxes.forEach(checkbox => {
+                checkbox.checked = false;
+                checkbox.indeterminate = false;
+            });
+            updatePermissionsCount();
+        });
+    }
+});
+</script>
+{% endblock %}

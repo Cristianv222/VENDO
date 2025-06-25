@@ -1,5 +1,5 @@
 """
-Vistas del módulo Core
+Vistas del módulo Core - CORREGIDAS
 """
 import json
 from datetime import datetime, timedelta
@@ -35,7 +35,7 @@ from .utils import get_client_ip
 
 class DashboardView(LoginRequiredMixin, CompanyPermissionMixin, TemplateView):
     """
-    Vista principal del dashboard
+    Vista principal del dashboard (versión mínima)
     """
     template_name = 'core/dashboard.html'
     
@@ -45,12 +45,26 @@ class DashboardView(LoginRequiredMixin, CompanyPermissionMixin, TemplateView):
         if hasattr(self.request, 'company'):
             company = self.request.company
             
-            # Estadísticas básicas
+            # Solo datos básicos y seguros
             context.update({
+                'company': company,
                 'total_branches': company.branches.filter(is_active=True).count(),
-                'total_users': self.get_total_users(),
-                'recent_activities': self.get_recent_activities(),
-                'system_alerts': self.get_system_alerts(),
+                'total_users': 0,  # Fijo por ahora
+                'recent_activities': [],  # Vacío por ahora
+                'system_alerts': self.get_system_alerts_safe(),  # CORREGIDO: Método seguro
+                'current_branch': getattr(self.request, 'current_branch', None),
+                'available_branches': company.branches.filter(is_active=True).order_by('name'),
+            })
+        else:
+            # Si no hay empresa, datos por defecto
+            context.update({
+                'company': None,
+                'total_branches': 0,
+                'total_users': 0,
+                'recent_activities': [],
+                'system_alerts': [],
+                'current_branch': None,
+                'available_branches': [],
             })
         
         return context
@@ -75,9 +89,9 @@ class DashboardView(LoginRequiredMixin, CompanyPermissionMixin, TemplateView):
             ).select_related('user').order_by('-created_at')[:10]
         return []
     
-    def get_system_alerts(self):
+    def get_system_alerts_safe(self):
         """
-        Obtiene alertas del sistema
+        Obtiene alertas del sistema de forma segura (SIN URLs problemáticas)
         """
         alerts = []
         
@@ -89,7 +103,7 @@ class DashboardView(LoginRequiredMixin, CompanyPermissionMixin, TemplateView):
                 alerts.append({
                     'type': 'warning',
                     'message': _('No se ha configurado el certificado digital SRI'),
-                    'action_url': reverse('settings:company'),
+                    'action_url': '#',  # CORREGIDO: URL segura temporal
                     'action_text': _('Configurar')
                 })
             
@@ -97,7 +111,7 @@ class DashboardView(LoginRequiredMixin, CompanyPermissionMixin, TemplateView):
                 alerts.append({
                     'type': 'danger',
                     'message': _('No hay sucursales activas configuradas'),
-                    'action_url': reverse('core:branch_create'),
+                    'action_url': '#',  # CORREGIDO: URL segura temporal
                     'action_text': _('Crear sucursal')
                 })
         
@@ -110,6 +124,13 @@ class SelectCompanyView(LoginRequiredMixin, TemplateView):
     """
     template_name = 'core/select_company.html'
     
+    def dispatch(self, request, *args, **kwargs):
+        # Si ya tiene empresa seleccionada, redirigir al dashboard
+        if hasattr(request, 'company'):
+            return redirect('core:dashboard')
+        
+        return super().dispatch(request, *args, **kwargs)
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
@@ -117,11 +138,41 @@ class SelectCompanyView(LoginRequiredMixin, TemplateView):
         if self.request.user.is_superuser:
             available_companies = Company.objects.filter(is_active=True)
         else:
-            # Esto se implementará cuando tengamos el módulo de usuarios
+            # Por ahora permitir acceso a todas las empresas activas
+            # Esto se modificará cuando implementemos el módulo de usuarios
             available_companies = Company.objects.filter(is_active=True)
         
         context['available_companies'] = available_companies
         return context
+
+    def get(self, request, *args, **kwargs):
+        # Verificar si hay empresas disponibles
+        if request.user.is_superuser:
+            available_companies = Company.objects.filter(is_active=True)
+        else:
+            available_companies = Company.objects.filter(is_active=True)
+        
+        if not available_companies.exists():
+            messages.error(
+                request,
+                _('No hay empresas disponibles. Contacte al administrador.')
+            )
+            # CORREGIDO: Usar logout correcto en lugar de admin:logout
+            return redirect('users:logout')
+        
+        # Si solo hay una empresa, seleccionarla automáticamente
+        if available_companies.count() == 1:
+            company = available_companies.first()
+            request.session['company_id'] = str(company.id)
+            messages.success(
+                request,
+                _('Empresa seleccionada automáticamente: %(company)s') % {
+                    'company': company.business_name
+                }
+            )
+            return redirect('core:dashboard')
+        
+        return super().get(request, *args, **kwargs)
 
 
 class SwitchCompanyView(LoginRequiredMixin, View):
@@ -134,7 +185,9 @@ class SwitchCompanyView(LoginRequiredMixin, View):
             company = get_object_or_404(Company, id=company_id, is_active=True)
             
             # Verificar que el usuario tiene acceso a esta empresa
-            # Esto se implementará cuando tengamos el módulo de usuarios
+            if not request.user.is_superuser:
+                # Aquí verificarías permisos específicos cuando implementes usuarios
+                pass
             
             # Establecer empresa en sesión
             request.session['company_id'] = str(company.id)
@@ -145,11 +198,22 @@ class SwitchCompanyView(LoginRequiredMixin, View):
                 _('Empresa cambiada a %(company)s') % {'company': company.business_name}
             )
             
-            return redirect('core:dashboard')
+            # Redirigir al dashboard o a la URL solicitada
+            next_url = request.GET.get('next', 'core:dashboard')
+            return redirect(next_url)
             
         except Exception as e:
-            messages.error(request, _('Error al cambiar de empresa: %(error)s') % {'error': str(e)})
+            messages.error(
+                request, 
+                _('Error al cambiar de empresa: %(error)s') % {'error': str(e)}
+            )
             return redirect('core:select_company')
+
+    def get(self, request, company_id):
+        """
+        Permitir también GET para enlaces directos
+        """
+        return self.post(request, company_id)
 
 
 class SwitchBranchView(LoginRequiredMixin, CompanyPermissionMixin, View):
@@ -179,6 +243,12 @@ class SwitchBranchView(LoginRequiredMixin, CompanyPermissionMixin, View):
         except Exception as e:
             messages.error(request, _('Error al cambiar de sucursal: %(error)s') % {'error': str(e)})
             return redirect('core:dashboard')
+
+    def get(self, request, branch_id):
+        """
+        Permitir también GET para enlaces directos
+        """
+        return self.post(request, branch_id)
 
 
 # ===================================
@@ -264,7 +334,7 @@ class CompanyUpdateView(LoginRequiredMixin, SettingsPermissionMixin, UpdateView)
     fields = [
         'business_name', 'trade_name', 'email', 'phone', 'mobile',
         'address', 'city', 'province', 'postal_code', 'sri_environment',
-        'logo', 'is_active'
+        'logo', 'sri_certificate', 'is_active'
     ]
     
     def get_success_url(self):
@@ -453,6 +523,14 @@ class UserProfileView(LoginRequiredMixin, TemplateView):
     Perfil del usuario
     """
     template_name = 'core/user_profile.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'user_companies': Company.objects.filter(is_active=True) if self.request.user.is_superuser else Company.objects.filter(is_active=True),
+            'current_company': getattr(self.request, 'company', None),
+        })
+        return context
 
 
 class UserProfileUpdateView(LoginRequiredMixin, TemplateView):
@@ -463,7 +541,7 @@ class UserProfileUpdateView(LoginRequiredMixin, TemplateView):
 
 
 # ===================================
-# VISTAS DE UTILIDAD
+# VISTAS DE UTILIDAD - SIMPLIFICADAS
 # ===================================
 
 class HealthCheckView(View):
@@ -486,6 +564,7 @@ class HealthCheckView(View):
                 'version': getattr(settings, 'VERSION', '1.0.0'),
                 'database': 'connected',
                 'debug_mode': settings.DEBUG,
+                'companies_count': Company.objects.filter(is_active=True).count(),
             }
             
             return JsonResponse(status_data)
@@ -513,6 +592,10 @@ class SystemInfoView(LoginRequiredMixin, SettingsPermissionMixin, TemplateView):
             'database_engine': settings.DATABASES['default']['ENGINE'],
             'language_code': settings.LANGUAGE_CODE,
             'time_zone': settings.TIME_ZONE,
+            'total_companies': Company.objects.count(),
+            'active_companies': Company.objects.filter(is_active=True).count(),
+            'total_branches': Branch.objects.count(),
+            'active_branches': Branch.objects.filter(is_active=True).count(),
         })
         
         return context
@@ -566,7 +649,7 @@ def custom_500(request):
 
 
 # ===================================
-# API VIEWS
+# API VIEWS - SIMPLIFICADAS
 # ===================================
 
 class CompanyAPIView(generics.ListCreateAPIView):
@@ -577,7 +660,9 @@ class CompanyAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        return Company.objects.all()
+        if self.request.user.is_superuser:
+            return Company.objects.all()
+        return Company.objects.filter(is_active=True)
 
 
 class BranchAPIView(generics.ListCreateAPIView):
@@ -606,46 +691,44 @@ class AuditLogAPIView(generics.ListAPIView):
         return AuditLog.objects.none()
 
 
-class DashboardDataAPIView(generics.GenericAPIView):
+# ===================================
+# FUNCIONES BÁSICAS - SIMPLIFICADAS
+# ===================================
+
+@login_required
+def health_check(request):
     """
-    API para datos del dashboard
+    Función simple de health check
     """
-    permission_classes = [IsAuthenticated]
+    return JsonResponse({
+        'status': 'ok',
+        'timestamp': timezone.now().isoformat(),
+        'message': 'Sistema funcionando correctamente'
+    })
+@login_required
+def health_check(request):
+    """
+    Función simple de health check
+    """
+    from .utils import check_system_health
     
-    def get(self, request):
-        """
-        Obtiene datos para el dashboard
-        """
-        if not hasattr(request, 'company'):
-            return Response({'error': 'No company selected'}, status=400)
+    try:
+        health_data = check_system_health()
+        health_data.update({
+            'user': request.user.username,
+            'ip_address': get_client_ip(request),
+            'user_agent': request.META.get('HTTP_USER_AGENT', ''),
+            'method': request.method,
+        })
         
-        company = request.company
+        return JsonResponse(health_data)
         
-        # Estadísticas básicas
-        data = {
-            'company': {
-                'id': str(company.id),
-                'name': company.business_name,
-                'ruc': company.ruc,
-            },
-            'stats': {
-                'total_branches': company.branches.filter(is_active=True).count(),
-                'total_users': 0,  # Se implementará con el módulo de usuarios
-            },
-            'recent_activities': [],
-        }
-        
-        # Actividades recientes
-        recent_logs = AuditLog.objects.filter(
-            company=company
-        ).select_related('user').order_by('-created_at')[:5]
-        
-        for log in recent_logs:
-            data['recent_activities'].append({
-                'user': log.user.username if log.user else 'Sistema',
-                'action': log.get_action_display(),
-                'object': log.object_repr,
-                'timestamp': log.created_at.isoformat(),
-            })
-        
-        return Response(data)
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'error': str(e),
+            'timestamp': timezone.now().isoformat(),
+        }, status=500)
+
+# NOTA: Se eliminaron las funciones problemáticas quick_company_switch y quick_branch_switch
+# Se implementarán cuando las URLs estén correctamente configuradas

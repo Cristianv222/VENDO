@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seleccionar Empresa - VENDO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .company-selector-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 24px 48px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 600px;
+            padding: 40px;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo-icon {
+            background: #1976d2;
+            color: white;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 28px;
+        }
+
+        .main-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1976d2;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .user-info {
+            background: rgba(25, 118, 210, 0.05);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .companies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .company-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #f8f9fa;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .company-card:hover {
+            border-color: #1976d2;
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(25, 118, 210, 0.15);
+        }
+
+        .company-card.selected {
+            border-color: #1976d2;
+            background: rgba(25, 118, 210, 0.05);
+        }
+
+        .company-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #1976d2;
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .company-card:hover::before,
+        .company-card.selected::before {
+            transform: scaleX(1);
+        }
+
+        .company-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            object-fit: cover;
+            margin-bottom: 12px;
+            background: #1976d2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+
+        .company-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #333;
+        }
+
+        .company-ruc {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .company-status {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            color: #4caf50;
+        }
+
+        .status-inactive {
+            color: #f44336;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #1976d2;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1565c0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(25, 118, 210, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #1976d2;
+            border: 2px solid #1976d2;
+        }
+
+        .btn-secondary:hover {
+            background: #1976d2;
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .empty-state .material-icons {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .footer-info {
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #e0e0e0;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alert-info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border-left: 4px solid #1976d2;
+        }
+
+        .alert-warning {
+            background: #fff3e0;
+            color: #f57c00;
+            border-left: 4px solid #f57c00;
+        }
+
+        @media (max-width: 768px) {
+            .company-selector-container {
+                margin: 16px;
+                padding: 24px;
+            }
+
+            .companies-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="company-selector-container">
+        <div class="header-section">
+            <div class="logo-icon">
+                <span class="material-icons">store</span>
+            </div>
+            <div class="main-title">Seleccionar Empresa</div>
+            <div class="subtitle">Elige la empresa con la que deseas trabajar</div>
+            
+            {% if user %}
+            <div class="user-info">
+                <span class="material-icons">person</span>
+                <span>Bienvenido, <strong>{{ user.get_full_name|default:user.username }}</strong></span>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }}">
+                <span class="material-icons">
+                    {% if message.tags == 'error' %}error
+                    {% elif message.tags == 'success' %}check_circle
+                    {% elif message.tags == 'warning' %}warning
+                    {% else %}info{% endif %}
+                </span>
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if companies %}
+        <form method="post" id="companyForm">
+            {% csrf_token %}
+            <div class="companies-grid">
+                {% for company in companies %}
+                <div class="company-card" onclick="selectCompany('{{ company.id }}')">
+                    <div class="company-logo">
+                        {% if company.logo %}
+                            <img src="{{ company.logo.url }}" alt="{{ company.business_name }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                        {% else %}
+                            <span class="material-icons">business</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="company-name">{{ company.business_name }}</div>
+                    <div class="company-ruc">RUC: {{ company.ruc }}</div>
+                    
+                    <div class="company-status">
+                        {% if company.is_active %}
+                            <span class="material-icons status-active">check_circle</span>
+                            <span class="status-active">Activa</span>
+                        {% else %}
+                            <span class="material-icons status-inactive">cancel</span>
+                            <span class="status-inactive">Inactiva</span>
+                        {% endif %}
+                    </div>
+                    
+                    <input type="radio" name="company_id" value="{{ company.id }}" style="display: none;" {% if not company.is_active %}disabled{% endif %}>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="action-buttons">
+                <button type="submit" class="btn btn-primary" id="continueBtn" disabled>
+                    <span class="material-icons">arrow_forward</span>
+                    Continuar
+                </button>
+                
+                {% if user.is_staff %}
+                <a href="{% url 'admin:index' %}" class="btn btn-secondary">
+                    <span class="material-icons">settings</span>
+                    Administración
+                </a>
+                {% endif %}
+            </div>
+        </form>
+        
+        {% else %}
+        <div class="empty-state">
+            <span class="material-icons">business_center</span>
+            <h3>No hay empresas disponibles</h3>
+            <p>Contacta al administrador del sistema para configurar tu acceso.</p>
+            
+            {% if user.is_staff %}
+            <div style="margin-top: 20px;">
+                <a href="{% url 'admin:core_company_add' %}" class="btn btn-primary">
+                    <span class="material-icons">add</span>
+                    Crear Nueva Empresa
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="footer-info">
+            VENDO v1.0.0 - Sistema de Gestión Empresarial<br>
+            {% now "Y" %} - Todos los derechos reservados
+        </div>
+    </div>
+
+    <script>
+        let selectedCompanyId = null;
+        const continueBtn = document.getElementById('continueBtn');
+        
+        function selectCompany(companyId) {
+            // Remover selección previa
+            document.querySelectorAll('.company-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Seleccionar nueva empresa
+            const selectedCard = event.currentTarget;
+            const radio = selectedCard.querySelector('input[type="radio"]');
+            
+            if (!radio.disabled) {
+                selectedCard.classList.add('selected');
+                radio.checked = true;
+                selectedCompanyId = companyId;
+                continueBtn.disabled = false;
+            }
+        }
+        
+        // Animación de entrada para las tarjetas
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.company-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+        
+        // Manejar envío del formulario
+        document.getElementById('companyForm')?.addEventListener('submit', function(e) {
+            if (!selectedCompanyId) {
+                e.preventDefault();
+                alert('Por favor selecciona una empresa');
+                return;
+            }
+            
+            // Mostrar loading
+            continueBtn.innerHTML = '<span class="material-icons">hourglass_empty</span> Cargando...';
+            continueBtn.disabled = true;
+        });
+        
+        // Atajos de teclado
+        document.addEventListener('keydown', function(e) {
+            const cards = document.querySelectorAll('.company-card');
+            
+            // Números 1-9 para seleccionar empresas
+            if (e.key >= '1' && e.key <= '9') {
+                const index = parseInt(e.key) - 1;
+                if (index < cards.length) {
+                    cards[index].click();
+                }
+            }
+            
+            // Enter para continuar
+            if (e.key === 'Enter' && selectedCompanyId) {
+                document.getElementById('companyForm')?.submit();
+            }
+        });
+    </script>
+</body>
+</html>

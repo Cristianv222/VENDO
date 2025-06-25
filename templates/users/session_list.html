@@ -1,0 +1,494 @@
+{% extends "users/base_users.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Sesiones de Usuario" %}{% endblock %}
+
+{% block user_breadcrumbs %}
+<li class="breadcrumb-item active">{% trans "Sesiones" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-history me-2"></i>{% trans "Sesiones de Usuario" %}</h2>
+        <p class="text-muted mb-0">{% trans "Historial de sesiones y actividad de usuarios" %}</p>
+    </div>
+    <div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-danger" id="cleanup-sessions">
+                <i class="fas fa-broom me-2"></i>{% trans "Limpiar Expiradas" %}
+            </button>
+            <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#export-modal">
+                <i class="fas fa-download me-2"></i>{% trans "Exportar" %}
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Usuario" %}</label>
+                <select name="user" class="form-select">
+                    <option value="">{% trans "Todos los usuarios" %}</option>
+                    {% for user in available_users %}
+                        <option value="{{ user.id }}" {% if request.GET.user == user.id|stringformat:"s" %}selected{% endif %}>
+                            {{ user.get_full_name }} (@{{ user.username }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">{% trans "Estado" %}</label>
+                <select name="status" class="form-select">
+                    <option value="">{% trans "Todos" %}</option>
+                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>
+                        {% trans "Activas" %}
+                    </option>
+                    <option value="closed" {% if request.GET.status == 'closed' %}selected{% endif %}>
+                        {% trans "Cerradas" %}
+                    </option>
+                    <option value="expired" {% if request.GET.status == 'expired' %}selected{% endif %}>
+                        {% trans "Expiradas" %}
+                    </option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">{% trans "Desde" %}</label>
+                <input type="date" name="date_from" class="form-control" value="{{ request.GET.date_from }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">{% trans "Hasta" %}</label>
+                <input type="date" name="date_to" class="form-control" value="{{ request.GET.date_to }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">{% trans "IP" %}</label>
+                <input type="text" name="ip" class="form-control" value="{{ request.GET.ip }}" placeholder="192.168.1.1">
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Estadísticas rápidas -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">{{ active_sessions_count }}</h5>
+                        <p class="card-text">{% trans "Sesiones Activas" %}</p>
+                    </div>
+                    <div>
+                        <i class="fas fa-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">{{ total_sessions_today }}</h5>
+                        <p class="card-text">{% trans "Sesiones Hoy" %}</p>
+                    </div>
+                    <div>
+                        <i class="fas fa-calendar-day fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">{{ expired_sessions_count }}</h5>
+                        <p class="card-text">{% trans "Sesiones Expiradas" %}</p>
+                    </div>
+                    <div>
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">{{ unique_users_count }}</h5>
+                        <p class="card-text">{% trans "Usuarios Únicos" %}</p>
+                    </div>
+                    <div>
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de sesiones -->
+<div class="card">
+    <div class="card-body">
+        {% if sessions %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>{% trans "Usuario" %}</th>
+                            <th>{% trans "Empresa/Sucursal" %}</th>
+                            <th>{% trans "Inicio" %}</th>
+                            <th>{% trans "Última Actividad" %}</th>
+                            <th>{% trans "Duración" %}</th>
+                            <th>{% trans "IP/Ubicación" %}</th>
+                            <th>{% trans "Navegador" %}</th>
+                            <th>{% trans "Estado" %}</th>
+                            <th>{% trans "Acciones" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for session in sessions %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if session.user.avatar %}
+                                            <img src="{{ session.user.avatar.url }}" alt="{{ session.user.get_full_name }}" 
+                                                 class="avatar-img me-2" style="width: 32px; height: 32px;">
+                                        {% else %}
+                                            <div class="avatar-img bg-secondary d-flex align-items-center justify-content-center text-white me-2" 
+                                                 style="width: 32px; height: 32px; font-size: 0.7rem;">
+                                                <i class="fas fa-user"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <div class="fw-bold">{{ session.user.get_full_name }}</div>
+                                            <small class="text-muted">@{{ session.user.username }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if session.company %}
+                                        <div>
+                                            <strong>{{ session.company.business_name }}</strong>
+                                            {% if session.branch %}
+                                                <br><small class="text-muted">{{ session.branch.name }}</small>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted">{% trans "Sin empresa" %}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div>{{ session.login_at|date:"d/m/Y" }}</div>
+                                    <small class="text-muted">{{ session.login_at|date:"H:i" }}</small>
+                                </td>
+                                <td>
+                                    <div>{{ session.last_activity|date:"d/m/Y" }}</div>
+                                    <small class="text-muted">{{ session.last_activity|date:"H:i" }}</small>
+                                </td>
+                                <td>
+                                    {% if session.logout_at %}
+                                        {{ session.logout_at|timeuntil:session.login_at }}
+                                    {% else %}
+                                        {{ session.last_activity|timeuntil:session.login_at }}
+                                        {% if not session.is_expired %}
+                                            <br><small class="text-success">{% trans "En curso" %}</small>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div>{{ session.ip_address }}</div>
+                                    <small class="text-muted">
+                                        {% comment %}
+                                        <!-- Aquí podrías agregar geolocalización -->
+                                        {% if session.location %}
+                                            {{ session.location }}
+                                        {% endif %}
+                                        {% endcomment %}
+                                    </small>
+                                </td>
+                                <td>
+                                    <small>
+                                        {% include "users/includes/session_info.html" with session=session %}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if session.logout_at %}
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-sign-out-alt"></i> {% trans "Cerrada" %}
+                                        </span>
+                                    {% elif session.is_expired %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-clock"></i> {% trans "Expirada" %}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-circle"></i> {% trans "Activa" %}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-info" data-bs-toggle="modal" 
+                                                data-bs-target="#session-detail-modal" 
+                                                data-session-id="{{ session.id }}"
+                                                title="{% trans 'Ver detalles' %}">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        {% if not session.logout_at and not session.is_expired %}
+                                            <button class="btn btn-outline-warning force-logout-btn" 
+                                                    data-session-id="{{ session.id }}"
+                                                    title="{% trans 'Forzar cierre' %}">
+                                                <i class="fas fa-sign-out-alt"></i>
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            {% if is_paginated %}
+                <nav aria-label="{% trans 'Paginación de sesiones' %}" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}">
+                                    {% trans "Anterior" %}
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{{ request.GET.urlencode }}&page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}">
+                                    {% trans "Siguiente" %}
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">{% trans "No hay sesiones" %}</h5>
+                <p class="text-muted">{% trans "No se encontraron sesiones con los filtros aplicados." %}</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal de detalles de sesión -->
+<div class="modal fade" id="session-detail-modal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-info-circle me-2"></i>{% trans "Detalles de Sesión" %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="session-detail-content">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">{% trans "Cargando..." %}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de exportación -->
+<div class="modal fade" id="export-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-download me-2"></i>{% trans "Exportar Sesiones" %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="export-form">
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Formato" %}</label>
+                        <select name="format" class="form-select">
+                            <option value="csv">CSV</option>
+                            <option value="excel">Excel</option>
+                            <option value="pdf">PDF</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Rango de fechas" %}</label>
+                        <div class="row">
+                            <div class="col-6">
+                                <input type="date" name="export_date_from" class="form-control">
+                            </div>
+                            <div class="col-6">
+                                <input type="date" name="export_date_to" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="include_current_filters" checked>
+                        <label class="form-check-label">
+                            {% trans "Incluir filtros actuales" %}
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    {% trans "Cancelar" %}
+                </button>
+                <button type="button" class="btn btn-primary" id="export-btn">
+                    <i class="fas fa-download me-2"></i>{% trans "Exportar" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Limpiar sesiones expiradas
+    document.getElementById('cleanup-sessions').addEventListener('click', function() {
+        if (confirm('{% trans "¿Desea limpiar todas las sesiones expiradas?" %}')) {
+            fetch('{% url "users:session_cleanup" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('{% trans "Error al limpiar sesiones" %}');
+                }
+            });
+        }
+    });
+
+    // Forzar cierre de sesión
+    document.querySelectorAll('.force-logout-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const sessionId = this.dataset.sessionId;
+            if (confirm('{% trans "¿Desea forzar el cierre de esta sesión?" %}')) {
+                fetch(`/users/sessions/${sessionId}/force-logout/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('{% trans "Error al cerrar sesión" %}');
+                    }
+                });
+            }
+        });
+    });
+
+    // Detalles de sesión
+    const sessionDetailModal = document.getElementById('session-detail-modal');
+    sessionDetailModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const sessionId = button.getAttribute('data-session-id');
+        
+        fetch(`/users/sessions/${sessionId}/detail/`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('session-detail-content').innerHTML = data.html;
+            })
+            .catch(error => {
+                document.getElementById('session-detail-content').innerHTML = 
+                    '<div class="alert alert-danger">{% trans "Error al cargar detalles" %}</div>';
+            });
+    });
+
+    // Exportar sesiones
+    document.getElementById('export-btn').addEventListener('click', function() {
+        const form = document.getElementById('export-form');
+        const formData = new FormData(form);
+        
+        // Agregar filtros actuales si está marcado
+        if (formData.get('include_current_filters')) {
+            const currentParams = new URLSearchParams(window.location.search);
+            for (const [key, value] of currentParams) {
+                formData.append(`current_${key}`, value);
+            }
+        }
+        
+        // Crear y enviar formulario de descarga
+        const downloadForm = document.createElement('form');
+        downloadForm.method = 'POST';
+        downloadForm.action = '{% url "users:session_export" %}';
+        
+        for (const [key, value] of formData) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = value;
+            downloadForm.appendChild(input);
+        }
+        
+        // CSRF Token
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = '{{ csrf_token }}';
+        downloadForm.appendChild(csrfInput);
+        
+        document.body.appendChild(downloadForm);
+        downloadForm.submit();
+        document.body.removeChild(downloadForm);
+        
+        // Cerrar modal
+        bootstrap.Modal.getInstance(document.getElementById('export-modal')).hide();
+    });
+});
+</script>
+{% endblock %}

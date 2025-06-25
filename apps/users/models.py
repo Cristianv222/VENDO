@@ -1,563 +1,633 @@
 """
-Modelos para el módulo de usuarios de VENDO.
-Incluye User personalizado, Roles, Permisos y Perfiles.
+Modelos del módulo Users
 """
-
+import uuid
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Permission as DjangoPermission
 from django.core.validators import RegexValidator
 from django.utils.translation import gettext_lazy as _
+from django.urls import reverse
 from django.conf import settings
-import uuid
-from datetime import datetime
 
-
-class Role(models.Model):
-    """
-    Modelo para gestionar roles de usuario en el sistema.
-    """
-    ROLE_TYPES = [
-        ('admin', _('Administrador')),
-        ('manager', _('Gerente')),
-        ('cashier', _('Cajero')),
-        ('inventory_manager', _('Encargado de Inventario')),
-        ('accountant', _('Contador')),
-        ('sales_rep', _('Vendedor')),
-        ('viewer', _('Solo Lectura')),
-    ]
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(_('Nombre'), max_length=50, unique=True)
-    code = models.CharField(
-        _('Código'), 
-        max_length=20, 
-        unique=True,
-        choices=ROLE_TYPES
-    )
-    description = models.TextField(_('Descripción'), blank=True)
-    is_active = models.BooleanField(_('Activo'), default=True)
-    created_at = models.DateTimeField(_('Creado en'), auto_now_add=True)
-    updated_at = models.DateTimeField(_('Actualizado en'), auto_now=True)
-
-    class Meta:
-        db_table = 'users_role'
-        verbose_name = _('Rol')
-        verbose_name_plural = _('Roles')
-        ordering = ['name']
-
-    def __str__(self):
-        return self.name
-
-    @property
-    def user_count(self):
-        """Cantidad de usuarios con este rol."""
-        return self.vendo_users.filter(is_active=True).count()
-
-
-class Permission(models.Model):
-    """
-    Modelo para gestionar permisos específicos del sistema VENDO.
-    """
-    PERMISSION_TYPES = [
-        # POS Permissions
-        ('pos_view', _('Ver POS')),
-        ('pos_create_sale', _('Crear Venta')),
-        ('pos_cancel_sale', _('Cancelar Venta')),
-        ('pos_manage_cash', _('Gestionar Caja')),
-        
-        # Inventory Permissions
-        ('inventory_view', _('Ver Inventario')),
-        ('inventory_create', _('Crear Productos')),
-        ('inventory_edit', _('Editar Productos')),
-        ('inventory_delete', _('Eliminar Productos')),
-        ('inventory_adjust', _('Ajustar Stock')),
-        
-        # Invoicing Permissions
-        ('invoice_view', _('Ver Facturas')),
-        ('invoice_create', _('Crear Facturas')),
-        ('invoice_edit', _('Editar Facturas')),
-        ('invoice_cancel', _('Anular Facturas')),
-        ('invoice_send_sri', _('Enviar a SRI')),
-        
-        # Reports Permissions
-        ('reports_view', _('Ver Reportes')),
-        ('reports_export', _('Exportar Reportes')),
-        ('reports_financial', _('Reportes Financieros')),
-        
-        # Admin Permissions
-        ('admin_users', _('Gestionar Usuarios')),
-        ('admin_settings', _('Configurar Sistema')),
-        ('admin_backup', _('Gestionar Respaldos')),
-    ]
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(_('Nombre'), max_length=100)
-    code = models.CharField(
-        _('Código'), 
-        max_length=50, 
-        unique=True,
-        choices=PERMISSION_TYPES
-    )
-    description = models.TextField(_('Descripción'), blank=True)
-    module = models.CharField(_('Módulo'), max_length=50)
-    is_active = models.BooleanField(_('Activo'), default=True)
-    created_at = models.DateTimeField(_('Creado en'), auto_now_add=True)
-
-    class Meta:
-        db_table = 'users_permission'
-        verbose_name = _('Permiso')
-        verbose_name_plural = _('Permisos')
-        ordering = ['module', 'name']
-
-    def __str__(self):
-        return f"{self.module} - {self.name}"
+from apps.core.models import BaseModel, Company, Branch
 
 
 class User(AbstractUser):
     """
-    Modelo de usuario personalizado para VENDO.
-    Extiende el usuario de Django con campos específicos del negocio.
+    Modelo de usuario personalizado
     """
-    USER_TYPES = [
-        ('admin', _('Administrador')),
-        ('employee', _('Empleado')),
-        ('customer', _('Cliente')),
-    ]
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(
+        primary_key=True, 
+        default=uuid.uuid4, 
+        editable=False,
+        verbose_name=_('ID')
+    )
     
-    # Sobrescribir campos de AbstractUser para evitar conflictos
+    # ✅ CORREGIR EMAIL PARA USERNAME_FIELD
+    email = models.EmailField(
+        _('email address'),
+        unique=True,  # ✅ AGREGADO: unique=True requerido para USERNAME_FIELD
+        error_messages={
+            'unique': _("Ya existe un usuario con este email."),
+        },
+    )
+    
+    # Información personal adicional
+    document_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('cedula', _('Cédula')),
+            ('pasaporte', _('Pasaporte')),
+            ('ruc', _('RUC')),
+        ],
+        default='cedula',
+        verbose_name=_('Tipo de documento')
+    )
+    document_number = models.CharField(
+        max_length=20,
+        unique=True,
+        verbose_name=_('Número de documento'),
+        validators=[
+            RegexValidator(
+                regex=r'^[\d\-]+$',
+                message=_('El número de documento solo puede contener números y guiones.'),
+            ),
+        ]
+    )
+    phone = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name=_('Teléfono'),
+        validators=[
+            RegexValidator(
+                regex=r'^[\d\+\-\(\)\s]+$',
+                message=_('Formato de teléfono inválido.'),
+            ),
+        ]
+    )
+    mobile = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name=_('Celular'),
+        validators=[
+            RegexValidator(
+                regex=r'^[\d\+\-\(\)\s]+$',
+                message=_('Formato de celular inválido.'),
+            ),
+        ]
+    )
+    
+    # Relaciones con empresa
+    companies = models.ManyToManyField(
+        Company,
+        through='UserCompany',
+        related_name='users',
+        verbose_name=_('Empresas')
+    )
+    
+    # Campos adicionales
+    avatar = models.ImageField(
+        upload_to='avatars/',
+        blank=True,
+        verbose_name=_('Avatar')
+    )
+    birth_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name=_('Fecha de nacimiento')
+    )
+    address = models.TextField(
+        blank=True,
+        verbose_name=_('Dirección')
+    )
+    
+    # Configuración de usuario
+    language = models.CharField(
+        max_length=10,
+        choices=[
+            ('es', _('Español')),
+            ('en', _('Inglés')),
+        ],
+        default='es',
+        verbose_name=_('Idioma')
+    )
+    timezone = models.CharField(
+        max_length=50,
+        default='America/Guayaquil',
+        verbose_name=_('Zona horaria')
+    )
+    
+    # Control de acceso
+    is_system_admin = models.BooleanField(
+        default=False,
+        verbose_name=_('Administrador del sistema')
+    )
+    force_password_change = models.BooleanField(
+        default=False,
+        verbose_name=_('Forzar cambio de contraseña')
+    )
+    password_changed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Contraseña cambiada el')
+    )
+    last_activity = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Última actividad')
+    )
+    
+    # Fechas de control
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_('Fecha de creación')
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_('Fecha de actualización')
+    )
+    
+    # ✅ CORREGIR CONFLICTOS DE RELATED_NAME
     groups = models.ManyToManyField(
         'auth.Group',
         verbose_name=_('groups'),
         blank=True,
-        help_text=_('The groups this user belongs to.'),
-        related_name='vendo_users',
+        help_text=_(
+            'The groups this user belongs to. A user will get all permissions '
+            'granted to each of their groups.'
+        ),
+        related_name='vendo_user_set',  # ✅ AGREGADO: related_name único
         related_query_name='vendo_user',
     )
+    
     user_permissions = models.ManyToManyField(
         'auth.Permission',
         verbose_name=_('user permissions'),
         blank=True,
         help_text=_('Specific permissions for this user.'),
-        related_name='vendo_users',
+        related_name='vendo_user_set',  # ✅ AGREGADO: related_name único
         related_query_name='vendo_user',
     )
     
-    # Información personal
-    document_type = models.CharField(
-        _('Tipo de Documento'),
-        max_length=10,
-        choices=[
-            ('cedula', _('Cédula')),
-            ('ruc', _('RUC')),
-            ('passport', _('Pasaporte')),
-        ],
-        default='cedula'
-    )
-    document_number = models.CharField(
-        _('Número de Documento'), 
-        max_length=20, 
-        unique=True,
-        validators=[
-            RegexValidator(
-                regex=r'^[0-9]+$',
-                message=_('Solo se permiten números.')
-            )
-        ]
-    )
-    phone = models.CharField(
-        _('Teléfono'), 
-        max_length=15, 
-        blank=True,
-        validators=[
-            RegexValidator(
-                regex=r'^\+?1?\d{9,15}$',
-                message=_('Formato de teléfono inválido.')
-            )
-        ]
-    )
-    address = models.TextField(_('Dirección'), blank=True)
+    # ✅ CONFIGURACIÓN PARA LOGIN CON EMAIL
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name', 'document_number']
     
-    # Información laboral
-    user_type = models.CharField(
-        _('Tipo de Usuario'),
-        max_length=20,
-        choices=USER_TYPES,
-        default='employee'
-    )
-    employee_code = models.CharField(
-        _('Código de Empleado'), 
-        max_length=20, 
-        blank=True, 
-        unique=True,
-        null=True
-    )
-    hire_date = models.DateField(_('Fecha de Contratación'), null=True, blank=True)
-    department = models.CharField(_('Departamento'), max_length=100, blank=True)
-    position = models.CharField(_('Cargo'), max_length=100, blank=True)
-    
-    # Relaciones con through_fields especificados para evitar ambigüedad
-    roles = models.ManyToManyField(
-        Role, 
-        through='UserRole',
-        through_fields=('user', 'role'),
-        related_name='vendo_users',
-        blank=True
-    )
-    permissions = models.ManyToManyField(
-        Permission,
-        through='UserPermission',
-        through_fields=('user', 'permission'),
-        related_name='vendo_users',
-        blank=True
-    )
-    
-    # Configuraciones
-    is_active = models.BooleanField(_('Activo'), default=True)
-    failed_login_attempts = models.PositiveIntegerField(
-        _('Intentos de Login Fallidos'), 
-        default=0
-    )
-    last_password_change = models.DateTimeField(
-        _('Último Cambio de Contraseña'), 
-        null=True, 
-        blank=True
-    )
-    force_password_change = models.BooleanField(
-        _('Forzar Cambio de Contraseña'), 
-        default=False
-    )
-    
-    # Timestamps
-    created_at = models.DateTimeField(_('Creado en'), auto_now_add=True)
-    updated_at = models.DateTimeField(_('Actualizado en'), auto_now=True)
-    last_activity = models.DateTimeField(_('Última Actividad'), null=True, blank=True)
-
     class Meta:
-        db_table = 'users_user'
         verbose_name = _('Usuario')
         verbose_name_plural = _('Usuarios')
-        ordering = ['-created_at']
-
-    def __str__(self):
-        return f"{self.get_full_name()} ({self.username})"
-
-    def save(self, *args, **kwargs):
-        # Generar código de empleado automáticamente si no existe
-        if not self.employee_code and self.user_type == 'employee':
-            self.employee_code = self.generate_employee_code()
-        super().save(*args, **kwargs)
-
-    def generate_employee_code(self):
-        """Genera un código único de empleado."""
-        year = datetime.now().year
-        count = User.objects.filter(
-            employee_code__startswith=f'EMP{year}',
-            user_type='employee'
-        ).count() + 1
-        return f'EMP{year}{count:04d}'
-
-    @property
-    def full_name(self):
-        """Retorna el nombre completo del usuario."""
-        return self.get_full_name() or self.username
-
-    @property
-    def primary_role(self):
-        """Retorna el rol principal del usuario."""
-        return self.roles.filter(is_active=True).first()
-
-    def has_permission(self, permission_code):
-        """Verifica si el usuario tiene un permiso específico."""
-        return self.permissions.filter(
-            code=permission_code, 
-            is_active=True
-        ).exists()
-
-    def has_role(self, role_code):
-        """Verifica si el usuario tiene un rol específico."""
-        return self.roles.filter(
-            code=role_code, 
-            is_active=True
-        ).exists()
-
-    def is_admin(self):
-        """Verifica si el usuario es administrador."""
-        return self.has_role('admin') or self.is_superuser
-
-    def can_access_module(self, module_name):
-        """Verifica si el usuario puede acceder a un módulo."""
-        return self.permissions.filter(
-            module=module_name,
-            is_active=True
-        ).exists()
-
-    def reset_failed_attempts(self):
-        """Resetea los intentos fallidos de login."""
-        self.failed_login_attempts = 0
-        self.save(update_fields=['failed_login_attempts'])
-
-    def increment_failed_attempts(self):
-        """Incrementa los intentos fallidos de login."""
-        self.failed_login_attempts += 1
-        self.save(update_fields=['failed_login_attempts'])
-
-    def is_account_locked(self):
-        """Verifica si la cuenta está bloqueada por intentos fallidos."""
-        max_attempts = getattr(settings, 'MAX_FAILED_LOGIN_ATTEMPTS', 5)
-        return self.failed_login_attempts >= max_attempts
-
-
-class UserRole(models.Model):
-    """
-    Modelo intermedio para la relación Usuario-Rol.
-    """
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    role = models.ForeignKey(Role, on_delete=models.CASCADE)
-    assigned_by = models.ForeignKey(
-        User, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        related_name='assigned_roles'
-    )
-    assigned_at = models.DateTimeField(_('Asignado en'), auto_now_add=True)
-    is_active = models.BooleanField(_('Activo'), default=True)
-
-    class Meta:
-        db_table = 'users_user_role'
-        unique_together = ['user', 'role']
-        verbose_name = _('Rol de Usuario')
-        verbose_name_plural = _('Roles de Usuario')
-
-    def __str__(self):
-        return f"{self.user.username} - {self.role.name}"
-
-
-class UserPermission(models.Model):
-    """
-    Modelo intermedio para la relación Usuario-Permiso.
-    """
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    permission = models.ForeignKey(Permission, on_delete=models.CASCADE)
-    granted_by = models.ForeignKey(
-        User, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        related_name='granted_permissions'
-    )
-    granted_at = models.DateTimeField(_('Otorgado en'), auto_now_add=True)
-    is_active = models.BooleanField(_('Activo'), default=True)
-
-    class Meta:
-        db_table = 'users_user_permission'
-        unique_together = ['user', 'permission']
-        verbose_name = _('Permiso de Usuario')
-        verbose_name_plural = _('Permisos de Usuario')
-
-    def __str__(self):
-        return f"{self.user.username} - {self.permission.name}"
-
-
-class UserProfile(models.Model):
-    """
-    Perfil extendido del usuario con configuraciones adicionales.
-    """
-    THEMES = [
-        ('light', _('Claro')),
-        ('dark', _('Oscuro')),
-        ('auto', _('Automático')),
-    ]
-
-    LANGUAGES = [
-        ('es', _('Español')),
-        ('en', _('English')),
-    ]
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.OneToOneField(
-        User, 
-        on_delete=models.CASCADE, 
-        related_name='profile'
-    )
+        db_table = 'users_user'
+        indexes = [
+            models.Index(fields=['email']),
+            models.Index(fields=['document_number']),
+            models.Index(fields=['is_active', 'is_staff']),
+            models.Index(fields=['created_at']),
+        ]
     
-    # Información adicional
-    avatar = models.ImageField(
-        _('Avatar'), 
-        upload_to='avatars/', 
-        blank=True, 
-        null=True
-    )
-    birth_date = models.DateField(_('Fecha de Nacimiento'), null=True, blank=True)
-    bio = models.TextField(_('Biografía'), blank=True, max_length=500)
-    
-    # Preferencias
-    theme = models.CharField(
-        _('Tema'), 
-        max_length=10, 
-        choices=THEMES, 
-        default='light'
-    )
-    language = models.CharField(
-        _('Idioma'), 
-        max_length=5, 
-        choices=LANGUAGES, 
-        default='es'
-    )
-    timezone = models.CharField(
-        _('Zona Horaria'), 
-        max_length=50, 
-        default='America/Guayaquil'
-    )
-    
-    # Configuraciones de notificación
-    email_notifications = models.BooleanField(
-        _('Notificaciones por Email'), 
-        default=True
-    )
-    sms_notifications = models.BooleanField(
-        _('Notificaciones por SMS'), 
-        default=False
-    )
-    push_notifications = models.BooleanField(
-        _('Notificaciones Push'), 
-        default=True
-    )
-    
-    # Configuraciones del POS
-    default_pos_session_timeout = models.PositiveIntegerField(
-        _('Timeout de Sesión POS (minutos)'), 
-        default=60
-    )
-    auto_print_receipts = models.BooleanField(
-        _('Imprimir Recibos Automáticamente'), 
-        default=True
-    )
-    
-    # Timestamps
-    created_at = models.DateTimeField(_('Creado en'), auto_now_add=True)
-    updated_at = models.DateTimeField(_('Actualizado en'), auto_now=True)
-
-    class Meta:
-        db_table = 'users_user_profile'
-        verbose_name = _('Perfil de Usuario')
-        verbose_name_plural = _('Perfiles de Usuario')
-
     def __str__(self):
-        return f"Perfil de {self.user.username}"
-
-    @property
-    def age(self):
-        """Calcula la edad del usuario."""
-        if self.birth_date:
-            from datetime import date
-            today = date.today()
-            return today.year - self.birth_date.year - (
-                (today.month, today.day) < (self.birth_date.month, self.birth_date.day)
-            )
-        return None
-
-
-class UserSession(models.Model):
-    """
-    Modelo para gestionar sesiones activas de usuarios.
-    """
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sessions')
-    session_key = models.CharField(_('Clave de Sesión'), max_length=40, unique=True)
-    ip_address = models.GenericIPAddressField(_('Dirección IP'))
-    user_agent = models.TextField(_('User Agent'), blank=True)
-    location = models.CharField(_('Ubicación'), max_length=100, blank=True)
-    is_active = models.BooleanField(_('Activa'), default=True)
-    created_at = models.DateTimeField(_('Creada en'), auto_now_add=True)
-    last_activity = models.DateTimeField(_('Última Actividad'), auto_now=True)
-
-    class Meta:
-        db_table = 'users_user_session'
-        verbose_name = _('Sesión de Usuario')
-        verbose_name_plural = _('Sesiones de Usuario')
-        ordering = ['-last_activity']
-
-    def __str__(self):
-        return f"{self.user.username} - {self.ip_address}"
-
-    @property
-    def is_expired(self):
-        """Verifica si la sesión ha expirado."""
-        from datetime import timedelta
-        from django.utils import timezone
+        return f"{self.get_full_name()} ({self.email})"
+    
+    def clean(self):
+        """Validaciones personalizadas"""
+        from django.core.exceptions import ValidationError
         
-        timeout = getattr(settings, 'SESSION_TIMEOUT_MINUTES', 60)
-        expiry_time = self.last_activity + timedelta(minutes=timeout)
-        return timezone.now() > expiry_time
-    """
-Actualización del modelo User para incluir campos faltantes.
-Agregar estos campos al modelo User existente.
-"""
+        super().clean()
+        
+        # Validar email
+        if self.email:
+            self.email = self.email.lower().strip()
+        
+        # Validar documento
+        if self.document_type == 'cedula' and self.document_number:
+            if len(self.document_number) != 10:
+                raise ValidationError({
+                    'document_number': _('La cédula debe tener 10 dígitos.')
+                })
+        elif self.document_type == 'ruc' and self.document_number:
+            if len(self.document_number) != 13:
+                raise ValidationError({
+                    'document_number': _('El RUC debe tener 13 dígitos.')
+                })
+    
+    def save(self, *args, **kwargs):
+        """Sobrescribir save para lógica adicional"""
+        self.full_clean()  # Ejecutar validaciones
+        
+        # Normalizar email
+        if self.email:
+            self.email = self.email.lower().strip()
+        
+        super().save(*args, **kwargs)
+        
+        # Crear perfil automáticamente
+        if not hasattr(self, 'profile'):
+            UserProfile.objects.create(user=self)
+    
+    def get_absolute_url(self):
+        return reverse('users:user_detail', kwargs={'pk': self.pk})
+    
+    def get_full_name(self):
+        """Retorna el nombre completo del usuario"""
+        return f"{self.first_name} {self.last_name}".strip() or self.username
+    
+    def get_companies(self):
+        """Retorna las empresas a las que pertenece el usuario"""
+        return self.companies.filter(is_active=True)
+    
+    def has_company_access(self, company):
+        """Verifica si el usuario tiene acceso a una empresa"""
+        if self.is_system_admin:
+            return True
+        return self.companies.filter(id=company.id, is_active=True).exists()
+    
+    def get_roles_for_company(self, company):
+        """Obtiene los roles del usuario para una empresa específica"""
+        return Role.objects.filter(
+            usercompany__user=self,
+            usercompany__company=company
+        )
+    
+    def has_permission_in_company(self, permission_codename, company):
+        """Verifica si el usuario tiene un permiso específico en una empresa"""
+        if self.is_system_admin:
+            return True
+        
+        # Verificar permisos a través de roles
+        roles = self.get_roles_for_company(company)
+        return Permission.objects.filter(
+            roles__in=roles,
+            codename=permission_codename
+        ).exists()
+    
+    def get_user_company(self, company):
+        """Obtiene la relación UserCompany para una empresa específica"""
+        try:
+            return UserCompany.objects.get(user=self, company=company)
+        except UserCompany.DoesNotExist:
+            return None
+    
+    def is_company_admin(self, company):
+        """Verifica si el usuario es administrador de una empresa"""
+        if self.is_system_admin:
+            return True
+        
+        user_company = self.get_user_company(company)
+        return user_company and user_company.is_admin
+    
+    def get_accessible_branches(self, company):
+        """Obtiene las sucursales a las que el usuario tiene acceso en una empresa"""
+        user_company = self.get_user_company(company)
+        if not user_company:
+            return Branch.objects.none()
+        
+        if user_company.is_admin:
+            return company.branches.filter(is_active=True)
+        
+        return user_company.branches.filter(is_active=True)
 
-# AGREGAR ESTOS CAMPOS AL MODELO USER EXISTENTE:
-    # CAMPOS ADICIONALES REQUERIDOS:
-    
-    # Configuración de seguridad
-    failed_login_attempts = models.PositiveIntegerField(
-        _('Intentos fallidos'),
-        default=0,
-        help_text=_('Número de intentos de login fallidos')
+
+class Role(BaseModel):
+    """
+    Modelo para roles de usuario
+    """
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name=_('Nombre')
+    )
+    description = models.TextField(
+        blank=True,
+        verbose_name=_('Descripción')
     )
     
-    force_password_change = models.BooleanField(
-        _('Forzar cambio de contraseña'),
+    # Permisos del rol
+    permissions = models.ManyToManyField(
+        'Permission',
+        blank=True,
+        related_name='roles',
+        verbose_name=_('Permisos')
+    )
+    
+    # Configuración
+    is_system_role = models.BooleanField(
         default=False,
-        help_text=_('Usuario debe cambiar contraseña en siguiente login')
+        verbose_name=_('Rol del sistema')
+    )
+    color = models.CharField(
+        max_length=7,
+        default='#007bff',
+        verbose_name=_('Color'),
+        validators=[
+            RegexValidator(
+                regex=r'^#[0-9A-Fa-f]{6}$',
+                message=_('Color debe ser un código hexadecimal válido (ej: #007bff).'),
+            ),
+        ]
     )
     
-    last_password_change = models.DateTimeField(
-        _('Último cambio de contraseña'),
+    class Meta:
+        verbose_name = _('Rol')
+        verbose_name_plural = _('Roles')
+        db_table = 'users_role'
+        indexes = [
+            models.Index(fields=['name']),
+            models.Index(fields=['is_active']),
+        ]
+    
+    def __str__(self):
+        return self.name
+    
+    def get_absolute_url(self):
+        return reverse('users:role_detail', kwargs={'pk': self.pk})
+    
+    @property
+    def users_count(self):
+        """Retorna el número de usuarios con este rol"""
+        return self.user_companies.count()
+
+
+class Permission(BaseModel):
+    """
+    Modelo para permisos específicos del sistema
+    """
+    name = models.CharField(
+        max_length=100,
+        verbose_name=_('Nombre')
+    )
+    codename = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name=_('Código'),
+        validators=[
+            RegexValidator(
+                regex=r'^[a-z0-9_]+$',
+                message=_('El código solo puede contener letras minúsculas, números y guiones bajos.'),
+            ),
+        ]
+    )
+    description = models.TextField(
         blank=True,
-        null=True
+        verbose_name=_('Descripción')
     )
     
-    last_activity = models.DateTimeField(
-        _('Última actividad'),
+    # Categorización
+    module = models.CharField(
+        max_length=50,
+        choices=[
+            ('core', _('Core')),
+            ('users', _('Usuarios')),
+            ('pos', _('Punto de Venta')),
+            ('inventory', _('Inventario')),
+            ('invoicing', _('Facturación')),
+            ('purchases', _('Compras')),
+            ('accounting', _('Contabilidad')),
+            ('quotations', _('Cotizaciones')),
+            ('reports', _('Reportes')),
+            ('settings', _('Configuraciones')),
+        ],
+        verbose_name=_('Módulo')
+    )
+    
+    class Meta:
+        verbose_name = _('Permiso')
+        verbose_name_plural = _('Permisos')
+        db_table = 'users_permission'
+        unique_together = [('codename', 'module')]
+        indexes = [
+            models.Index(fields=['module']),
+            models.Index(fields=['codename']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} ({self.codename})"
+
+
+class UserCompany(BaseModel):
+    """
+    Modelo intermedio para la relación usuario-empresa con roles
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name=_('Usuario')
+    )
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        verbose_name=_('Empresa')
+    )
+    
+    # Roles en la empresa
+    roles = models.ManyToManyField(
+        Role,
         blank=True,
-        null=True
+        related_name='user_companies',
+        verbose_name=_('Roles')
     )
     
-    # Información adicional
-    document_number = models.CharField(
-        _('Número de documento'),
+    # Sucursales a las que tiene acceso
+    branches = models.ManyToManyField(
+        Branch,
+        blank=True,
+        related_name='user_companies',
+        verbose_name=_('Sucursales')
+    )
+    
+    # Configuración
+    is_admin = models.BooleanField(
+        default=False,
+        verbose_name=_('Administrador de empresa')
+    )
+    
+    # Fechas específicas de la relación
+    joined_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_('Fecha de incorporación')
+    )
+    
+    class Meta:
+        verbose_name = _('Usuario-Empresa')
+        verbose_name_plural = _('Usuarios-Empresas')
+        db_table = 'users_user_company'
+        unique_together = [('user', 'company')]
+        indexes = [
+            models.Index(fields=['user', 'company']),
+            models.Index(fields=['is_admin']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.company.business_name}"
+    
+    def clean(self):
+        """Validaciones personalizadas"""
+        from django.core.exceptions import ValidationError
+        
+        super().clean()
+        
+        # Validar que las sucursales pertenezcan a la empresa
+        if self.pk and self.branches.exists():
+            invalid_branches = self.branches.exclude(company=self.company)
+            if invalid_branches.exists():
+                raise ValidationError({
+                    'branches': _('Todas las sucursales deben pertenecer a la empresa seleccionada.')
+                })
+
+
+class UserProfile(BaseModel):
+    """
+    Perfil extendido del usuario
+    """
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='profile',
+        verbose_name=_('Usuario')
+    )
+    
+    # Información profesional
+    position = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name=_('Cargo')
+    )
+    department = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name=_('Departamento')
+    )
+    employee_code = models.CharField(
         max_length=20,
         blank=True,
-        help_text=_('Cédula, RUC o pasaporte')
+        unique=True,
+        null=True,
+        verbose_name=_('Código de empleado')
     )
     
-    department = models.CharField(
-        _('Departamento'),
-        max_length=100,
-        blank=True
+    # Configuraciones de la interfaz
+    theme = models.CharField(
+        max_length=20,
+        choices=[
+            ('light', _('Claro')),
+            ('dark', _('Oscuro')),
+            ('auto', _('Automático')),
+        ],
+        default='light',
+        verbose_name=_('Tema')
+    )
+    sidebar_collapsed = models.BooleanField(
+        default=False,
+        verbose_name=_('Sidebar colapsado')
     )
     
-    # MÉTODOS ADICIONALES:
+    # Notificaciones
+    email_notifications = models.BooleanField(
+        default=True,
+        verbose_name=_('Notificaciones por email')
+    )
+    sms_notifications = models.BooleanField(
+        default=False,
+        verbose_name=_('Notificaciones por SMS')
+    )
+    system_notifications = models.BooleanField(
+        default=True,
+        verbose_name=_('Notificaciones del sistema')
+    )
     
-    def reset_failed_attempts(self):
-        """Resetear intentos fallidos de login."""
-        self.failed_login_attempts = 0
-        self.save(update_fields=['failed_login_attempts'])
+    # Información adicional
+    bio = models.TextField(
+        blank=True,
+        verbose_name=_('Biografía')
+    )
+    social_media = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('Redes sociales')
+    )
     
-    def increment_failed_attempts(self):
-        """Incrementar intentos fallidos de login."""
-        self.failed_login_attempts += 1
-        self.save(update_fields=['failed_login_attempts'])
+    class Meta:
+        verbose_name = _('Perfil de usuario')
+        verbose_name_plural = _('Perfiles de usuario')
+        db_table = 'users_user_profile'
     
-    def is_account_locked(self):
-        """Verificar si la cuenta está bloqueada por intentos fallidos."""
-        from django.conf import settings
-        max_attempts = getattr(settings, 'MAX_FAILED_LOGIN_ATTEMPTS', 5)
-        return self.failed_login_attempts >= max_attempts
+    def __str__(self):
+        return f"Perfil de {self.user.get_full_name()}"
+
+
+class UserSession(BaseModel):
+    """
+    Modelo para gestionar sesiones de usuario
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='sessions',
+        verbose_name=_('Usuario')
+    )
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        verbose_name=_('Empresa')
+    )
+    branch = models.ForeignKey(
+        Branch,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        verbose_name=_('Sucursal')
+    )
+    
+    # Información de la sesión
+    session_key = models.CharField(
+        max_length=40,
+        unique=True,
+        verbose_name=_('Clave de sesión')
+    )
+    ip_address = models.GenericIPAddressField(
+        verbose_name=_('Dirección IP')
+    )
+    user_agent = models.TextField(
+        blank=True,
+        verbose_name=_('User Agent')
+    )
+    
+    # Control de tiempo
+    login_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_('Inicio de sesión')
+    )
+    last_activity = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_('Última actividad')
+    )
+    logout_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Cierre de sesión')
+    )
+    
+    # Estado
+    is_expired = models.BooleanField(
+        default=False,
+        verbose_name=_('Expirada')
+    )
+    
+    class Meta:
+        verbose_name = _('Sesión de usuario')
+        verbose_name_plural = _('Sesiones de usuario')
+        db_table = 'users_user_session'
+        indexes = [
+            models.Index(fields=['user', 'login_at']),
+            models.Index(fields=['session_key']),
+            models.Index(fields=['is_expired']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.login_at}"
     
     @property
-    def full_name(self):
-        """Propiedad para compatibilidad."""
-        return self.get_full_name()
+    def duration(self):
+        """Retorna la duración de la sesión"""
+        end_time = self.logout_at or self.last_activity
+        return end_time - self.login_at if end_time else None

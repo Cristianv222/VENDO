@@ -1,86 +1,60 @@
 """
-Señales para el módulo de usuarios de VENDO.
+Señales del módulo Users
 """
-
-from django.db.models.signals import post_save, pre_save, post_delete
+from django.db.models.signals import post_save, post_delete, pre_save
 from django.dispatch import receiver
-from django.contrib.auth.signals import user_logged_in, user_logged_out, user_login_failed
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.conf import settings
+from django.contrib.auth.signals import user_logged_in, user_logged_out
 from django.utils import timezone
-from django.contrib.auth.models import Group
-import logging
+from django.core.mail import send_mail
+from django.conf import settings
+from django.template.loader import render_to_string
 
 from .models import User, UserProfile, UserSession, Role, Permission
-
-logger = logging.getLogger('vendo.users')
+from apps.core.models import AuditLog
 
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     """
-    Crear perfil de usuario automáticamente cuando se crea un usuario.
+    Crear perfil automáticamente cuando se crea un usuario
     """
     if created:
-        try:
-            UserProfile.objects.create(user=instance)
-            logger.info(f"Perfil creado para usuario: {instance.username}")
-            
-            # Asignar rol por defecto según el tipo de usuario
-            if instance.user_type == 'employee':
-                try:
-                    default_role = Role.objects.get(code='employee', is_active=True)
-                    instance.roles.add(default_role)
-                    logger.info(f"Rol por defecto asignado a {instance.username}: {default_role.name}")
-                except Role.DoesNotExist:
-                    logger.warning(f"Rol por defecto 'employee' no encontrado para {instance.username}")
-            
-            # Enviar email de bienvenida si está configurado
-            if hasattr(settings, 'SEND_WELCOME_EMAIL') and settings.SEND_WELCOME_EMAIL:
-                send_welcome_email(instance)
-                
-        except Exception as e:
-            logger.error(f"Error creando perfil para {instance.username}: {str(e)}")
+        UserProfile.objects.get_or_create(user=instance)
 
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     """
-    Guardar perfil cuando se guarda el usuario.
+    Guardar perfil cuando se guarda el usuario
     """
-    try:
-        if hasattr(instance, 'profile'):
-            instance.profile.save()
-    except UserProfile.DoesNotExist:
-        # Si no existe perfil, crearlo
-        UserProfile.objects.create(user=instance)
-        logger.info(f"Perfil creado tardíamente para usuario: {instance.username}")
+    if hasattr(instance, 'profile'):
+        instance.profile.save()
 
 
 @receiver(pre_save, sender=User)
 def user_pre_save(sender, instance, **kwargs):
     """
-    Acciones antes de guardar un usuario.
+    Acciones antes de guardar usuario
     """
-    # Si es una actualización (no creación)
     if instance.pk:
         try:
-            old_user = User.objects.get(pk=instance.pk)
+            old_instance = User.objects.get(pk=instance.pk)
             
-            # Detectar cambio de estado activo/inactivo
-            if old_user.is_active != instance.is_active:
+            # Detectar cambio de contraseña
+            if old_instance.password != instance.password:
+                instance.password_changed_at = timezone.now()
+            
+            # Detectar cambio de estado activo
+            if old_instance.is_active != instance.is_active:
                 if not instance.is_active:
-                    # Usuario desactivado - terminar sesiones activas
-                    UserSession.objects.filter(user=instance, is_active=True).update(is_active=False)
-                    logger.info(f"Sesiones terminadas para usuario desactivado: {instance.username}")
-                
-                logger.info(f"Estado de usuario cambiado: {instance.username} - Activo: {instance.is_active}")
-            
-            # Detectar cambio de email
-            if old_user.email != instance.email:
-                logger.info(f"Email cambiado para {instance.username}: {old_user.email} -> {instance.email}")
-                
+                    # Expirar todas las sesiones activas
+                    UserSession.objects.filter(
+                        user=instance,
+                        logout_at__isnull=True
+                    ).update(
+                        is_expired=True,
+                        logout_at=timezone.now()
+                    )
         except User.DoesNotExist:
             pass
 
@@ -88,123 +62,168 @@ def user_pre_save(sender, instance, **kwargs):
 @receiver(user_logged_in)
 def user_logged_in_handler(sender, request, user, **kwargs):
     """
-    Manejar evento de login exitoso.
+    Manejar inicio de sesión
     """
-    try:
-        # Actualizar última actividad
-        user.last_activity = timezone.now()
-        user.save(update_fields=['last_activity'])
-        
-        # Registrar sesión
-        session_key = request.session.session_key
-        ip_address = get_client_ip(request)
-        user_agent = request.META.get('HTTP_USER_AGENT', '')
-        
-        UserSession.objects.create(
+    # Actualizar última actividad
+    user.last_activity = timezone.now()
+    user.save(update_fields=['last_activity'])
+    
+    # Crear o actualizar sesión
+    session_key = request.session.session_key
+    if session_key:
+        UserSession.objects.update_or_create(
             user=user,
             session_key=session_key,
-            ip_address=ip_address,
-            user_agent=user_agent,
-            location=get_location_from_ip(ip_address)
+            defaults={
+                'ip_address': get_client_ip(request),
+                'user_agent': request.META.get('HTTP_USER_AGENT', ''),
+                'login_at': timezone.now(),
+                'last_activity': timezone.now(),
+                'is_expired': False,
+                'logout_at': None,
+            }
         )
-        
-        logger.info(f"Login exitoso: {user.username} desde {ip_address}")
-        
-        # Notificar login desde nueva ubicación/dispositivo (opcional)
-        if should_notify_new_login(user, ip_address, user_agent):
-            notify_new_login(user, ip_address, user_agent)
-            
-    except Exception as e:
-        logger.error(f"Error en señal de login: {str(e)}")
+    
+    # Registrar en auditoría
+    try:
+        AuditLog.objects.create(
+            user=user,
+            action='LOGIN',
+            object_repr=f"Inicio de sesión - {user.get_full_name()}",
+            ip_address=get_client_ip(request),
+            user_agent=request.META.get('HTTP_USER_AGENT', ''),
+            changes={'login_time': timezone.now().isoformat()}
+        )
+    except Exception:
+        pass  # No fallar el login por problemas de auditoría
 
 
 @receiver(user_logged_out)
 def user_logged_out_handler(sender, request, user, **kwargs):
     """
-    Manejar evento de logout.
+    Manejar cierre de sesión
     """
-    try:
-        if user:
-            # Marcar sesión como inactiva
-            session_key = request.session.session_key
+    if user:
+        session_key = request.session.session_key
+        if session_key:
+            # Marcar sesión como cerrada
             UserSession.objects.filter(
                 user=user,
                 session_key=session_key,
-                is_active=True
-            ).update(is_active=False)
-            
-            logger.info(f"Logout: {user.username}")
-            
-    except Exception as e:
-        logger.error(f"Error en señal de logout: {str(e)}")
+                logout_at__isnull=True
+            ).update(
+                logout_at=timezone.now()
+            )
+        
+        # Registrar en auditoría
+        try:
+            AuditLog.objects.create(
+                user=user,
+                action='LOGOUT',
+                object_repr=f"Cierre de sesión - {user.get_full_name()}",
+                ip_address=get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                changes={'logout_time': timezone.now().isoformat()}
+            )
+        except Exception:
+            pass
 
 
-@receiver(user_login_failed)
-def user_login_failed_handler(sender, credentials, request, **kwargs):
+@receiver(post_save, sender=User)
+def send_welcome_email(sender, instance, created, **kwargs):
     """
-    Manejar intentos de login fallidos.
+    Enviar email de bienvenida a usuarios nuevos
     """
-    try:
-        username = credentials.get('username')
-        ip_address = get_client_ip(request)
-        
-        if username:
-            try:
-                user = User.objects.get(username=username)
-                user.increment_failed_attempts()
+    if created and instance.email:
+        try:
+            # Solo enviar si está configurado
+            if hasattr(settings, 'SEND_WELCOME_EMAIL') and settings.SEND_WELCOME_EMAIL:
+                subject = f'Bienvenido a {settings.SITE_NAME or "VENDO"}'
                 
-                logger.warning(f"Login fallido: {username} desde {ip_address} - Intentos: {user.failed_login_attempts}")
+                html_message = render_to_string('users/emails/welcome.html', {
+                    'user': instance,
+                    'site_name': settings.SITE_NAME or 'VENDO',
+                    'login_url': f"{settings.SITE_URL}/users/login/" if hasattr(settings, 'SITE_URL') else None
+                })
                 
-                # Notificar si la cuenta se bloquea
-                if user.is_account_locked():
-                    notify_account_locked(user)
-                    logger.error(f"Cuenta bloqueada: {username} por demasiados intentos fallidos")
-                    
-            except User.DoesNotExist:
-                logger.warning(f"Intento de login con usuario inexistente: {username} desde {ip_address}")
-        
-    except Exception as e:
-        logger.error(f"Error en señal de login fallido: {str(e)}")
+                send_mail(
+                    subject=subject,
+                    message=f'Bienvenido {instance.get_full_name()}, su cuenta ha sido creada exitosamente.',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[instance.email],
+                    html_message=html_message,
+                    fail_silently=True
+                )
+        except Exception:
+            pass  # No fallar la creación por problemas de email
 
 
 @receiver(post_save, sender=Role)
-def role_created(sender, instance, created, **kwargs):
+def role_audit_log(sender, instance, created, **kwargs):
     """
-    Acciones al crear un nuevo rol.
-    """
-    if created:
-        logger.info(f"Nuevo rol creado: {instance.name} ({instance.code})")
-        
-        # Crear grupo de Django correspondiente si no existe
-        try:
-            group, group_created = Group.objects.get_or_create(name=instance.name)
-            if group_created:
-                logger.info(f"Grupo de Django creado para rol: {instance.name}")
-        except Exception as e:
-            logger.error(f"Error creando grupo para rol {instance.name}: {str(e)}")
-
-
-@receiver(post_delete, sender=User)
-def user_deleted(sender, instance, **kwargs):
-    """
-    Limpiar datos relacionados cuando se elimina un usuario.
+    Registrar cambios en roles
     """
     try:
-        # Eliminar sesiones
-        UserSession.objects.filter(user=instance).delete()
-        
-        logger.info(f"Usuario eliminado: {instance.username}")
-        
-    except Exception as e:
-        logger.error(f"Error en cleanup de usuario eliminado: {str(e)}")
+        action = 'CREATE' if created else 'UPDATE'
+        AuditLog.objects.create(
+            action=action,
+            object_repr=f"Rol: {instance.name}",
+            changes={
+                'role_id': str(instance.id),
+                'role_name': instance.name,
+                'is_active': instance.is_active,
+                'permissions_count': instance.permissions.count()
+            }
+        )
+    except Exception:
+        pass
 
 
-# ==========================================
-# FUNCIONES AUXILIARES
-# ==========================================
+@receiver(post_delete, sender=Role)
+def role_delete_audit_log(sender, instance, **kwargs):
+    """
+    Registrar eliminación de roles
+    """
+    try:
+        AuditLog.objects.create(
+            action='DELETE',
+            object_repr=f"Rol eliminado: {instance.name}",
+            changes={
+                'role_id': str(instance.id),
+                'role_name': instance.name,
+                'deleted_at': timezone.now().isoformat()
+            }
+        )
+    except Exception:
+        pass
+
+
+@receiver(post_save, sender=Permission)
+def permission_audit_log(sender, instance, created, **kwargs):
+    """
+    Registrar cambios en permisos
+    """
+    try:
+        action = 'CREATE' if created else 'UPDATE'
+        AuditLog.objects.create(
+            action=action,
+            object_repr=f"Permiso: {instance.name}",
+            changes={
+                'permission_id': str(instance.id),
+                'permission_name': instance.name,
+                'codename': instance.codename,
+                'module': instance.module,
+                'is_active': instance.is_active
+            }
+        )
+    except Exception:
+        pass
+
 
 def get_client_ip(request):
-    """Obtener la IP real del cliente."""
+    """
+    Obtener IP del cliente
+    """
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
         ip = x_forwarded_for.split(',')[0]
@@ -213,139 +232,22 @@ def get_client_ip(request):
     return ip
 
 
-def get_location_from_ip(ip_address):
+# Limpiar sesiones expiradas automáticamente
+@receiver(user_logged_in)
+def cleanup_expired_sessions(sender, request, user, **kwargs):
     """
-    Obtener ubicación aproximada desde la IP.
-    Implementación básica - puedes integrar servicios como GeoIP.
-    """
-    # Por ahora retornar vacío
-    # En producción podrías usar:
-    # - Django GeoIP2
-    # - Servicios externos como ipapi.com
-    return ""
-
-
-def should_notify_new_login(user, ip_address, user_agent):
-    """
-    Determinar si se debe notificar sobre un nuevo login.
-    """
-    # Verificar si es la primera vez desde esta IP
-    recent_sessions = UserSession.objects.filter(
-        user=user,
-        ip_address=ip_address,
-        created_at__gte=timezone.now() - timezone.timedelta(days=30)
-    ).exists()
-    
-    return not recent_sessions
-
-
-def send_welcome_email(user):
-    """
-    Enviar email de bienvenida a nuevos usuarios.
+    Limpiar sesiones expiradas del usuario al iniciar sesión
     """
     try:
-        if user.email:
-            subject = f'Bienvenido a {getattr(settings, "COMPANY_NAME", "VENDO")}'
-            html_message = render_to_string('emails/welcome.html', {
-                'user': user,
-                'company_name': getattr(settings, 'COMPANY_NAME', 'VENDO'),
-                'login_url': getattr(settings, 'FRONTEND_URL', '') + '/login'
-            })
-            
-            send_mail(
-                subject=subject,
-                message='',  # Texto plano vacío
-                html_message=html_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                fail_silently=True
-            )
-            
-            logger.info(f"Email de bienvenida enviado a: {user.email}")
-            
-    except Exception as e:
-        logger.error(f"Error enviando email de bienvenida a {user.email}: {str(e)}")
-
-
-def notify_new_login(user, ip_address, user_agent):
-    """
-    Notificar al usuario sobre un nuevo login.
-    """
-    try:
-        if user.email and user.profile.email_notifications:
-            subject = 'Nuevo acceso a tu cuenta'
-            html_message = render_to_string('emails/new_login.html', {
-                'user': user,
-                'ip_address': ip_address,
-                'user_agent': user_agent,
-                'login_time': timezone.now(),
-                'company_name': getattr(settings, 'COMPANY_NAME', 'VENDO')
-            })
-            
-            send_mail(
-                subject=subject,
-                message='',
-                html_message=html_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                fail_silently=True
-            )
-            
-            logger.info(f"Notificación de nuevo login enviada a: {user.email}")
-            
-    except Exception as e:
-        logger.error(f"Error enviando notificación de nuevo login: {str(e)}")
-
-
-def notify_account_locked(user):
-    """
-    Notificar al usuario que su cuenta ha sido bloqueada.
-    """
-    try:
-        if user.email:
-            subject = 'Cuenta bloqueada por seguridad'
-            html_message = render_to_string('emails/account_locked.html', {
-                'user': user,
-                'max_attempts': getattr(settings, 'MAX_FAILED_LOGIN_ATTEMPTS', 5),
-                'company_name': getattr(settings, 'COMPANY_NAME', 'VENDO'),
-                'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@vendo.com')
-            })
-            
-            send_mail(
-                subject=subject,
-                message='',
-                html_message=html_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                fail_silently=True
-            )
-            
-            logger.info(f"Notificación de cuenta bloqueada enviada a: {user.email}")
-            
-    except Exception as e:
-        logger.error(f"Error enviando notificación de cuenta bloqueada: {str(e)}")
-
-
-def cleanup_expired_sessions():
-    """
-    Limpiar sesiones expiradas.
-    Esta función puede ser llamada por un comando de gestión o tarea de Celery.
-    """
-    try:
-        expired_sessions = UserSession.objects.filter(
-            last_activity__lt=timezone.now() - timezone.timedelta(
-                minutes=getattr(settings, 'SESSION_TIMEOUT_MINUTES', 60)
-            ),
-            is_active=True
+        # Marcar como expiradas las sesiones antiguas (más de 30 días)
+        cutoff_date = timezone.now() - timezone.timedelta(days=30)
+        UserSession.objects.filter(
+            user=user,
+            last_activity__lt=cutoff_date,
+            logout_at__isnull=True
+        ).update(
+            is_expired=True,
+            logout_at=timezone.now()
         )
-        
-        count = expired_sessions.count()
-        expired_sessions.update(is_active=False)
-        
-        logger.info(f"Se marcaron {count} sesiones como expiradas")
-        
-        return count
-        
-    except Exception as e:
-        logger.error(f"Error limpiando sesiones expiradas: {str(e)}")
-        return 0
+    except Exception:
+        pass

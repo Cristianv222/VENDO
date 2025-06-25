@@ -251,48 +251,6 @@ def menu_context(request):
                 'url': 'core:dashboard',
                 'order': 1
             },
-            'pos': {
-                'title': 'Punto de Venta',
-                'icon': 'fas fa-cash-register',
-                'url': 'pos:dashboard',
-                'order': 2
-            },
-            'inventory': {
-                'title': 'Inventario',
-                'icon': 'fas fa-boxes',
-                'url': 'inventory:products',
-                'order': 3
-            },
-            'invoicing': {
-                'title': 'Facturación',
-                'icon': 'fas fa-file-invoice',
-                'url': 'invoicing:invoices',
-                'order': 4
-            },
-            'purchases': {
-                'title': 'Compras',
-                'icon': 'fas fa-shopping-cart',
-                'url': 'purchases:suppliers',
-                'order': 5
-            },
-            'accounting': {
-                'title': 'Contabilidad',
-                'icon': 'fas fa-calculator',
-                'url': 'accounting:accounts',
-                'order': 6
-            },
-            'reports': {
-                'title': 'Reportes',
-                'icon': 'fas fa-chart-bar',
-                'url': 'reports:dashboard',
-                'order': 7
-            },
-            'settings': {
-                'title': 'Configuración',
-                'icon': 'fas fa-cog',
-                'url': 'settings:company',
-                'order': 8
-            },
         }
         
         for module in user_modules:

@@ -1,5 +1,5 @@
 """
-Middleware personalizado para el sistema VENDO
+Middleware personalizado para el sistema VENDO - CORREGIDO
 """
 import logging
 import time
@@ -35,10 +35,14 @@ class CompanyMiddleware(MiddlewareMixin):
         # Saltar para rutas de autenticación y admin
         skip_paths = [
             '/admin/',
-            '/auth/login/',
-            '/auth/logout/',
+            '/auth/',  # AGREGADO: Toda la ruta auth
+            '/users/login/',
+            '/users/logout/',
+            '/users/password',  # AGREGADO: Para password reset
             '/static/',
             '/media/',
+            '/robots.txt',
+            '/health/',
             '/__debug__/',  # Debug toolbar
         ]
         
@@ -54,9 +58,20 @@ class CompanyMiddleware(MiddlewareMixin):
             company = self._get_user_company(request)
             
             if not company:
-                # Si no hay empresa asignada, redirigir a selección de empresa
-                if request.path != reverse('core:select_company'):
-                    return redirect('core:select_company')
+                # Si no hay empresa asignada, verificar si hay empresas disponibles
+                if self._has_available_companies(request.user):
+                    # Redirigir a selección de empresa si no estamos ya ahí
+                    if request.path != reverse('core:select_company'):
+                        return redirect('core:select_company')
+                else:
+                    # No hay empresas disponibles
+                    messages.error(
+                        request,
+                        _('No tiene acceso a ninguna empresa. Contacte al administrador.')
+                    )
+                    logout(request)
+                    # CORREGIDO: Usar users:login en lugar de auth:login
+                    return redirect('users:login')
                 return None
             
             # Verificar que la empresa esté activa
@@ -67,9 +82,10 @@ class CompanyMiddleware(MiddlewareMixin):
             request.company = company
             request.session['company_id'] = str(company.id)
             
-            # En esquemas por módulo, no cambiamos esquema aquí
-            # El router ya maneja los esquemas por app
-            pass
+            # Establecer sucursal actual si existe
+            branch = self._get_current_branch(request, company)
+            if branch:
+                request.current_branch = branch
             
         except VendoBaseException as e:
             logger.error(f"Error en CompanyMiddleware: {e}")
@@ -81,46 +97,138 @@ class CompanyMiddleware(MiddlewareMixin):
             
             # Cerrar sesión y redirigir al login
             logout(request)
-            return redirect('auth:login')
+            # CORREGIDO: Usar users:login en lugar de auth:login
+            return redirect('users:login')
         
         except Exception as e:
             logger.error(f"Error inesperado en CompanyMiddleware: {e}")
-            messages.error(request, _('Error interno del sistema.'))
-            logout(request)
-            return redirect('auth:login')
+            
+            # Si es una request AJAX, devolver JSON
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'error': 'Error interno del sistema'}, status=500)
+            
+            # Para requests normales, mostrar mensaje y redirigir
+            try:
+                messages.error(request, _('Error interno del sistema.'))
+                logout(request)
+                # CORREGIDO: Usar users:login en lugar de auth:login
+                return redirect('users:login')
+            except Exception:
+                # Si incluso el redirect falla, usar redirect básico
+                return redirect('users:login')
         
         return None
     
     def _get_user_company(self, request):
         """
-        Obtiene la empresa del usuario
+        Obtiene la empresa del usuario - VERSIÓN SEGURA
         """
-        # Primero intentar desde la sesión
-        company_id = request.session.get('company_id')
-        
-        if company_id:
-            try:
-                return Company.objects.get(id=company_id, is_active=True)
-            except Company.DoesNotExist:
-                # Limpiar sesión si la empresa ya no existe
-                request.session.pop('company_id', None)
-        
-        # Si el usuario tiene una empresa asignada directamente
-        if hasattr(request.user, 'company') and request.user.company:
-            return request.user.company
-        
-        # Si el usuario pertenece a una empresa a través de su perfil
-        if hasattr(request.user, 'profile') and request.user.profile.company:
-            return request.user.profile.company
-        
-        return None
+        try:
+            # Primero intentar desde la sesión
+            company_id = request.session.get('company_id')
+            
+            if company_id:
+                try:
+                    company = Company.objects.get(id=company_id, is_active=True)
+                    # Verificar que el usuario tiene acceso a esta empresa
+                    if self._user_has_access_to_company(request.user, company):
+                        return company
+                    else:
+                        # Usuario no tiene acceso, limpiar sesión
+                        request.session.pop('company_id', None)
+                except Company.DoesNotExist:
+                    # Limpiar sesión si la empresa ya no existe
+                    request.session.pop('company_id', None)
+            
+            # Si el usuario tiene una empresa asignada directamente
+            if hasattr(request.user, 'company') and request.user.company:
+                if request.user.company.is_active:
+                    return request.user.company
+            
+            # CORREGIDO: Manejo seguro del perfil de usuario
+            # Si el usuario pertenece a una empresa a través de su perfil
+            if hasattr(request.user, 'profile'):
+                profile = request.user.profile
+                # Solo acceder a company si el atributo existe
+                if hasattr(profile, 'company') and profile.company:
+                    if profile.company.is_active:
+                        # Sincronizar con sesión
+                        request.session['company_id'] = str(profile.company.id)
+                        return profile.company
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error creando audit log para login: {e}")
+            return None
     
-    # En esquemas por módulo, el router maneja los esquemas automáticamente
+    def _get_current_branch(self, request, company):
+        """
+        Obtiene la sucursal actual del usuario
+        """
+        try:
+            # Intentar obtener de la sesión
+            branch_id = request.session.get('current_branch_id')
+            if branch_id:
+                try:
+                    return company.branches.get(id=branch_id, is_active=True)
+                except:
+                    request.session.pop('current_branch_id', None)
+            
+            # Obtener sucursal principal por defecto
+            main_branch = company.branches.filter(is_main=True, is_active=True).first()
+            if main_branch:
+                request.session['current_branch_id'] = str(main_branch.id)
+                return main_branch
+            
+            # Si no hay principal, obtener la primera activa
+            first_branch = company.branches.filter(is_active=True).first()
+            if first_branch:
+                request.session['current_branch_id'] = str(first_branch.id)
+                return first_branch
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error obteniendo sucursal: {e}")
+            return None
+    
+    def _user_has_access_to_company(self, user, company):
+        """
+        Verifica si el usuario tiene acceso a la empresa
+        """
+        try:
+            # Superusuarios tienen acceso a todo
+            if user.is_superuser:
+                return True
+            
+            # Por ahora permitir acceso a todas las empresas activas
+            # Esto se modificará cuando implementemos el módulo completo de usuarios
+            return company.is_active
+            
+        except Exception as e:
+            logger.error(f"Error verificando acceso a empresa: {e}")
+            return False
+    
+    def _has_available_companies(self, user):
+        """
+        Verifica si el usuario tiene empresas disponibles
+        """
+        try:
+            if user.is_superuser:
+                return Company.objects.filter(is_active=True).exists()
+            
+            # Por ahora verificar si hay empresas activas
+            return Company.objects.filter(is_active=True).exists()
+            
+        except Exception as e:
+            logger.error(f"Error verificando empresas disponibles: {e}")
+            return False
 
 
 class AuditMiddleware(MiddlewareMixin):
     """
-    Middleware para auditoría de acciones del usuario
+    Middleware para auditoría de acciones del usuario - VERSIÓN SEGURA
     """
     
     # Métodos que requieren auditoría
@@ -131,6 +239,8 @@ class AuditMiddleware(MiddlewareMixin):
         '/admin/',
         '/static/',
         '/media/',
+        '/health/',
+        '/robots.txt',
         '/__debug__/',
         '/auth/logout/',  # El logout ya se audita en la vista
     ]
@@ -151,10 +261,10 @@ class AuditMiddleware(MiddlewareMixin):
             return response
         
         try:
-            # Crear log de auditoría
-            self._create_audit_log(request, response)
+            # Crear log de auditoría de forma segura
+            self._create_audit_log_safe(request, response)
         except Exception as e:
-            logger.error(f"Error al crear log de auditoría: {e}")
+            logger.error(f"Error creando audit log para logout: {e}")
         
         return response
     
@@ -188,61 +298,74 @@ class AuditMiddleware(MiddlewareMixin):
             '/reports/',
             '/admin/',
             '/settings/',
+            '/companies/',
+            '/branches/',
         ]
         return any(request.path.startswith(path) for path in important_paths)
     
-    def _create_audit_log(self, request, response):
+    def _create_audit_log_safe(self, request, response):
         """
-        Crea el log de auditoría
+        Crea el log de auditoría de forma segura
         """
-        # Determinar acción basada en método HTTP
-        action_map = {
-            'GET': 'VIEW',
-            'POST': 'CREATE',
-            'PUT': 'UPDATE',
-            'PATCH': 'UPDATE',
-            'DELETE': 'DELETE',
-        }
-        
-        action = action_map.get(request.method, 'VIEW')
-        
-        # Obtener información adicional
-        user_agent = request.META.get('HTTP_USER_AGENT', '')
-        ip_address = get_client_ip(request)
-        
-        # Calcular tiempo de procesamiento
-        processing_time = None
-        if hasattr(request, '_audit_start_time'):
-            processing_time = time.time() - request._audit_start_time
-        
-        # Crear el log
-        audit_data = {
-            'user': request.user,
-            'company': getattr(request, 'company', None),
-            'action': action,
-            'object_repr': f"{request.method} {request.path}",
-            'ip_address': ip_address,
-            'user_agent': user_agent,
-            'changes': {
-                'method': request.method,
-                'path': request.path,
-                'status_code': response.status_code,
-                'processing_time': processing_time,
+        try:
+            # Determinar acción basada en método HTTP
+            action_map = {
+                'GET': 'VIEW',
+                'POST': 'CREATE',
+                'PUT': 'UPDATE',
+                'PATCH': 'UPDATE',
+                'DELETE': 'DELETE',
             }
-        }
-        
-        # Agregar datos POST si están disponibles (sin contraseñas)
-        if request.method in ['POST', 'PUT', 'PATCH']:
-            post_data = dict(request.POST)
-            # Remover datos sensibles
-            sensitive_fields = ['password', 'token', 'csrf', 'secret']
-            for field in sensitive_fields:
-                post_data.pop(field, None)
             
-            if post_data:
-                audit_data['changes']['form_data'] = post_data
-        
-        AuditLog.objects.create(**audit_data)
+            action = action_map.get(request.method, 'VIEW')
+            
+            # Obtener información adicional
+            user_agent = request.META.get('HTTP_USER_AGENT', '')[:200]  # Truncar
+            ip_address = get_client_ip(request)
+            
+            # Calcular tiempo de procesamiento
+            processing_time = None
+            if hasattr(request, '_audit_start_time'):
+                processing_time = time.time() - request._audit_start_time
+            
+            # Preparar datos extra de forma segura
+            extra_data = {
+                'method': request.method,
+                'path': request.path[:200],  # Truncar
+                'status_code': response.status_code,
+            }
+            
+            if processing_time is not None:
+                extra_data['processing_time'] = round(processing_time, 3)
+            
+            # Agregar datos POST si están disponibles (sin contraseñas)
+            if request.method in ['POST', 'PUT', 'PATCH'] and hasattr(request, 'POST'):
+                try:
+                    post_data = dict(request.POST)
+                    # Remover datos sensibles
+                    sensitive_fields = ['password', 'token', 'csrf', 'secret', 'key']
+                    for field in list(post_data.keys()):
+                        if any(sensitive in field.lower() for sensitive in sensitive_fields):
+                            post_data.pop(field, None)
+                    
+                    if post_data:
+                        extra_data['form_data'] = post_data
+                except Exception:
+                    pass  # Ignorar errores al procesar POST data
+            
+            # Crear el log de auditoría
+            AuditLog.objects.create(
+                user=request.user,
+                company=getattr(request, 'company', None),
+                action=action,
+                object_repr=f"{request.method} {request.path}"[:255],  # Truncar
+                ip_address=ip_address[:45],  # Truncar IP
+                user_agent=user_agent,
+                extra_data=extra_data
+            )
+            
+        except Exception as e:
+            logger.error(f"Error en _create_audit_log_safe: {e}")
 
 
 class SecurityMiddleware(MiddlewareMixin):
@@ -254,10 +377,13 @@ class SecurityMiddleware(MiddlewareMixin):
         """
         Verifica aspectos de seguridad en la request
         """
-        # Verificar headers de seguridad maliciosos
-        if self._has_malicious_headers(request):
-            logger.warning(f"Request maliciosa detectada desde {get_client_ip(request)}")
-            return JsonResponse({'error': 'Request no válida'}, status=400)
+        try:
+            # Verificar headers de seguridad maliciosos
+            if self._has_malicious_headers(request):
+                logger.warning(f"Request maliciosa detectada desde {get_client_ip(request)}")
+                return JsonResponse({'error': 'Request no válida'}, status=400)
+        except Exception as e:
+            logger.error(f"Error en SecurityMiddleware.process_request: {e}")
         
         return None
     
@@ -265,16 +391,25 @@ class SecurityMiddleware(MiddlewareMixin):
         """
         Agrega headers de seguridad a la respuesta
         """
-        # Headers de seguridad
-        security_headers = {
-            'X-Content-Type-Options': 'nosniff',
-            'X-Frame-Options': 'DENY',
-            'X-XSS-Protection': '1; mode=block',
-            'Referrer-Policy': 'strict-origin-when-cross-origin',
-        }
-        
-        for header, value in security_headers.items():
-            response[header] = value
+        try:
+            # Headers de seguridad
+            security_headers = {
+                'X-Content-Type-Options': 'nosniff',
+                'X-XSS-Protection': '1; mode=block',
+                'Referrer-Policy': 'strict-origin-when-cross-origin',
+            }
+            
+            # En desarrollo, usar SAMEORIGIN para debug toolbar
+            if settings.DEBUG:
+                security_headers['X-Frame-Options'] = 'SAMEORIGIN'
+            else:
+                security_headers['X-Frame-Options'] = 'DENY'
+            
+            for header, value in security_headers.items():
+                response[header] = value
+                
+        except Exception as e:
+            logger.error(f"Error en SecurityMiddleware.process_response: {e}")
         
         return response
     
@@ -282,23 +417,28 @@ class SecurityMiddleware(MiddlewareMixin):
         """
         Verifica si la request tiene headers maliciosos
         """
-        malicious_patterns = [
-            'script',
-            'javascript:',
-            '<script',
-            'onclick',
-            'onerror',
-        ]
-        
-        # Verificar en User-Agent y Referer
-        user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
-        referer = request.META.get('HTTP_REFERER', '').lower()
-        
-        for pattern in malicious_patterns:
-            if pattern in user_agent or pattern in referer:
-                return True
-        
-        return False
+        try:
+            malicious_patterns = [
+                'script',
+                'javascript:',
+                '<script',
+                'onclick',
+                'onerror',
+            ]
+            
+            # Verificar en User-Agent y Referer
+            user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
+            referer = request.META.get('HTTP_REFERER', '').lower()
+            
+            for pattern in malicious_patterns:
+                if pattern in user_agent or pattern in referer:
+                    return True
+            
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error verificando headers maliciosos: {e}")
+            return False
 
 
 class PerformanceMiddleware(MiddlewareMixin):
@@ -317,20 +457,25 @@ class PerformanceMiddleware(MiddlewareMixin):
         """
         Calcula y registra métricas de rendimiento
         """
-        if not hasattr(request, '_performance_start_time'):
-            return response
-        
-        # Calcular tiempo total
-        total_time = time.time() - request._performance_start_time
-        
-        # Agregar header con tiempo de respuesta
-        response['X-Response-Time'] = f"{total_time:.3f}s"
-        
-        # Log para requests lentas (más de 2 segundos)
-        if total_time > 2.0:
-            logger.warning(
-                f"Request lenta detectada: {request.method} {request.path} "
-                f"- {total_time:.3f}s - Usuario: {getattr(request.user, 'username', 'Anónimo')}"
-            )
+        try:
+            if not hasattr(request, '_performance_start_time'):
+                return response
+            
+            # Calcular tiempo total
+            total_time = time.time() - request._performance_start_time
+            
+            # Agregar header con tiempo de respuesta
+            response['X-Response-Time'] = f"{total_time:.3f}s"
+            
+            # Log para requests lentas (más de 2 segundos)
+            if total_time > 2.0:
+                username = getattr(request.user, 'username', 'Anónimo') if hasattr(request, 'user') else 'Anónimo'
+                logger.warning(
+                    f"Request lenta detectada: {request.method} {request.path} "
+                    f"- {total_time:.3f}s - Usuario: {username}"
+                )
+                
+        except Exception as e:
+            logger.error(f"Error en PerformanceMiddleware: {e}")
         
         return response

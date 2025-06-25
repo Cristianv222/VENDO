@@ -373,14 +373,36 @@
                 
                 <!-- Desktop Navigation -->
                 <nav class="nav-menu">
-                    {% for menu_item in menu_items %}
-                    <div class="nav-item">
-                        <a class="nav-link" href="{% url menu_item.url %}">
-                            <span class="material-icons">{{ menu_item.icon }}</span>
-                            {{ menu_item.title }}
-                        </a>
-                    </div>
-                    {% endfor %}
+                    {% if menu_items %}
+                        {% for menu_item in menu_items %}
+                        <div class="nav-item">
+                            <a class="nav-link" href="{% url menu_item.url %}">
+                                <span class="material-icons">{{ menu_item.icon }}</span>
+                                {{ menu_item.title }}
+                            </a>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <!-- Menú básico si no hay menu_items -->
+                        <div class="nav-item">
+                            <a class="nav-link" href="{% url 'core:dashboard' %}">
+                                <span class="material-icons">dashboard</span>
+                                Dashboard
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a class="nav-link" href="{% url 'core:company_list' %}">
+                                <span class="material-icons">business</span>
+                                Empresas
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a class="nav-link" href="{% url 'core:branch_list' %}">
+                                <span class="material-icons">store</span>
+                                Sucursales
+                            </a>
+                        </div>
+                    {% endif %}
                 </nav>
             </div>
             
@@ -394,14 +416,16 @@
                         <span class="material-icons">expand_more</span>
                     </button>
                     <div id="companyMenu" class="mdc-menu">
-                        {% for company in available_companies %}
-                        <form method="post" action="{% url 'core:switch_company' company.id %}" style="margin: 0;">
-                            {% csrf_token %}
-                            <button type="submit" class="mdc-menu-item {% if company == current_company %}active{% endif %}">
+                        {% if available_companies %}
+                            {% for company in available_companies %}
+                            <!-- NOTA: URL comentada hasta implementar la función switch_company -->
+                            <div class="mdc-menu-item {% if company == current_company %}active{% endif %}">
                                 {{ company.business_name }}
-                            </button>
-                        </form>
-                        {% endfor %}
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="mdc-menu-item">No hay empresas disponibles</div>
+                        {% endif %}
                     </div>
                 </div>
                 {% endif %}
@@ -416,12 +440,10 @@
                     </button>
                     <div id="branchMenu" class="mdc-menu">
                         {% for branch in user_branches %}
-                        <form method="post" action="{% url 'core:switch_branch' branch.id %}" style="margin: 0;">
-                            {% csrf_token %}
-                            <button type="submit" class="mdc-menu-item {% if branch == current_branch %}active{% endif %}">
-                                {{ branch.name }}
-                            </button>
-                        </form>
+                        <!-- NOTA: URL comentada hasta implementar la función switch_branch -->
+                        <div class="mdc-menu-item {% if branch == current_branch %}active{% endif %}">
+                            {{ branch.name }}
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
@@ -468,7 +490,8 @@
                             <span class="material-icons">person</span>
                             Mi Perfil
                         </a>
-                        <a class="mdc-menu-item" href="{% url 'admin:logout' %}">
+                        <!-- CORREGIDO: Usar users:logout en lugar de admin:logout -->
+                        <a class="mdc-menu-item" href="{% url 'users:logout' %}">
                             <span class="material-icons">logout</span>
                             Cerrar Sesión
                         </a>
@@ -490,12 +513,28 @@
             </div>
         </div>
         <div style="padding: 8px 0;">
-            {% for menu_item in menu_items %}
-            <a class="mdc-menu-item" href="{% url menu_item.url %}" style="padding: 12px 16px;">
-                <span class="material-icons">{{ menu_item.icon }}</span>
-                {{ menu_item.title }}
-            </a>
-            {% endfor %}
+            {% if menu_items %}
+                {% for menu_item in menu_items %}
+                <a class="mdc-menu-item" href="{% url menu_item.url %}" style="padding: 12px 16px;">
+                    <span class="material-icons">{{ menu_item.icon }}</span>
+                    {{ menu_item.title }}
+                </a>
+                {% endfor %}
+            {% else %}
+                <!-- Menú móvil básico -->
+                <a class="mdc-menu-item" href="{% url 'core:dashboard' %}" style="padding: 12px 16px;">
+                    <span class="material-icons">dashboard</span>
+                    Dashboard
+                </a>
+                <a class="mdc-menu-item" href="{% url 'core:company_list' %}" style="padding: 12px 16px;">
+                    <span class="material-icons">business</span>
+                    Empresas
+                </a>
+                <a class="mdc-menu-item" href="{% url 'core:branch_list' %}" style="padding: 12px 16px;">
+                    <span class="material-icons">store</span>
+                    Sucursales
+                </a>
+            {% endif %}
         </div>
     </nav>
     {% endif %}
@@ -559,7 +598,7 @@
     {% if user.is_authenticated %}
     <footer class="footer">
         <div>
-            &copy; {{ current_year }} VENDO v{{ system_version }} - 
+            &copy; {{ current_year|default:"2025" }} VENDO v{{ system_version|default:"1.0" }} - 
             {% if current_company %}{{ current_company.business_name }}{% endif %}
             {% if debug_mode %} - <span style="color: #ed6c02;">MODO DEBUG</span>{% endif %}
         </div>

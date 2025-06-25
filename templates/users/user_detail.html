@@ -1,0 +1,297 @@
+{% extends "users/base_users.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ user_obj.get_full_name }}{% endblock %}
+
+{% block user_breadcrumbs %}
+<li class="breadcrumb-item active">{{ user_obj.get_full_name }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Información principal -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body text-center">
+                {% if user_obj.avatar %}
+                    <img src="{{ user_obj.avatar.url }}" alt="{{ user_obj.get_full_name }}" 
+                         class="avatar-img avatar-lg mb-3">
+                {% else %}
+                    <div class="avatar-img avatar-lg bg-secondary d-flex align-items-center justify-content-center text-white mb-3 mx-auto">
+                        <i class="fas fa-user fa-2x"></i>
+                    </div>
+                {% endif %}
+                
+                <h5 class="card-title">{{ user_obj.get_full_name }}</h5>
+                <p class="text-muted">@{{ user_obj.username }}</p>
+                
+                <div class="mb-3">
+                    {% if user_obj.is_active %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-check"></i> {% trans "Activo" %}
+                        </span>
+                    {% else %}
+                        <span class="badge bg-danger">
+                            <i class="fas fa-times"></i> {% trans "Inactivo" %}
+                        </span>
+                    {% endif %}
+                    
+                    {% if user_obj.is_system_admin %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="fas fa-crown"></i> {% trans "Admin Sistema" %}
+                        </span>
+                    {% endif %}
+                    
+                    {% if user_obj.is_staff %}
+                        <span class="badge bg-info">
+                            <i class="fas fa-user-cog"></i> {% trans "Staff" %}
+                        </span>
+                    {% endif %}
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <a href="{% url 'users:user_edit' user_obj.pk %}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> {% trans "Editar Usuario" %}
+                    </a>
+                    {% if request.company %}
+                        <a href="{% url 'users:user_company_manage' user_obj.pk %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-building"></i> {% trans "Gestionar Accesos" %}
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Información de contacto -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-address-card me-2"></i>{% trans "Información de Contacto" %}</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <strong>{% trans "Email:" %}</strong><br>
+                    <a href="mailto:{{ user_obj.email }}">{{ user_obj.email }}</a>
+                </div>
+                
+                {% if user_obj.phone %}
+                    <div class="mb-2">
+                        <strong>{% trans "Teléfono:" %}</strong><br>
+                        <a href="tel:{{ user_obj.phone }}">{{ user_obj.phone }}</a>
+                    </div>
+                {% endif %}
+                
+                {% if user_obj.mobile %}
+                    <div class="mb-2">
+                        <strong>{% trans "Celular:" %}</strong><br>
+                        <a href="tel:{{ user_obj.mobile }}">{{ user_obj.mobile }}</a>
+                    </div>
+                {% endif %}
+                
+                <div class="mb-2">
+                    <strong>{% trans "Documento:" %}</strong><br>
+                    {{ user_obj.get_document_type_display }}: {{ user_obj.document_number }}
+                </div>
+                
+                {% if user_obj.address %}
+                    <div class="mb-2">
+                        <strong>{% trans "Dirección:" %}</strong><br>
+                        {{ user_obj.address }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Detalles -->
+    <div class="col-lg-8">
+        <!-- Roles y permisos en empresa actual -->
+        {% if user_company %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-building me-2"></i>
+                        {% trans "Accesos en" %} {{ request.company.business_name }}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>{% trans "Roles:" %}</h6>
+                            {% if user_roles %}
+                                {% for role in user_roles %}
+                                    <span class="badge me-1 mb-1 role-badge" data-role-color="{{ role.color|default:'#6c757d' }}">
+                                        {{ role.name }}
+                                    </span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted">{% trans "Sin roles asignados" %}</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h6>{% trans "Sucursales:" %}</h6>
+                            {% if user_branches %}
+                                {% for branch in user_branches %}
+                                    <span class="badge bg-secondary me-1 mb-1">
+                                        {{ branch.name }}
+                                    </span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted">{% trans "Todas las sucursales" %}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if user_company.is_admin %}
+                        <div class="mt-2">
+                            <span class="badge bg-warning text-dark">
+                                <i class="fas fa-star"></i> {% trans "Administrador de Empresa" %}
+                            </span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Sesiones recientes -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-history me-2"></i>{% trans "Sesiones Recientes" %}</h6>
+            </div>
+            <div class="card-body">
+                {% if recent_sessions %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "Inicio" %}</th>
+                                    <th>{% trans "IP" %}</th>
+                                    <th>{% trans "Estado" %}</th>
+                                    <th>{% trans "Duración" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in recent_sessions %}
+                                    <tr>
+                                        <td>{{ session.login_at|date:"d/m/Y H:i" }}</td>
+                                        <td>{{ session.ip_address }}</td>
+                                        <td>
+                                            {% if session.logout_at %}
+                                                <span class="text-muted">{% trans "Cerrada" %}</span>
+                                            {% elif session.is_expired %}
+                                                <span class="text-danger">{% trans "Expirada" %}</span>
+                                            {% else %}
+                                                <span class="text-success">{% trans "Activa" %}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if session.logout_at %}
+                                                {{ session.logout_at|timeuntil:session.login_at }}
+                                            {% else %}
+                                                {{ session.last_activity|timeuntil:session.login_at }}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-history fa-2x mb-2"></i><br>
+                        {% trans "No hay sesiones registradas" %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Información adicional -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>{% trans "Información Adicional" %}</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-2">
+                            <strong>{% trans "Fecha de registro:" %}</strong><br>
+                            {{ user_obj.date_joined|date:"d/m/Y H:i" }}
+                        </div>
+                        <div class="mb-2">
+                            <strong>{% trans "Último login:" %}</strong><br>
+                            {% if user_obj.last_login %}
+                                {{ user_obj.last_login|date:"d/m/Y H:i" }}
+                            {% else %}
+                                <span class="text-muted">{% trans "Nunca" %}</span>
+                            {% endif %}
+                        </div>
+                        <div class="mb-2">
+                            <strong>{% trans "Última actividad:" %}</strong><br>
+                            {% if user_obj.last_activity %}
+                                {{ user_obj.last_activity|date:"d/m/Y H:i" }}
+                            {% else %}
+                                <span class="text-muted">{% trans "No registrada" %}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-2">
+                            <strong>{% trans "Idioma:" %}</strong><br>
+                            {{ user_obj.get_language_display }}
+                        </div>
+                        <div class="mb-2">
+                            <strong>{% trans "Zona horaria:" %}</strong><br>
+                            {{ user_obj.timezone }}
+                        </div>
+                        {% if user_obj.birth_date %}
+                            <div class="mb-2">
+                                <strong>{% trans "Fecha de nacimiento:" %}</strong><br>
+                                {{ user_obj.birth_date|date:"d/m/Y" }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .role-badge {
+        color: white !important;
+    }
+    
+    .avatar-img {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    
+    .avatar-lg {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .card-header h6 {
+        color: #495057;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Aplicar colores dinámicos a los badges de roles
+    document.querySelectorAll('.role-badge').forEach(badge => {
+        const color = badge.getAttribute('data-role-color');
+        if (color) {
+            badge.style.backgroundColor = color;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,312 +1,355 @@
 """
-Configuración del panel de administración para el módulo de usuarios.
+Configuración del admin para el módulo Users
 """
-
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
 from django.urls import reverse
-from django.utils.safestring import mark_safe
+from django.db.models import Count
 
-from .models import User, Role, Permission, UserProfile, UserRole, UserPermission, UserSession
-
-
-class UserProfileInline(admin.StackedInline):
-    """Inline para el perfil de usuario."""
-    model = UserProfile
-    can_delete = False
-    verbose_name_plural = _('Perfil')
-    extra = 0
-    fieldsets = (
-        (_('Información Personal'), {
-            'fields': ('avatar', 'birth_date', 'bio')
-        }),
-        (_('Preferencias'), {
-            'fields': ('theme', 'language', 'timezone')
-        }),
-        (_('Notificaciones'), {
-            'fields': ('email_notifications', 'sms_notifications', 'push_notifications')
-        }),
-        (_('Configuraciones POS'), {
-            'fields': ('default_pos_session_timeout', 'auto_print_receipts')
-        }),
-    )
-
-
-class UserRoleInline(admin.TabularInline):
-    """Inline para roles de usuario."""
-    model = UserRole
-    fk_name = 'user'  # Especificar cuál FK usar
-    extra = 0
-    readonly_fields = ('assigned_at', 'assigned_by')
-    fields = ('role', 'is_active', 'assigned_at', 'assigned_by')
-
-
-class UserPermissionInline(admin.TabularInline):
-    """Inline para permisos de usuario."""
-    model = UserPermission
-    fk_name = 'user'  # Especificar cuál FK usar
-    extra = 0
-    readonly_fields = ('granted_at', 'granted_by')
-    fields = ('permission', 'is_active', 'granted_at', 'granted_by')
+from .models import User, Role, Permission, UserCompany, UserProfile, UserSession
 
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    """Administración personalizada para el modelo User."""
-    
-    inlines = [UserProfileInline, UserRoleInline, UserPermissionInline]
-    
-    list_display = (
-        'username', 'email', 'full_name', 'user_type', 
-        'document_number', 'is_active', 'last_login', 'created_at'
-    )
-    list_filter = (
-        'user_type', 'is_active', 'is_staff', 'document_type',
-        'department', 'created_at', 'last_login'
-    )
-    search_fields = (
-        'username', 'email', 'first_name', 'last_name', 
-        'document_number', 'employee_code'
-    )
-    ordering = ('-created_at',)
+    """
+    Admin personalizado para usuarios
+    """
+    list_display = [
+        'username', 'email', 'get_full_name', 'document_number',
+        'is_active', 'is_staff', 'is_system_admin', 'last_login',
+        'companies_count'
+    ]
+    list_filter = [
+        'is_active', 'is_staff', 'is_system_admin', 'document_type',
+        'language', 'created_at', 'last_login'
+    ]
+    search_fields = [
+        'username', 'email', 'first_name', 'last_name',
+        'document_number', 'phone', 'mobile'
+    ]
+    ordering = ['-created_at']
+    readonly_fields = ['id', 'created_at', 'updated_at', 'last_login', 'date_joined']
     
     fieldsets = (
-        (None, {
-            'fields': ('username', 'password')
+        (_('Información básica'), {
+            'fields': ('username', 'email', 'password')
         }),
-        (_('Información Personal'), {
+        (_('Información personal'), {
             'fields': (
-                'first_name', 'last_name', 'email', 
-                'document_type', 'document_number', 
-                'phone', 'address'
+                'first_name', 'last_name', 'document_type', 'document_number',
+                'phone', 'mobile', 'birth_date', 'address', 'avatar'
             )
         }),
-        (_('Información Laboral'), {
-            'fields': (
-                'user_type', 'employee_code', 'hire_date',
-                'department', 'position'
-            )
+        (_('Configuración'), {
+            'fields': ('language', 'timezone')
         }),
         (_('Permisos'), {
             'fields': (
-                'is_active', 'is_staff', 'is_superuser',
-                'groups', 'user_permissions'
-            )
-        }),
-        (_('Seguridad'), {
-            'fields': (
-                'failed_login_attempts', 'last_password_change',
+                'is_active', 'is_staff', 'is_superuser', 'is_system_admin',
                 'force_password_change'
             )
         }),
-        (_('Fechas Importantes'), {
-            'fields': ('last_login', 'date_joined', 'last_activity')
+        (_('Fechas importantes'), {
+            'fields': ('last_login', 'date_joined', 'password_changed_at', 'last_activity')
+        }),
+        (_('Metadatos'), {
+            'fields': ('id', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
         }),
     )
     
     add_fieldsets = (
-        (None, {
+        (_('Información básica'), {
             'classes': ('wide',),
             'fields': (
                 'username', 'email', 'password1', 'password2',
-                'first_name', 'last_name', 'document_type', 
-                'document_number', 'user_type'
-            ),
+                'first_name', 'last_name', 'document_type', 'document_number'
+            )
+        }),
+        (_('Permisos'), {
+            'fields': ('is_active', 'is_staff', 'is_system_admin')
         }),
     )
     
-    readonly_fields = ('last_login', 'date_joined', 'last_activity', 'created_at', 'updated_at')
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(
+            companies_count=Count('companies', distinct=True)
+        )
     
-    actions = ['activate_users', 'deactivate_users', 'reset_password', 'reset_failed_attempts']
+    def companies_count(self, obj):
+        """Número de empresas del usuario"""
+        return obj.companies_count
+    companies_count.short_description = _('Empresas')
+    companies_count.admin_order_field = 'companies_count'
+    
+    def get_full_name(self, obj):
+        """Nombre completo del usuario"""
+        return obj.get_full_name()
+    get_full_name.short_description = _('Nombre completo')
 
-    def activate_users(self, request, queryset):
-        """Activar usuarios seleccionados."""
-        updated = queryset.update(is_active=True)
-        self.message_user(
-            request,
-            f'{updated} usuarios han sido activados exitosamente.'
-        )
-    activate_users.short_description = _('Activar usuarios seleccionados')
 
-    def deactivate_users(self, request, queryset):
-        """Desactivar usuarios seleccionados."""
-        updated = queryset.update(is_active=False)
-        self.message_user(
-            request,
-            f'{updated} usuarios han sido desactivados exitosamente.'
-        )
-    deactivate_users.short_description = _('Desactivar usuarios seleccionados')
-
-    def reset_failed_attempts(self, request, queryset):
-        """Resetear intentos fallidos de login."""
-        updated = queryset.update(failed_login_attempts=0)
-        self.message_user(
-            request,
-            f'Se han reseteado los intentos fallidos de {updated} usuarios.'
-        )
-    reset_failed_attempts.short_description = _('Resetear intentos fallidos')
-
-    def full_name(self, obj):
-        """Mostrar nombre completo."""
-        return obj.full_name
-    full_name.short_description = _('Nombre Completo')
+class UserCompanyInline(admin.TabularInline):
+    """
+    Inline para relación usuario-empresa
+    """
+    model = UserCompany
+    extra = 0
+    readonly_fields = ['created_at']
+    filter_horizontal = ['roles', 'branches']
 
 
 @admin.register(Role)
 class RoleAdmin(admin.ModelAdmin):
-    """Administración para el modelo Role."""
-    
-    list_display = ('name', 'code', 'user_count', 'is_active', 'created_at')
-    list_filter = ('is_active', 'created_at')
-    search_fields = ('name', 'code', 'description')
-    ordering = ('name',)
+    """
+    Admin para roles
+    """
+    list_display = [
+        'name', 'description_truncated', 'permissions_count',
+        'color_display', 'is_system_role', 'is_active', 'created_at'
+    ]
+    list_filter = ['is_system_role', 'is_active', 'created_at']
+    search_fields = ['name', 'description']
+    ordering = ['name']
+    readonly_fields = ['id', 'created_at', 'updated_at']
+    filter_horizontal = ['permissions']
     
     fieldsets = (
-        (None, {
-            'fields': ('name', 'code', 'description', 'is_active')
+        (_('Información básica'), {
+            'fields': ('name', 'description', 'color')
         }),
-        (_('Información del Sistema'), {
-            'fields': ('created_at', 'updated_at'),
+        (_('Configuración'), {
+            'fields': ('is_system_role', 'is_active')
+        }),
+        (_('Permisos'), {
+            'fields': ('permissions',)
+        }),
+        (_('Metadatos'), {
+            'fields': ('id', 'created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )
     
-    readonly_fields = ('created_at', 'updated_at')
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(
+            permissions_count=Count('permissions', distinct=True)
+        )
     
-    actions = ['activate_roles', 'deactivate_roles']
-
-    def activate_roles(self, request, queryset):
-        updated = queryset.update(is_active=True)
-        self.message_user(request, f'{updated} roles han sido activados.')
-    activate_roles.short_description = _('Activar roles seleccionados')
-
-    def deactivate_roles(self, request, queryset):
-        updated = queryset.update(is_active=False)
-        self.message_user(request, f'{updated} roles han sido desactivados.')
-    deactivate_roles.short_description = _('Desactivar roles seleccionados')
+    def description_truncated(self, obj):
+        """Descripción truncada"""
+        if obj.description:
+            return obj.description[:50] + ('...' if len(obj.description) > 50 else '')
+        return '-'
+    description_truncated.short_description = _('Descripción')
+    
+    def permissions_count(self, obj):
+        """Número de permisos"""
+        return obj.permissions_count
+    permissions_count.short_description = _('Permisos')
+    permissions_count.admin_order_field = 'permissions_count'
+    
+    def color_display(self, obj):
+        """Mostrar color"""
+        return format_html(
+            '<span style="background-color: {}; padding: 2px 8px; border-radius: 3px; color: white;">{}</span>',
+            obj.color,
+            obj.color
+        )
+    color_display.short_description = _('Color')
 
 
 @admin.register(Permission)
 class PermissionAdmin(admin.ModelAdmin):
-    """Administración para el modelo Permission."""
-    
-    list_display = ('name', 'code', 'module', 'is_active', 'created_at')
-    list_filter = ('module', 'is_active', 'created_at')
-    search_fields = ('name', 'code', 'description', 'module')
-    ordering = ('module', 'name')
+    """
+    Admin para permisos
+    """
+    list_display = [
+        'name', 'codename', 'module', 'description_truncated',
+        'roles_count', 'is_active', 'created_at'
+    ]
+    list_filter = ['module', 'is_active', 'created_at']
+    search_fields = ['name', 'codename', 'description']
+    ordering = ['module', 'name']
+    readonly_fields = ['id', 'created_at', 'updated_at']
     
     fieldsets = (
-        (None, {
-            'fields': ('name', 'code', 'module', 'description', 'is_active')
+        (_('Información básica'), {
+            'fields': ('name', 'codename', 'description')
         }),
-        (_('Información del Sistema'), {
-            'fields': ('created_at',),
+        (_('Configuración'), {
+            'fields': ('module', 'is_active')
+        }),
+        (_('Metadatos'), {
+            'fields': ('id', 'created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )
     
-    readonly_fields = ('created_at',)
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(
+            roles_count=Count('roles', distinct=True)
+        )
+    
+    def description_truncated(self, obj):
+        """Descripción truncada"""
+        if obj.description:
+            return obj.description[:50] + ('...' if len(obj.description) > 50 else '')
+        return '-'
+    description_truncated.short_description = _('Descripción')
+    
+    def roles_count(self, obj):
+        """Número de roles que tienen este permiso"""
+        return obj.roles_count
+    roles_count.short_description = _('Roles')
+    roles_count.admin_order_field = 'roles_count'
+
+
+@admin.register(UserCompany)
+class UserCompanyAdmin(admin.ModelAdmin):
+    """
+    Admin para relación usuario-empresa
+    """
+    list_display = [
+        'user', 'company', 'roles_display', 'branches_count',
+        'is_admin', 'is_active', 'created_at'
+    ]
+    list_filter = ['is_admin', 'is_active', 'company', 'created_at']
+    search_fields = [
+        'user__username', 'user__email', 'user__first_name',
+        'user__last_name', 'company__business_name'
+    ]
+    ordering = ['-created_at']
+    readonly_fields = ['id', 'created_at', 'updated_at']
+    filter_horizontal = ['roles', 'branches']
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related(
+            'user', 'company'
+        ).prefetch_related('roles', 'branches')
+    
+    def roles_display(self, obj):
+        """Mostrar roles"""
+        roles = obj.roles.all()[:3]
+        result = ', '.join([role.name for role in roles])
+        if obj.roles.count() > 3:
+            result += f' (+{obj.roles.count() - 3} más)'
+        return result or '-'
+    roles_display.short_description = _('Roles')
+    
+    def branches_count(self, obj):
+        """Número de sucursales"""
+        return obj.branches.count()
+    branches_count.short_description = _('Sucursales')
 
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    """Administración para el modelo UserProfile."""
-    
-    list_display = ('user', 'theme', 'language', 'email_notifications', 'age')
-    list_filter = ('theme', 'language', 'email_notifications', 'sms_notifications')
-    search_fields = ('user__username', 'user__email', 'user__first_name', 'user__last_name')
+    """
+    Admin para perfiles de usuario
+    """
+    list_display = [
+        'user', 'position', 'department', 'employee_code',
+        'theme', 'email_notifications', 'is_active', 'created_at'
+    ]
+    list_filter = [
+        'theme', 'email_notifications', 'sms_notifications',
+        'system_notifications', 'is_active', 'created_at'
+    ]
+    search_fields = [
+        'user__username', 'user__email', 'user__first_name',
+        'user__last_name', 'position', 'department', 'employee_code'
+    ]
+    ordering = ['-created_at']
+    readonly_fields = ['id', 'created_at', 'updated_at']
     
     fieldsets = (
         (_('Usuario'), {
             'fields': ('user',)
         }),
-        (_('Información Personal'), {
-            'fields': ('avatar', 'birth_date', 'bio')
+        (_('Información profesional'), {
+            'fields': ('position', 'department', 'employee_code')
         }),
-        (_('Preferencias'), {
-            'fields': ('theme', 'language', 'timezone')
+        (_('Configuración de interfaz'), {
+            'fields': ('theme', 'sidebar_collapsed')
         }),
         (_('Notificaciones'), {
-            'fields': ('email_notifications', 'sms_notifications', 'push_notifications')
+            'fields': (
+                'email_notifications', 'sms_notifications',
+                'system_notifications'
+            )
         }),
-        (_('Configuraciones POS'), {
-            'fields': ('default_pos_session_timeout', 'auto_print_receipts')
+        (_('Información adicional'), {
+            'fields': ('bio', 'social_media')
+        }),
+        (_('Estado'), {
+            'fields': ('is_active',)
+        }),
+        (_('Metadatos'), {
+            'fields': ('id', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
         }),
     )
-    
-    readonly_fields = ('created_at', 'updated_at')
-
-    def age(self, obj):
-        """Mostrar edad del usuario."""
-        return obj.age if obj.age else '-'
-    age.short_description = _('Edad')
-
-
-@admin.register(UserRole)
-class UserRoleAdmin(admin.ModelAdmin):
-    """Administración para la relación Usuario-Rol."""
-    
-    list_display = ('user', 'role', 'is_active', 'assigned_by', 'assigned_at')
-    list_filter = ('role', 'is_active', 'assigned_at')
-    search_fields = ('user__username', 'role__name')
-    ordering = ('-assigned_at',)
-    
-    def save_model(self, request, obj, form, change):
-        if not change:  # Solo en creación
-            obj.assigned_by = request.user
-        super().save_model(request, obj, form, change)
-
-
-@admin.register(UserPermission)
-class UserPermissionAdmin(admin.ModelAdmin):
-    """Administración para la relación Usuario-Permiso."""
-    
-    list_display = ('user', 'permission', 'is_active', 'granted_by', 'granted_at')
-    list_filter = ('permission__module', 'is_active', 'granted_at')
-    search_fields = ('user__username', 'permission__name')
-    ordering = ('-granted_at',)
-    
-    def save_model(self, request, obj, form, change):
-        if not change:  # Solo en creación
-            obj.granted_by = request.user
-        super().save_model(request, obj, form, change)
 
 
 @admin.register(UserSession)
 class UserSessionAdmin(admin.ModelAdmin):
-    """Administración para las sesiones de usuario."""
+    """
+    Admin para sesiones de usuario
+    """
+    list_display = [
+        'user', 'company', 'branch', 'ip_address',
+        'login_at', 'last_activity', 'logout_at', 'is_expired'
+    ]
+    list_filter = [
+        'is_expired', 'company', 'branch', 'login_at', 'logout_at'
+    ]
+    search_fields = [
+        'user__username', 'user__email', 'ip_address',
+        'session_key', 'user_agent'
+    ]
+    ordering = ['-login_at']
+    readonly_fields = [
+        'id', 'session_key', 'login_at', 'last_activity',
+        'logout_at', 'created_at', 'updated_at'
+    ]
     
-    list_display = (
-        'user', 'ip_address', 'location', 'is_active', 
-        'created_at', 'last_activity', 'is_expired_display'
+    fieldsets = (
+        (_('Usuario y empresa'), {
+            'fields': ('user', 'company', 'branch')
+        }),
+        (_('Información de sesión'), {
+            'fields': ('session_key', 'ip_address', 'user_agent')
+        }),
+        (_('Fechas'), {
+            'fields': ('login_at', 'last_activity', 'logout_at')
+        }),
+        (_('Estado'), {
+            'fields': ('is_expired', 'is_active')
+        }),
+        (_('Metadatos'), {
+            'fields': ('id', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
     )
-    list_filter = ('is_active', 'created_at', 'last_activity')
-    search_fields = ('user__username', 'ip_address', 'location')
-    ordering = ('-last_activity',)
-    readonly_fields = ('session_key', 'created_at', 'last_activity')
     
-    actions = ['terminate_sessions']
-
-    def is_expired_display(self, obj):
-        """Mostrar si la sesión está expirada."""
-        if obj.is_expired:
-            return format_html('<span style="color: red;">Expirada</span>')
-        return format_html('<span style="color: green;">Activa</span>')
-    is_expired_display.short_description = _('Estado')
-
-    def terminate_sessions(self, request, queryset):
-        """Terminar sesiones seleccionadas."""
-        updated = queryset.update(is_active=False)
-        self.message_user(
-            request,
-            f'{updated} sesiones han sido terminadas.'
-        )
-    terminate_sessions.short_description = _('Terminar sesiones seleccionadas')
+    def has_add_permission(self, request):
+        """No permitir crear sesiones desde admin"""
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        """Solo permitir cambiar el estado is_expired"""
+        return True
+    
+    def get_readonly_fields(self, request, obj=None):
+        """Campos de solo lectura"""
+        readonly = list(self.readonly_fields)
+        if obj:  # Si está editando
+            readonly.extend(['user', 'company', 'branch', 'ip_address', 'user_agent'])
+        return readonly
 
 
-# Configuración del sitio de administración
-admin.site.site_header = _('VENDO - Panel de Administración')
+# Personalización del admin site
+admin.site.site_header = _('VENDO - Administración')
 admin.site.site_title = _('VENDO Admin')
-admin.site.index_title = _('Bienvenido al Panel de Administración de VENDO')
+admin.site.index_title = _('Panel de administración')

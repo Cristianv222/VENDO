@@ -1,0 +1,224 @@
+{% extends "users/base_users.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ role.name }}{% endblock %}
+
+{% block user_breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'users:role_list' %}">{% trans "Roles" %}</a></li>
+<li class="breadcrumb-item active">{{ role.name }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Información del rol -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header text-white role-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-users-cog me-2"></i>{{ role.name }}
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if role.description %}
+                    <p class="text-muted">{{ role.description }}</p>
+                {% else %}
+                    <p class="text-muted">{% trans "Sin descripción" %}</p>
+                {% endif %}
+                
+                <div class="row text-center mb-3">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h4 class="text-primary mb-0">{{ role.permissions.count }}</h4>
+                            <small class="text-muted">{% trans "Permisos" %}</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-success mb-0">{{ role_users.count }}</h4>
+                        <small class="text-muted">{% trans "Usuarios" %}</small>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    {% if role.is_active %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-check"></i> {% trans "Activo" %}
+                        </span>
+                    {% else %}
+                        <span class="badge bg-danger">
+                            <i class="fas fa-times"></i> {% trans "Inactivo" %}
+                        </span>
+                    {% endif %}
+                    
+                    {% if role.is_system_role %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="fas fa-cog"></i> {% trans "Rol del Sistema" %}
+                        </span>
+                    {% endif %}
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <a href="{% url 'users:role_edit' role.pk %}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> {% trans "Editar Rol" %}
+                    </a>
+                    {% if not role.is_system_role %}
+                        <a href="{% url 'users:role_delete' role.pk %}" class="btn btn-outline-danger">
+                            <i class="fas fa-trash"></i> {% trans "Eliminar Rol" %}
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Información adicional -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>{% trans "Información" %}</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <strong>{% trans "Creado:" %}</strong><br>
+                    {{ role.created_at|date:"d/m/Y H:i" }}
+                </div>
+                <div class="mb-2">
+                    <strong>{% trans "Actualizado:" %}</strong><br>
+                    {{ role.updated_at|date:"d/m/Y H:i" }}
+                </div>
+                <div class="mb-2">
+                    <strong>{% trans "Color:" %}</strong><br>
+                    <span class="badge role-color-badge">
+                        {{ role.color|default:'Sin color' }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Permisos y usuarios -->
+    <div class="col-lg-8">
+        <!-- Permisos -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-key me-2"></i>{% trans "Permisos" %} ({{ role.permissions.count }})
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if role.permissions.exists %}
+                    {% regroup role.permissions.all by module as permission_modules %}
+                    <div class="row">
+                        {% for module in permission_modules %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card permission-card">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0 text-capitalize">
+                                            <i class="fas fa-cube me-2"></i>{{ module.grouper }}
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul class="list-unstyled mb-0">
+                                            {% for permission in module.list %}
+                                                <li class="mb-1">
+                                                    <i class="fas fa-check text-success me-2"></i>
+                                                    <small>{{ permission.name }}</small>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-key fa-2x mb-2"></i><br>
+                        {% trans "No hay permisos asignados a este rol" %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Usuarios con este rol -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="fas fa-users me-2"></i>{% trans "Usuarios con este rol" %} ({{ role_users.count }})
+                </h6>
+                {% if role_users.count > 0 %}
+                    <a href="{% url 'users:user_list' %}?role={{ role.id }}" class="btn btn-sm btn-outline-primary">
+                        {% trans "Ver todos" %}
+                    </a>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if role_users %}
+                    <div class="row">
+                        {% for user in role_users|slice:":12" %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                {% include "users/includes/user_card.html" with user=user show_company=True %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if role_users.count > 12 %}
+                        <div class="text-center mt-3">
+                            <a href="{% url 'users:user_list' %}?role={{ role.id }}" class="btn btn-outline-primary">
+                                {% trans "Ver todos los" %} {{ role_users.count }} {% trans "usuarios" %}
+                            </a>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-users fa-2x mb-2"></i><br>
+                        {% trans "No hay usuarios con este rol" %}
+                        <br><br>
+                        <a href="{% url 'users:user_list' %}" class="btn btn-primary">
+                            <i class="fas fa-user-plus me-2"></i>{% trans "Asignar usuarios" %}
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .role-header {
+        background-color: var(--role-color, #6c757d) !important;
+    }
+    
+    .permission-card {
+        border-left: 4px solid var(--role-color, #6c757d);
+        transition: transform 0.2s ease-in-out;
+    }
+    
+    .permission-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .role-color-badge {
+        background-color: var(--role-color, #6c757d) !important;
+        color: white;
+    }
+    
+    .badge {
+        font-size: 0.75em;
+    }
+    
+    .card-header h6 {
+        color: #495057;
+        font-weight: 600;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Aplicar color dinámico del rol
+    const roleColor = '{{ role.color|default:"#6c757d" }}';
+    document.documentElement.style.setProperty('--role-color', roleColor);
+});
+</script>
+{% endblock %}
