@@ -51,11 +51,7 @@ DJANGO_APPS = [
 # Third party apps
 THIRD_PARTY_APPS = [
     'rest_framework',
-<<<<<<< Updated upstream
     'rest_framework.authtoken',
-=======
-    'rest_framework.authtoken',  # ← AGREGADO: Este era el problema principal
->>>>>>> Stashed changes
     'corsheaders',
     'django_filters',
     'crispy_forms',
@@ -84,28 +80,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 print(f"INSTALLED_APPS cargadas: {len(INSTALLED_APPS)} apps")
 
 # ==========================================
-# CUSTOM USER MODEL
-# ==========================================
-
-# DESCOMENTADO: Necesario para usar el modelo User personalizado
-AUTH_USER_MODEL = 'users.User'
-
-# ==========================================
-# AUTHENTICATION CONFIGURATION
-# ==========================================
-
-AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-    # Agregar backends personalizados aquí si es necesario
-]
-
-# Login/Logout URLs
-LOGIN_URL = '/users/login/'
-LOGIN_REDIRECT_URL = '/users/dashboard/'
-LOGOUT_REDIRECT_URL = '/users/login/'
-
-# ==========================================
-# MIDDLEWARE CONFIGURATION
+# MIDDLEWARE CONFIGURATION (CORREGIDO)
 # ==========================================
 
 MIDDLEWARE = [
@@ -130,7 +105,10 @@ MIDDLEWARE = [
     # Authentication
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     
-    # VENDO Custom Middlewares (orden importante)
+    # Messages framework (DEBE IR ANTES de los middlewares personalizados)
+    'django.contrib.messages.middleware.MessageMiddleware',
+    
+    # VENDO Custom Middlewares (DESPUÉS del MessageMiddleware)
     'apps.core.middleware.CompanyMiddleware',       # Gestión de empresa
     'apps.core.middleware.AuditMiddleware',         # Auditoría automática
     'apps.core.middleware.SecurityMiddleware',      # Seguridad adicional
@@ -169,14 +147,14 @@ TEMPLATES = [
                 'django.template.context_processors.static',
                 'django.template.context_processors.tz',
                 
-                # VENDO custom context processors (comentados hasta que se creen)
-                # 'apps.core.context_processors.company_context',
-                # 'apps.core.context_processors.branch_context',
-                # 'apps.core.context_processors.user_context',
-                # 'apps.core.context_processors.system_context',
-                # 'apps.core.context_processors.navigation_context',
-                # 'apps.core.context_processors.menu_context',
-                # 'apps.core.context_processors.notifications_context',
+                # VENDO custom context processors
+                'apps.core.context_processors.company_context',
+                'apps.core.context_processors.branch_context',
+                'apps.core.context_processors.user_context',
+                'apps.core.context_processors.system_context',
+                'apps.core.context_processors.navigation_context',
+                'apps.core.context_processors.menu_context',
+                'apps.core.context_processors.notifications_context',
             ],
         },
     },
@@ -210,7 +188,6 @@ try:
             'OPTIONS': {
                 'options': '-c search_path=vendo_core,public',
             },
-<<<<<<< Updated upstream
             'CONN_MAX_AGE': 60,  # Reutilizar conexiones por 60 segundos
             'CONN_HEALTH_CHECKS': True,  # Verificar salud de conexiones
         },
@@ -263,7 +240,7 @@ print("=== DATABASES Y ROUTER CONFIGURADOS ===")
 # ==========================================
 
 # Custom User Model (descomenta cuando esté listo)
-# AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = 'users.User'
 
 # ==========================================
 # PASSWORD VALIDATION
@@ -360,9 +337,8 @@ try:
             'rest_framework.authentication.TokenAuthentication',
         ],
         'DEFAULT_PERMISSION_CLASSES': [
-            'rest_framework.permissions.IsAuthenticated',
-            # 'apps.core.permissions.IsAuthenticatedAndActive',  # Cuando se cree
-            # 'apps.core.permissions.HasCompanyAccess',  # Cuando se cree
+            'apps.core.permissions.IsAuthenticatedAndActive',
+            'apps.core.permissions.HasCompanyAccess',
         ],
         'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
         'PAGE_SIZE': 25,
@@ -380,7 +356,6 @@ try:
             'rest_framework.parsers.FormParser',
             'rest_framework.parsers.MultiPartParser',
         ],
-<<<<<<< Updated upstream
         'EXCEPTION_HANDLER': 'apps.core.exceptions.custom_exception_handler',
         'DATETIME_FORMAT': '%d/%m/%Y %H:%M:%S',
         'DATE_FORMAT': '%d/%m/%Y',
@@ -473,55 +448,6 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = not DEBUG  # Solo HTTPS en producción
 
 # ==========================================
-# CELERY CONFIGURATION
-# ==========================================
-
-CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULT_BACKEND = REDIS_URL
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = TIME_ZONE
-<<<<<<< Updated upstream
-CELERY_ENABLE_UTC = True
-CELERY_TASK_TRACK_STARTED = True
-CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutos
-CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 minutos
-CELERY_WORKER_PREFETCH_MULTIPLIER = 1
-CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
-=======
-
-# ==========================================
-# CACHE CONFIGURATION
-# ==========================================
-
-print("=== ANTES DE CACHE ===")
-
-try:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-            'LOCATION': REDIS_URL,
-            'KEY_PREFIX': 'vendo',
-            'TIMEOUT': 300,
-        }
-    }
-    print("✅ CACHES configurado")
-except Exception as e:
-    print(f"❌ Error en CACHES: {e}")
-
-# ==========================================
-# SESSION CONFIGURATION
-# ==========================================
-
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'default'
-SESSION_COOKIE_AGE = 86400  # 24 hours
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-SESSION_SAVE_EVERY_REQUEST = True
->>>>>>> Stashed changes
-
-# ==========================================
 # EMAIL CONFIGURATION
 # ==========================================
 
@@ -540,324 +466,6 @@ SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
-
-# ==========================================
-# SRI API CONFIGURATION
-# ==========================================
-
-SRI_API_CONFIG = {
-    'BASE_URL': config('SRI_API_BASE_URL', default='https://api.abitmedia.cloud/facturasoft/v1'),
-    'TOKEN': config('SRI_API_TOKEN', default=''),
-    'ENVIRONMENT': config('SRI_ENVIRONMENT', default='test'),
-    'TIMEOUT': 30,
-    'MAX_RETRIES': 3,
-    'ENDPOINTS': {
-        'INVOICES': '/invoices',
-        'CREDIT_NOTES': '/credit-notes',
-        'DEBIT_NOTES': '/debit-notes',
-        'WAYBILLS': '/waybills',
-        'RETENTIONS': '/retentions',
-        'PURCHASE_SETTLEMENTS': '/purchase-settlements',
-        'DOWNLOAD_PDF': '/electronic-vouchers/download-ride',
-        'DOWNLOAD_XML': '/electronic-vouchers/download-xml',
-    }
-}
-
-# ==========================================
-# COMPANY DEFAULT CONFIGURATION
-# ==========================================
-
-COMPANY_CONFIG = {
-    'NAME': config('COMPANY_NAME', default='Mi Empresa'),
-    'RUC': config('COMPANY_RUC', default='1234567890001'),
-    'ADDRESS': config('COMPANY_ADDRESS', default=''),
-    'PHONE': config('COMPANY_PHONE', default=''),
-    'EMAIL': config('COMPANY_EMAIL', default=''),
-    'LOGO': 'img/logo.png',
-    'CURRENCY': 'USD',
-    'DECIMAL_PLACES': 2,
-    'MAX_BRANCHES_PER_COMPANY': 10,
-    'DEFAULT_COUNTRY': 'EC',
-    'DEFAULT_TIMEZONE': TIME_ZONE,
-}
-
-# ==========================================
-# TAX CONFIGURATION FOR ECUADOR
-# ==========================================
-
-TAX_CONFIG = {
-    'IVA_RATE': 0.12,  # 12%
-    'IVA_CODE': '2',   # Código SRI para IVA
-    'ICE_RATES': {
-        'ALCOHOL': 0.40,
-        'TOBACCO': 0.30,
-        'FUEL': 0.15,
-    },
-    'RETENTION_RATES': {
-        'RENT_IR': 0.08,      # Impuesto a la Renta - Arrendamientos
-        'SERVICES_IR': 0.02,   # Impuesto a la Renta - Servicios
-        'GOODS_IR': 0.01,      # Impuesto a la Renta - Bienes
-        'IVA_30': 0.30,        # Retención IVA 30%
-        'IVA_70': 0.70,        # Retención IVA 70%
-        'IVA_100': 1.00,       # Retención IVA 100%
-    },
-}
-
-# ==========================================
-# FILE UPLOAD SETTINGS
-# ==========================================
-
-FILE_UPLOAD_MAX_MEMORY_SIZE = config('MAX_UPLOAD_SIZE', default=5242880, cast=int)  # 5MB
-DATA_UPLOAD_MAX_MEMORY_SIZE = FILE_UPLOAD_MAX_MEMORY_SIZE
-DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
-
-FILE_UPLOAD_SETTINGS = {
-    'MAX_IMAGE_SIZE': 5 * 1024 * 1024,      # 5 MB
-    'MAX_DOCUMENT_SIZE': 10 * 1024 * 1024,  # 10 MB
-    'MAX_CERTIFICATE_SIZE': 1 * 1024 * 1024, # 1 MB
-    'ALLOWED_IMAGE_TYPES': ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-    'ALLOWED_DOCUMENT_TYPES': ['pdf', 'doc', 'docx', 'txt'],
-    'ALLOWED_CERTIFICATE_TYPES': ['p12', 'pfx'],
-    'ALLOWED_EXCEL_TYPES': ['xls', 'xlsx', 'csv'],
-}
-
-# ==========================================
-# CUSTOM SETTINGS FOR VENDO MODULES
-# ==========================================
-
-VENDO_CONFIG = {
-    # General
-    'VERSION': '1.0.0',
-    'SYSTEM_NAME': 'VENDO',
-    
-    # Business rules
-    'MAX_INVOICE_ITEMS': 100,
-    'MAX_PRODUCT_IMAGES': 5,
-    'BACKUP_RETENTION_DAYS': 30,
-    'SESSION_TIMEOUT_MINUTES': 60,
-    'MAX_FAILED_LOGIN_ATTEMPTS': 5,
-    'PASSWORD_RESET_TIMEOUT_DAYS': 1,
-<<<<<<< Updated upstream
-    
-    # Document prefixes
-=======
-    'FORCE_PASSWORD_CHANGE_DAYS': 90,  # AGREGADO: Forzar cambio de contraseña
->>>>>>> Stashed changes
-    'INVOICE_NUMBER_PREFIX': 'FACT-',
-    'CREDIT_NOTE_PREFIX': 'NC-',
-    'DEBIT_NOTE_PREFIX': 'ND-',
-    'WAYBILL_PREFIX': 'GR-',
-    'QUOTATION_PREFIX': 'COT-',
-    'RECEIPT_PREFIX': 'REC-',
-    
-    # Inventory
-    'LOW_STOCK_THRESHOLD': 10,
-    'CRITICAL_STOCK_THRESHOLD': 5,
-    
-    # UI/UX
-    'PAGINATION_SIZE': 25,
-    'MAX_SEARCH_RESULTS': 100,
-    'ITEMS_PER_PAGE_OPTIONS': [10, 25, 50, 100],
-    
-    # Reporting
-    'DEFAULT_REPORT_FORMAT': 'PDF',
-    'MAX_REPORT_RECORDS': 10000,
-    
-    # Performance
-    'QUERY_TIMEOUT_SECONDS': 30,
-    'MAX_CONCURRENT_USERS': 100,
-}
-
-<<<<<<< Updated upstream
-# ==========================================
-# AUDIT SETTINGS
-# ==========================================
-
-AUDIT_SETTINGS = {
-    'ENABLED': True,
-    'LOG_VIEWS': True,
-    'LOG_API_CALLS': True,
-    'LOG_ADMIN_ACTIONS': True,
-    'RETENTION_DAYS': 365,  # Mantener logs por 1 año
-    'EXCLUDED_PATHS': ['/health-check/', '/static/', '/media/'],
-    'EXCLUDED_USERS': [],  # Usuarios excluidos de auditoría
-    'SENSITIVE_FIELDS': ['password', 'token', 'secret', 'key'],
-}
-=======
-# AGREGADO: Configuraciones adicionales para Users
-MAX_FAILED_LOGIN_ATTEMPTS = VENDO_CONFIG['MAX_FAILED_LOGIN_ATTEMPTS']
-PASSWORD_RESET_TIMEOUT_DAYS = VENDO_CONFIG['PASSWORD_RESET_TIMEOUT_DAYS']
-
-print("=== ANTES DE LOGGING ===")
->>>>>>> Stashed changes
-
-# ==========================================
-# LOGGING CONFIGURATION (CORREGIDO)
-# ==========================================
-
-print("=== CONFIGURANDO LOGGING ===")
-
-# Crear directorio de logs si no existe
-os.makedirs(BASE_DIR / 'logs', exist_ok=True)
-
-try:
-    # Crear directorio de logs si no existe
-    (BASE_DIR / 'logs').mkdir(exist_ok=True)
-    
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'formatters': {
-            'verbose': {
-                'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-                'style': '{',
-            },
-            'simple': {
-                'format': '{levelname} {asctime} {message}',
-                'style': '{',
-            },
-            'structured': {
-                'format': 'LEVEL={levelname} TIME={asctime} MODULE={module} MESSAGE={message}',
-                'style': '{',
-            },
-        },
-        'filters': {
-            'require_debug_false': {
-                '()': 'django.utils.log.RequireDebugFalse',
-            },
-            'require_debug_true': {
-                '()': 'django.utils.log.RequireDebugTrue',
-            },
-        },
-        'handlers': {
-            'console': {
-                'level': 'DEBUG',
-                'filters': ['require_debug_true'],
-                'class': 'logging.StreamHandler',
-                'formatter': 'simple',
-            },
-            'file_info': {
-                'level': 'INFO',
-                'class': 'logging.handlers.RotatingFileHandler',
-                'filename': BASE_DIR / 'logs' / 'vendo.log',
-                'maxBytes': 1024 * 1024 * 10,  # 10 MB
-                'backupCount': 5,
-                'formatter': 'verbose',
-            },
-            'file_error': {
-                'level': 'ERROR',
-                'class': 'logging.handlers.RotatingFileHandler',
-                'filename': BASE_DIR / 'logs' / 'error.log',
-                'maxBytes': 1024 * 1024 * 5,  # 5 MB
-                'backupCount': 3,
-                'formatter': 'verbose',
-            },
-            'sri_file': {
-                'level': 'INFO',
-                'class': 'logging.handlers.RotatingFileHandler',
-                'filename': BASE_DIR / 'logs' / 'sri_api.log',
-                'maxBytes': 1024 * 1024 * 5,  # 5 MB
-                'backupCount': 3,
-                'formatter': 'structured',
-            },
-            'audit_file': {
-                'level': 'INFO',
-                'class': 'logging.handlers.RotatingFileHandler',
-                'filename': BASE_DIR / 'logs' / 'audit.log',
-                'maxBytes': 1024 * 1024 * 10,  # 10 MB
-                'backupCount': 10,
-                'formatter': 'structured',
-            },
-            'celery_file': {
-                'level': 'INFO',
-                'class': 'logging.handlers.RotatingFileHandler',
-                'filename': BASE_DIR / 'logs' / 'celery.log',
-                'maxBytes': 1024 * 1024 * 5,  # 5 MB
-                'backupCount': 3,
-                'formatter': 'verbose',
-            },
-            'mail_admins': {
-                'level': 'ERROR',
-                'filters': ['require_debug_false'],
-                'class': 'django.utils.log.AdminEmailHandler',
-                'formatter': 'verbose',
-            },
-        },
-        'root': {
-            'level': 'INFO',
-            'handlers': ['console', 'file_info'],
-        },
-        'loggers': {
-            'django': {
-                'handlers': ['console', 'file_info', 'file_error'],
-                'level': 'INFO',
-                'propagate': False,
-            },
-            'django.request': {
-                'handlers': ['file_error', 'mail_admins'],
-                'level': 'ERROR',
-                'propagate': False,
-            },
-            'django.security': {
-                'handlers': ['file_error', 'mail_admins'],
-                'level': 'ERROR',
-                'propagate': False,
-            },
-            'apps.core': {
-                'handlers': ['console', 'file_info'],
-                'level': 'DEBUG',
-                'propagate': False,
-            },
-            'apps.users': {
-                'handlers': ['console', 'file_info'],
-                'level': 'DEBUG',
-                'propagate': False,
-            },
-            'apps.pos': {
-                'handlers': ['console', 'file_info'],
-                'level': 'DEBUG',
-                'propagate': False,
-            },
-            'apps.inventory': {
-                'handlers': ['console', 'file_info'],
-                'level': 'DEBUG',
-                'propagate': False,
-            },
-            'apps.invoicing': {
-                'handlers': ['console', 'file_info'],
-                'level': 'DEBUG',
-                'propagate': False,
-            },
-            'vendo.users': {  # AGREGADO: Logger específico para users
-                'handlers': ['file', 'console'],
-                'level': 'DEBUG',
-                'propagate': False,
-            },
-            'sri_api': {
-                'handlers': ['sri_file', 'console'],
-                'level': 'INFO',
-                'propagate': False,
-            },
-            'audit': {
-                'handlers': ['audit_file'],
-                'level': 'INFO',
-                'propagate': False,
-            },
-            'celery': {
-                'handlers': ['celery_file', 'console'],
-                'level': 'INFO',
-                'propagate': False,
-            },
-            'celery.task': {
-                'handlers': ['celery_file'],
-                'level': 'INFO',
-                'propagate': False,
-            },
-        },
-    }
-    print("✅ LOGGING configurado")
-except Exception as e:
-    print(f"❌ Error en LOGGING: {e}")
 
 # ==========================================
 # MESSAGE TAGS FOR BOOTSTRAP
@@ -910,248 +518,23 @@ if DEBUG:
             'SHOW_TEMPLATE_CONTEXT': True,
         }
         
-        # Development email backend
-        EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-        
-<<<<<<< Updated upstream
         # Allow all origins in development
         CORS_ALLOW_ALL_ORIGINS = True
         
         # Disable template caching in development
         for template_engine in TEMPLATES:
             template_engine['OPTIONS']['debug'] = True
-=======
-        # AGREGADO: Configuraciones adicionales de desarrollo
-        DEBUG_TOOLBAR_CONFIG = {
-            'SHOW_TOOLBAR_CALLBACK': lambda request: DEBUG,
-        }
->>>>>>> Stashed changes
         
-        print(f"✅ Configuración de desarrollo aplicada. INSTALLED_APPS: {len(INSTALLED_APPS)} apps")
+        print(f"OK: Configuración de desarrollo aplicada. INSTALLED_APPS: {len(INSTALLED_APPS)} apps")
         
     except Exception as e:
         print(f"ERROR: Error en DEVELOPMENT SETTINGS: {e}")
         import traceback
         traceback.print_exc()
 
-# ==========================================
-# PRODUCTION SETTINGS
-# ==========================================
-
-else:  # Production settings
-    print("Aplicando configuraciones de producción...")
-    try:
-        # Security settings
-        SECURE_BROWSER_XSS_FILTER = True
-        SECURE_CONTENT_TYPE_NOSNIFF = True
-        SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-        SECURE_HSTS_SECONDS = 31536000  # 1 año
-        SECURE_HSTS_PRELOAD = True
-        SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=True, cast=bool)
-<<<<<<< Updated upstream
-        SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-        
-        # Cookies security
-        SESSION_COOKIE_SECURE = True
-        CSRF_COOKIE_SECURE = True
-        CSRF_COOKIE_HTTPONLY = True
-        
-        # Force HTTPS
-        USE_TLS = True
-        
-        # Compression
-        MIDDLEWARE.insert(1, 'django.middleware.gzip.GZipMiddleware')
-        
-        # Static files optimization
-        STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
-        
-        # Admins for error reporting
-        ADMINS = [
-            ('Admin VENDO', config('ADMIN_EMAIL', default='admin@vendo.com')),
-        ]
-        MANAGERS = ADMINS
-        
-        print("✅ Configuraciones de seguridad aplicadas")
-        
-    except Exception as e:
-        print(f"❌ Error en PRODUCTION SETTINGS: {e}")
-=======
-        SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=True, cast=bool)
-        CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=True, cast=bool)
-        X_FRAME_OPTIONS = 'DENY'
-        SECURE_REFERRER_POLICY = 'same-origin'
-        print("✅ Configuraciones de seguridad aplicadas")
-    else:
-        # AGREGADO: Configuraciones de seguridad para desarrollo
-        SESSION_COOKIE_SECURE = False
-        CSRF_COOKIE_SECURE = False
-        SECURE_SSL_REDIRECT = False
-except Exception as e:
-    print(f"❌ Error en SECURITY SETTINGS: {e}")
->>>>>>> Stashed changes
-
-# ==========================================
-# ERROR REPORTING
-# ==========================================
-
-# Configuración para Sentry (opcional)
-SENTRY_DSN = config('SENTRY_DSN', default='')
-if SENTRY_DSN and not DEBUG:
-    try:
-        import sentry_sdk
-        from sentry_sdk.integrations.django import DjangoIntegration
-        from sentry_sdk.integrations.celery import CeleryIntegration
-        from sentry_sdk.integrations.redis import RedisIntegration
-        
-        sentry_sdk.init(
-            dsn=SENTRY_DSN,
-            integrations=[
-                DjangoIntegration(auto_enabling=True),
-                CeleryIntegration(auto_enabling=True),
-                RedisIntegration(),
-            ],
-            traces_sample_rate=0.1,
-            send_default_pii=False,
-            environment='production' if not DEBUG else 'development',
-        )
-        print("✅ Sentry configurado")
-    except ImportError:
-        print("⚠️ Sentry SDK no instalado")
-
-# ==========================================
-# PERFORMANCE MONITORING
-# ==========================================
-
-# Configuración para New Relic (opcional)
-NEW_RELIC_CONFIG_FILE = config('NEW_RELIC_CONFIG_FILE', default='')
-if NEW_RELIC_CONFIG_FILE and not DEBUG:
-    try:
-        import newrelic.agent
-        newrelic.agent.initialize(NEW_RELIC_CONFIG_FILE)
-        print("✅ New Relic configurado")
-    except ImportError:
-        print("⚠️ New Relic agent no instalado")
-
-# ==========================================
-# HEALTH CHECK CONFIGURATION
-# ==========================================
-
-HEALTH_CHECK = {
-    'TIMEOUT': 10,  # segundos
-    'CHECKS': [
-        'database',
-        'cache',
-        'celery',
-        'redis',
-        'disk_space',
-    ],
-    'DISK_USAGE_MAX': 90,  # % máximo de uso de disco
-    'MEMORY_USAGE_MAX': 90,  # % máximo de uso de memoria
-}
-
-# ==========================================
-# API RATE LIMITING
-# ==========================================
-
-REST_FRAMEWORK_RATE_LIMITS = {
-    'anon': '100/hour',
-    'user': '1000/hour',
-    'admin': '5000/hour',
-}
-
-# ==========================================
-# BACKUP CONFIGURATION
-# ==========================================
-
-BACKUP_CONFIG = {
-    'ENABLED': config('BACKUP_ENABLED', default=True, cast=bool),
-    'STORAGE_PATH': BASE_DIR / 'media' / 'backups',
-    'RETENTION_DAYS': 30,
-    'SCHEDULE': {
-        'DATABASE': '0 2 * * *',  # Diario a las 2 AM
-        'MEDIA': '0 3 * * 0',     # Semanal los domingos a las 3 AM
-    },
-    'COMPRESS': True,
-    'ENCRYPT': config('BACKUP_ENCRYPT', default=False, cast=bool),
-    'ENCRYPTION_KEY': config('BACKUP_ENCRYPTION_KEY', default=''),
-}
-
-print("=== CONFIGURACIONES ADICIONALES COMPLETADAS ===")
+print("=== FIN SETTINGS VENDO ===")
 print(f"DATABASES final: {list(DATABASES.keys()) if 'DATABASES' in globals() else 'NO DEFINIDO'}")
-<<<<<<< Updated upstream
 print(f"APPS TOTALES: {len(INSTALLED_APPS)}")
 print(f"MIDDLEWARE STACK: {len(MIDDLEWARE)} middlewares")
 print(f"ESQUEMAS CONFIGURADOS: {len(DATABASE_APPS_MAPPING)}")
-print("=== FIN SETTINGS VENDO ===")
-
-# ==========================================
-# CONFIGURACIÓN FUTURA PARA NUEVOS MÓDULOS
-# ==========================================
-
-# Configuración para módulos futuros
-FUTURE_MODULES_CONFIG = {
-    'ecommerce': {
-        'enabled': False,
-        'schema': 'vendo_ecommerce',
-        'payment_gateways': ['paypal', 'stripe', 'payphone'],
-    },
-    'crm': {
-        'enabled': False,
-        'schema': 'vendo_crm',
-        'lead_sources': ['web', 'phone', 'email', 'referral'],
-    },
-    'hr': {
-        'enabled': False,
-        'schema': 'vendo_hr',
-        'modules': ['employees', 'payroll', 'attendance'],
-    },
-    'warehouse': {
-        'enabled': False,
-        'schema': 'vendo_warehouse',
-        'features': ['locations', 'transfers', 'picking'],
-    },
-    'analytics': {
-        'enabled': False,
-        'schema': 'vendo_analytics',
-        'engines': ['elasticsearch', 'clickhouse'],
-    },
-}
-
-# Variables de entorno adicionales para personalización
-CUSTOM_BRAND_NAME = config('CUSTOM_BRAND_NAME', default='VENDO')
-CUSTOM_THEME_COLOR = config('CUSTOM_THEME_COLOR', default='#007bff')
-CUSTOM_LOGO_URL = config('CUSTOM_LOGO_URL', default='')
-CUSTOM_FAVICON_URL = config('CUSTOM_FAVICON_URL', default='')
-
-# Feature flags para habilitar/deshabilitar funcionalidades
-FEATURE_FLAGS = {
-    'MULTI_CURRENCY': config('FEATURE_MULTI_CURRENCY', default=False, cast=bool),
-    'ADVANCED_REPORTING': config('FEATURE_ADVANCED_REPORTING', default=True, cast=bool),
-    'API_V2': config('FEATURE_API_V2', default=False, cast=bool),
-    'MOBILE_APP': config('FEATURE_MOBILE_APP', default=False, cast=bool),
-    'INTEGRATIONS': config('FEATURE_INTEGRATIONS', default=True, cast=bool),
-    'ADVANCED_PERMISSIONS': config('FEATURE_ADVANCED_PERMISSIONS', default=True, cast=bool),
-    'REAL_TIME_SYNC': config('FEATURE_REAL_TIME_SYNC', default=False, cast=bool),
-    'OFFLINE_MODE': config('FEATURE_OFFLINE_MODE', default=False, cast=bool),
-}
-
-print(f"✅ CONFIGURACIÓN COMPLETA DE VENDO CARGADA EXITOSAMENTE")
-print(f"🚀 Sistema: {CUSTOM_BRAND_NAME}")
-print(f"🔧 Debug: {DEBUG}")
-print(f"📊 Features habilitadas: {sum(1 for v in FEATURE_FLAGS.values() if v)}/{len(FEATURE_FLAGS)}")
-=======
-print(f"AUTH_USER_MODEL: {AUTH_USER_MODEL}")
-print(f"Apps instaladas: {len(INSTALLED_APPS)}")
-
-# ==========================================
-# VERIFICACIÓN FINAL
-# ==========================================
-
-if DEBUG:
-    print("\n=== VERIFICACIÓN DE CONFIGURACIÓN ===")
-    print(f"✅ rest_framework.authtoken en INSTALLED_APPS: {'rest_framework.authtoken' in INSTALLED_APPS}")
-    print(f"✅ AUTH_USER_MODEL configurado: {AUTH_USER_MODEL}")
-    print(f"✅ LOGIN_URL: {LOGIN_URL}")
-    print(f"✅ DATABASES configurado: {'default' in DATABASES}")
-    print("=====================================\n")
->>>>>>> Stashed changes
+print("OK: CONFIGURACIÓN COMPLETA DE VENDO CARGADA EXITOSAMENTE")
