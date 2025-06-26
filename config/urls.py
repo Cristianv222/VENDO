@@ -1,5 +1,5 @@
 """
-URLs principales del proyecto VENDO - VERSIÓN OPTIMIZADA
+URLs principales del proyecto VENDO - VERSIÓN LIMPIA Y CORREGIDA
 """
 from django.contrib import admin
 from django.urls import path, include
@@ -7,15 +7,18 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import redirect
 from django.http import HttpResponse
+from django.views.generic import RedirectView
 
-# Vista simple para redirección inteligente
+# ==========================================
+# VISTAS AUXILIARES
+# ==========================================
+
 def smart_redirect(request):
     """Redirección inteligente basada en autenticación"""
     if request.user.is_authenticated:
         return redirect('core:dashboard')
     return redirect('users:login')
 
-# Vista simple para robots.txt
 def robots_txt(request):
     """Robots.txt básico"""
     content = """User-agent: *
@@ -26,15 +29,11 @@ Allow: /
 """
     return HttpResponse(content, content_type='text/plain')
 
+# ==========================================
+# CONFIGURACIÓN DE URLs
+# ==========================================
+
 urlpatterns = [
-    # ==========================================
-    # AUTENTICACIÓN DJANGO - PRIORIDAD MÁXIMA
-    # ==========================================
-    
-    # CRÍTICO: URLs de autenticación de Django (namespace 'auth')
-    # DEBE ir PRIMERO para resolver todas las referencias a 'auth:'
-    path('auth/', include('django.contrib.auth.urls')),
-    
     # ==========================================
     # ADMIN Y NAVEGACIÓN PRINCIPAL
     # ==========================================
@@ -45,25 +44,35 @@ urlpatterns = [
     # Redirección inteligente de la raíz
     path('', smart_redirect, name='home'),
     
-    # Compatibilidad para URL /login/ (redirige a la correcta)
-    path('login/', lambda request: redirect('users:login'), name='login_redirect'),
-    
     # Robots.txt para SEO
     path('robots.txt', robots_txt, name='robots_txt'),
     
     # ==========================================
-    # MÓDULOS DE LA APLICACIÓN - ORDEN ESPECÍFICO
+    # AUTENTICACIÓN
     # ==========================================
     
-    # Usuarios y autenticación personalizada
+    # URLs de autenticación de Django (namespace 'auth')
+    path('auth/', include('django.contrib.auth.urls')),
+    
+    # URLs de allauth para OAuth (Google, etc.)
+    path('accounts/', include('allauth.urls')),
+    
+    # URLs de usuarios personalizadas
     path('users/', include('apps.users.urls')),
     
+    # Compatibilidad para URL /login/ (redirige a la correcta)
+    path('login/', lambda request: redirect('users:login'), name='login_redirect'),
+    
+    # ==========================================
+    # MÓDULOS ACTIVOS DE LA APLICACIÓN
+    # ==========================================
+    
     # Core (dashboard, empresas, sucursales)
-    # IMPORTANTE: Va al final para no interferir con otras rutas
+    # IMPORTANTE: Va después de las rutas específicas
     path('', include('apps.core.urls')),
     
     # ==========================================
-    # MÓDULOS FUTUROS (preparado para expansión)
+    # MÓDULOS FUTUROS (comentados hasta que existan)
     # ==========================================
     
     # Configuraciones del sistema
@@ -78,7 +87,7 @@ urlpatterns = [
     # path('quotations/', include('apps.quotations.urls')),
     # path('reports/', include('apps.reports.urls')),
     
-    # APIs externas y webhooks
+    # APIs externas y webhooks (crear cuando sea necesario)
     # path('api/v1/', include('apps.api.urls')),
     # path('webhooks/', include('apps.webhooks.urls')),
 ]
@@ -124,27 +133,11 @@ if not settings.DEBUG:
     ]
 
 # ==========================================
-# HANDLERS DE ERROR PERSONALIZADOS
+# HANDLERS DE ERROR PERSONALIZADOS (FUTURO)
 # ==========================================
 
-# Páginas de error personalizadas (solo si existen las vistas)
+# Páginas de error personalizadas (activar cuando existan las vistas)
 # handler400 = 'apps.core.views.custom_400'
 # handler403 = 'apps.core.views.custom_403'
 # handler404 = 'apps.core.views.custom_404'
 # handler500 = 'apps.core.views.custom_500'
-
-# ==========================================
-# CONFIGURACIÓN FUTURA
-# ==========================================
-
-# Configuración para subdominios (futuro)
-# SUBDOMAIN_URLCONFS = {
-#     'api': 'apps.api.urls',
-#     'admin': 'config.admin_urls',
-#     'pos': 'apps.pos.urls',
-# }
-
-# Rate limiting (futuro)
-# if 'django_ratelimit' in settings.INSTALLED_APPS:
-#     from django_ratelimit.decorators import ratelimit
-#     # Configurar rate limiting aquí
