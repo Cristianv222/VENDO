@@ -56,6 +56,11 @@ THIRD_PARTY_APPS = [
     'django_filters',
     'crispy_forms',
     'crispy_bootstrap5',
+    # Allauth apps
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
 ]
 
 # Local VENDO apps - organizadas por prioridad
@@ -80,7 +85,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 print(f"INSTALLED_APPS cargadas: {len(INSTALLED_APPS)} apps")
 
 # ==========================================
-# MIDDLEWARE CONFIGURATION (CORREGIDO)
+# MIDDLEWARE CONFIGURATION (CORREGIDO CON ALLAUTH)
 # ==========================================
 
 MIDDLEWARE = [
@@ -105,14 +110,17 @@ MIDDLEWARE = [
     # Authentication
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     
+    # ALLAUTH MIDDLEWARE (REQUERIDO) - DEBE IR DESPUÉS DE AuthenticationMiddleware
+    'allauth.account.middleware.AccountMiddleware',
+    
     # Messages framework (DEBE IR ANTES de los middlewares personalizados)
     'django.contrib.messages.middleware.MessageMiddleware',
     
-    # VENDO Custom Middlewares (DESPUÉS del MessageMiddleware)
-    'apps.core.middleware.CompanyMiddleware',       # Gestión de empresa
-    'apps.core.middleware.AuditMiddleware',         # Auditoría automática
-    'apps.core.middleware.SecurityMiddleware',      # Seguridad adicional
-    'apps.core.middleware.PerformanceMiddleware',   # Monitoreo rendimiento
+    # VENDO Custom Middlewares (DESPUÉS del MessageMiddleware) - Comentados hasta crear
+    # 'apps.core.middleware.CompanyMiddleware',       # Gestión de empresa
+    # 'apps.core.middleware.AuditMiddleware',         # Auditoría automática
+    # 'apps.core.middleware.SecurityMiddleware',      # Seguridad adicional
+    # 'apps.core.middleware.PerformanceMiddleware',   # Monitoreo rendimiento
     
     # Clickjacking protection (siempre al final)
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -120,8 +128,74 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'config.urls'
 
-# Sites framework
+# Sites framework (REQUERIDO POR ALLAUTH)
 SITE_ID = 1
+
+# ==========================================
+# AUTHENTICATION CONFIGURATION (CON ALLAUTH)
+# ==========================================
+
+# Authentication backends
+AUTHENTICATION_BACKENDS = [
+    # Backends de Django por defecto
+    'django.contrib.auth.backends.ModelBackend',
+    
+    # Backends de allauth
+    'allauth.account.auth_backends.AuthenticationBackend',
+    
+    # Tus backends personalizados (si existen)
+    # 'apps.users.authentication.EmailOrUsernameModelBackend',
+    # 'apps.users.authentication.CompanyAwareBackend',
+]
+
+# URLs de autenticación
+LOGIN_URL = '/accounts/login/'           # Cambiado para allauth
+LOGIN_REDIRECT_URL = '/dashboard/'       # Después del login exitoso
+LOGOUT_REDIRECT_URL = '/accounts/login/' # Después del logout
+
+# Configuración de allauth
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = 'optional'  # o 'mandatory' si quieres verificación obligatoria
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_USER_MODEL_USERNAME_FIELD = 'username'
+ACCOUNT_USER_MODEL_EMAIL_FIELD = 'email'
+
+# Auto-login después de registro social
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_EMAIL_REQUIRED = True
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'optional'
+
+# Configuración de proveedores sociales
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+        'OAUTH_PKCE_ENABLED': True,
+        'FETCH_USERINFO': True,
+    }
+}
+
+# URLs de redirección después del logout
+ACCOUNT_LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+# Conectar automáticamente cuentas sociales con usuarios existentes por email
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+
+# Adaptadores personalizados (descomenta cuando los tengas)
+# ACCOUNT_ADAPTER = 'apps.users.adapters.CustomAccountAdapter'
+# SOCIALACCOUNT_ADAPTER = 'apps.users.adapters.CustomSocialAccountAdapter'
+
+# Formularios personalizados (descomenta cuando los tengas)
+# ACCOUNT_FORMS = {
+#     'login': 'apps.users.forms.CustomAuthenticationForm',
+# }
 
 # ==========================================
 # TEMPLATES CONFIGURATION
@@ -147,28 +221,20 @@ TEMPLATES = [
                 'django.template.context_processors.static',
                 'django.template.context_processors.tz',
                 
-                # VENDO custom context processors
-                'apps.core.context_processors.company_context',
-                'apps.core.context_processors.branch_context',
-                'apps.core.context_processors.user_context',
-                'apps.core.context_processors.system_context',
-                'apps.core.context_processors.navigation_context',
-                'apps.core.context_processors.menu_context',
-                'apps.core.context_processors.notifications_context',
+                # VENDO custom context processors (comentados hasta crear)
+                # 'apps.core.context_processors.company_context',
+                # 'apps.core.context_processors.branch_context',
+                # 'apps.core.context_processors.user_context',
+                # 'apps.core.context_processors.system_context',
+                # 'apps.core.context_processors.navigation_context',
+                # 'apps.core.context_processors.menu_context',
+                # 'apps.core.context_processors.notifications_context',
             ],
         },
     },
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
-
-# ==========================================
-# AUTHENTICATION CONFIGURATION
-# ==========================================
-
-LOGIN_URL = '/users/login/'           # CORREGIDO: apunta a la URL correcta
-LOGIN_REDIRECT_URL = '/dashboard/'    # Después del login exitoso
-LOGOUT_REDIRECT_URL = '/users/login/' # Después del logout
 
 print("=== CONFIGURANDO DATABASES ===")
 
@@ -198,8 +264,8 @@ except Exception as e:
     import traceback
     traceback.print_exc()
 
-# Database Router for Schema Management (ACTIVADO)
-DATABASE_ROUTERS = ['config.db_router.SchemaRouter']
+# Database Router for Schema Management (comentado hasta crear)
+# DATABASE_ROUTERS = ['config.db_router.SchemaRouter']
 
 # Database Schema Mapping - Esquemas por módulo
 DATABASE_APPS_MAPPING = {
@@ -209,6 +275,7 @@ DATABASE_APPS_MAPPING = {
     'settings': 'vendo_core',
     
     # Apps de negocio (cada una en su esquema)
+    'api': 'vendo_core',  # API va en core por ahora
     'pos': 'vendo_pos',
     'inventory': 'vendo_inventory',
     'invoicing': 'vendo_invoicing',
@@ -231,6 +298,9 @@ DATABASE_APPS_MAPPING = {
     'authtoken': 'public',
     'corsheaders': 'public',
     'django_filters': 'public',
+    'allauth': 'public',
+    'account': 'public',
+    'socialaccount': 'public',
 }
 
 print("=== DATABASES Y ROUTER CONFIGURADOS ===")
@@ -337,8 +407,9 @@ try:
             'rest_framework.authentication.TokenAuthentication',
         ],
         'DEFAULT_PERMISSION_CLASSES': [
-            'apps.core.permissions.IsAuthenticatedAndActive',
-            'apps.core.permissions.HasCompanyAccess',
+            # 'apps.core.permissions.IsAuthenticatedAndActive',  # Comentado hasta crear
+            # 'apps.core.permissions.HasCompanyAccess',          # Comentado hasta crear
+            'rest_framework.permissions.IsAuthenticated',  # Usar por defecto por ahora
         ],
         'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
         'PAGE_SIZE': 25,
@@ -356,7 +427,7 @@ try:
             'rest_framework.parsers.FormParser',
             'rest_framework.parsers.MultiPartParser',
         ],
-        'EXCEPTION_HANDLER': 'apps.core.exceptions.custom_exception_handler',
+        # 'EXCEPTION_HANDLER': 'apps.core.exceptions.custom_exception_handler',  # Comentado hasta crear
         'DATETIME_FORMAT': '%d/%m/%Y %H:%M:%S',
         'DATE_FORMAT': '%d/%m/%Y',
     }
@@ -550,3 +621,30 @@ ZEBRA_PRINTER_NAME = 'ZDesigner'        # Nombre de la impresora en Windows
 # ZEBRA_USB_PORT = 'COM3'              # Windows (puerto específico)
 # ZEBRA_USB_PORT = '/dev/ttyUSB0'      # Linux
 # ZEBRA_PRINTER_NAME = 'ZDesigner GK420t'  # Nombre específico en Windows
+
+# Ir directamente a Google sin página intermedia
+SOCIALACCOUNT_LOGIN_ON_GET = True
+
+# Auto-login después de autenticación exitosa (opcional)
+SOCIALACCOUNT_AUTO_SIGNUP = True
+
+# No mostrar formulario de confirmación en login social
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+
+# Configuración del provider Google para login directo
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+        'OAUTH_PKCE_ENABLED': True,
+        'FETCH_USERINFO': True,
+        # Configuración para login directo
+        'VERIFIED_EMAIL': True,
+        'VERSION': 'v2',
+    }
+}

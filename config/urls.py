@@ -7,15 +7,18 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import redirect
 from django.http import HttpResponse
+from django.views.generic import RedirectView
 
-# Vista simple para redirección inteligente
+# ==========================================
+# VISTAS AUXILIARES
+# ==========================================
+
 def smart_redirect(request):
     """Redirección inteligente basada en autenticación"""
     if request.user.is_authenticated:
         return redirect('core:dashboard')
     return redirect('users:login')
 
-# Vista simple para robots.txt
 def robots_txt(request):
     """Robots.txt básico"""
     content = """User-agent: *
@@ -26,15 +29,11 @@ Allow: /
 """
     return HttpResponse(content, content_type='text/plain')
 
+# ==========================================
+# CONFIGURACIÓN DE URLs
+# ==========================================
+
 urlpatterns = [
-    # ==========================================
-    # AUTENTICACIÓN DJANGO - PRIORIDAD MÁXIMA
-    # ==========================================
-    
-    # CRÍTICO: URLs de autenticación de Django (namespace 'auth')
-    # DEBE ir PRIMERO para resolver todas las referencias a 'auth:'
-    path('auth/', include('django.contrib.auth.urls')),
-    
     # ==========================================
     # ADMIN Y NAVEGACIÓN PRINCIPAL
     # ==========================================
@@ -45,28 +44,45 @@ urlpatterns = [
     # Redirección inteligente de la raíz
     path('', smart_redirect, name='home'),
     
-    # Compatibilidad para URL /login/ (redirige a la correcta)
-    path('login/', lambda request: redirect('users:login'), name='login_redirect'),
-    
     # Robots.txt para SEO
     path('robots.txt', robots_txt, name='robots_txt'),
     
-    # ==========================================
+    # ==========================================¡
     # MÓDULOS DE LA APLICACIÓN - ORDEN CORREGIDO
+
+    # AUTENTICACIÓN
     # ==========================================
     
-    # Usuarios y autenticación personalizada
+    # URLs de autenticación de Django (namespace 'auth')
+    path('auth/', include('django.contrib.auth.urls')),
+    
+    # URLs de allauth para OAuth (Google, etc.)
+    path('accounts/', include('allauth.urls')),
+    
+    # URLs de usuarios personalizadas
     path('users/', include('apps.users.urls')),
     
+
     # Módulos de negocio (ANTES del core para evitar conflictos)
     path('inventory/', include('apps.inventory.urls')),
     
     # Core (dashboard, empresas, sucursales)
     # IMPORTANTE: Va después de los módulos específicos
+
+    # Compatibilidad para URL /login/ (redirige a la correcta)
+    path('login/', lambda request: redirect('users:login'), name='login_redirect'),
+    
+    # ==========================================
+    # MÓDULOS ACTIVOS DE LA APLICACIÓN
+    # ==========================================
+    
+    # Core (dashboard, empresas, sucursales)
+    # IMPORTANTE: Va después de las rutas específicas
+
     path('', include('apps.core.urls')),
     
     # ==========================================
-    # MÓDULOS FUTUROS (preparado para expansión)
+    # MÓDULOS FUTUROS (comentados hasta que existan)
     # ==========================================
     
     # Configuraciones del sistema
@@ -80,7 +96,7 @@ urlpatterns = [
     # path('quotations/', include('apps.quotations.urls')),
     # path('reports/', include('apps.reports.urls')),
     
-    # APIs externas y webhooks
+    # APIs externas y webhooks (crear cuando sea necesario)
     # path('api/v1/', include('apps.api.urls')),
     # path('webhooks/', include('apps.webhooks.urls')),
 ]
@@ -126,10 +142,10 @@ if not settings.DEBUG:
     ]
 
 # ==========================================
-# HANDLERS DE ERROR PERSONALIZADOS
+# HANDLERS DE ERROR PERSONALIZADOS (FUTURO)
 # ==========================================
 
-# Páginas de error personalizadas (solo si existen las vistas)
+# Páginas de error personalizadas (activar cuando existan las vistas)
 # handler400 = 'apps.core.views.custom_400'
 # handler403 = 'apps.core.views.custom_403'
 # handler404 = 'apps.core.views.custom_404'

@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Error de Autenticación - VENDO{% endblock %}
+
+{% block extra_css %}
+<style>
+    .error-container {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+    }
+    
+    .error-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        padding: 3rem;
+        max-width: 500px;
+        width: 100%;
+        text-align: center;
+    }
+    
+    .error-icon {
+        font-size: 4rem;
+        color: #ff6b6b;
+        margin-bottom: 1.5rem;
+    }
+    
+    .error-title {
+        color: #2c3e50;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+    
+    .error-message {
+        color: #7f8c8d;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+    }
+    
+    .error-details {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 2rem;
+        font-family: monospace;
+        font-size: 0.9rem;
+        color: #e74c3c;
+    }
+    
+    .btn-group .btn {
+        margin: 0 0.5rem;
+        border-radius: 8px;
+        padding: 12px 24px;
+        font-weight: 500;
+    }
+    
+    .btn-primary {
+        background: #667eea;
+        border: none;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        border: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-card">
+        <div class="error-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        
+        <h2 class="error-title">Error de Autenticación</h2>
+        
+        <div class="error-message">
+            <p>
+                Ha ocurrido un problema al intentar iniciar sesión con tu cuenta de Google.
+                Esto puede deberse a varias razones:
+            </p>
+            
+            <ul class="text-start mt-3">
+                <li>El proceso de autenticación fue cancelado</li>
+                <li>Tu cuenta de Google no está verificada</li>
+                <li>Hay un problema temporal con el servicio</li>
+                <li>La configuración de OAuth necesita ser actualizada</li>
+            </ul>
+        </div>
+        
+        {% if exception %}
+        <div class="error-details">
+            <strong>Detalles técnicos:</strong><br>
+            {{ exception }}
+        </div>
+        {% endif %}
+        
+        <div class="btn-group">
+            <a href="{% url 'users:login' %}" class="btn btn-primary">
+                <i class="fas fa-sign-in-alt me-2"></i>
+                Intentar de Nuevo
+            </a>
+            
+            <a href="{% url 'users:login' %}" class="btn btn-secondary">
+                <i class="fas fa-envelope me-2"></i>
+                Login con Email
+            </a>
+        </div>
+        
+        <div class="mt-4">
+            <small class="text-muted">
+                Si el problema persiste, contacta al administrador del sistema.
+            </small>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Mostrar mensaje de soporte técnico después de 10 segundos
+    setTimeout(function() {
+        const supportMsg = document.createElement('div');
+        supportMsg.className = 'alert alert-info mt-3';
+        supportMsg.innerHTML = `
+            <i class="fas fa-info-circle me-2"></i>
+            ¿Necesitas ayuda? Contacta a soporte técnico: 
+            <a href="mailto:soporte@vendo.com">soporte@vendo.com</a>
+        `;
+        document.querySelector('.error-card').appendChild(supportMsg);
+    }, 10000);
+</script>
+{% endblock %}

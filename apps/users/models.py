@@ -44,15 +44,18 @@ class User(AbstractUser):
         verbose_name=_('Tipo de documento')
     )
     document_number = models.CharField(
-        max_length=20,
-        unique=True,
-        verbose_name=_('Número de documento'),
-        validators=[
-            RegexValidator(
-                regex=r'^[\d\-]+$',
-                message=_('El número de documento solo puede contener números y guiones.'),
+    max_length=20,
+    unique=True,
+    blank=True,        # ← Permite campo vacío en formularios
+    null=True,         # ← Permite NULL en base de datos
+    verbose_name=_('Número de documento'),
+    help_text=_('Número de cédula o documento de identidad (opcional para registro social)'),
+    validators=[
+        RegexValidator(
+            regex=r'^[\d\-]+$',
+            message=_('El número de documento solo puede contener números y guiones.'),
             ),
-        ]
+        ]   
     )
     phone = models.CharField(
         max_length=20,
