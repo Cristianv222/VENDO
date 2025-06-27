@@ -1,5 +1,5 @@
 """
-URLs principales del proyecto VENDO - VERSIÓN OPTIMIZADA
+URLs principales del proyecto VENDO - VERSIÓN CORREGIDA
 """
 from django.contrib import admin
 from django.urls import path, include
@@ -52,14 +52,17 @@ urlpatterns = [
     path('robots.txt', robots_txt, name='robots_txt'),
     
     # ==========================================
-    # MÓDULOS DE LA APLICACIÓN - ORDEN ESPECÍFICO
+    # MÓDULOS DE LA APLICACIÓN - ORDEN CORREGIDO
     # ==========================================
     
     # Usuarios y autenticación personalizada
     path('users/', include('apps.users.urls')),
     
+    # Módulos de negocio (ANTES del core para evitar conflictos)
+    path('inventory/', include('apps.inventory.urls')),
+    
     # Core (dashboard, empresas, sucursales)
-    # IMPORTANTE: Va al final para no interferir con otras rutas
+    # IMPORTANTE: Va después de los módulos específicos
     path('', include('apps.core.urls')),
     
     # ==========================================
@@ -71,7 +74,6 @@ urlpatterns = [
     
     # Módulos de negocio (descomentar cuando estén listos)
     # path('pos/', include('apps.pos.urls')),
-    # path('inventory/', include('apps.inventory.urls')),
     # path('invoicing/', include('apps.invoicing.urls')),
     # path('purchases/', include('apps.purchases.urls')),
     # path('accounting/', include('apps.accounting.urls')),
@@ -132,19 +134,3 @@ if not settings.DEBUG:
 # handler403 = 'apps.core.views.custom_403'
 # handler404 = 'apps.core.views.custom_404'
 # handler500 = 'apps.core.views.custom_500'
-
-# ==========================================
-# CONFIGURACIÓN FUTURA
-# ==========================================
-
-# Configuración para subdominios (futuro)
-# SUBDOMAIN_URLCONFS = {
-#     'api': 'apps.api.urls',
-#     'admin': 'config.admin_urls',
-#     'pos': 'apps.pos.urls',
-# }
-
-# Rate limiting (futuro)
-# if 'django_ratelimit' in settings.INSTALLED_APPS:
-#     from django_ratelimit.decorators import ratelimit
-#     # Configurar rate limiting aquí

@@ -2,15 +2,16 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     
     <title>{% block title %}VENDO - Sistema de Gestión{% endblock %}</title>
     
     <!-- Material UI CSS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/@mui/material@5.14.20/umd/material-ui.min.css" rel="stylesheet">
     
     <!-- Custom CSS for Material UI styling -->
     <style>
@@ -30,11 +31,18 @@
             box-sizing: border-box;
         }
 
+        html {
+            overflow-x: hidden;
+            width: 100%;
+        }
+
         body {
             font-family: 'Roboto', sans-serif;
             background-color: var(--background-color);
             color: var(--text-primary);
             line-height: 1.5;
+            overflow-x: hidden;
+            width: 100%;
         }
 
         .mdc-top-app-bar {
@@ -42,8 +50,10 @@
             color: white;
             position: sticky;
             top: 0;
-            z-index: 1000;
+            z-index: 10000;
             box-shadow: 0 2px 4px -1px rgba(0,0,0,.2), 0 4px 5px 0 rgba(0,0,0,.14), 0 1px 10px 0 rgba(0,0,0,.12);
+            width: 100%;
+            overflow: visible;
         }
 
         .app-bar {
@@ -52,6 +62,11 @@
             justify-content: space-between;
             padding: 0 16px;
             height: 64px;
+            width: 100%;
+            max-width: 100vw;
+            overflow: visible;
+            position: relative;
+            z-index: 10000;
         }
 
         .app-bar-left {
@@ -64,6 +79,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-shrink: 0;
         }
 
         .logo {
@@ -74,6 +90,7 @@
             color: white;
             font-size: 20px;
             font-weight: 500;
+            flex-shrink: 0;
         }
 
         .nav-menu {
@@ -84,6 +101,7 @@
 
         .nav-item {
             position: relative;
+            flex-shrink: 0;
         }
 
         .nav-link {
@@ -95,10 +113,15 @@
             text-decoration: none;
             border-radius: 4px;
             transition: background-color 0.2s;
+            white-space: nowrap;
         }
 
         .nav-link:hover {
             background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
         }
 
         .mdc-button {
@@ -208,6 +231,8 @@
             max-width: 1200px;
             margin: 0 auto;
             padding: 24px 16px;
+            width: 100%;
+            overflow-x: hidden;
         }
 
         .mdc-breadcrumbs {
@@ -308,49 +333,228 @@
             left: 0;
             bottom: 0;
             width: 280px;
+            max-width: 85vw;
             background: white;
             z-index: 1004;
             transform: translateX(-100%);
             transition: transform 0.2s;
             overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .mobile-drawer.open {
             transform: translateX(0);
         }
 
-        @media (max-width: 768px) {
-            .nav-menu {
-                display: none;
-            }
+        .module-submenu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 5px 5px -3px rgba(0,0,0,.2), 0 8px 10px 1px rgba(0,0,0,.14), 0 3px 14px 2px rgba(0,0,0,.12);
+            min-width: 250px;
+            max-width: 90vw;
+            z-index: 1001;
+            opacity: 0;
+            transform: translateY(-8px);
+            transition: opacity 0.2s, transform 0.2s;
+            pointer-events: none;
+        }
 
-            .mobile-menu {
-                display: block;
-            }
-
-            .app-bar-right .mdc-button {
-                display: none;
-            }
-
-            .main-content {
-                padding: 16px 8px;
-            }
+        .nav-item:hover .module-submenu {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
         }
 
         .hidden {
             display: none;
         }
 
+        #userMenu {
+            min-width: 220px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        #userMenu .mdc-menu-item {
+            font-size: 14px;
+        }
+
+        #userMenu .mdc-menu-item[style*="text-transform: uppercase"] {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            padding: 8px 16px;
+        }
+
         .material-icons {
             font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .module-divider {
+            width: 1px;
+            height: 24px;
+            background-color: rgba(255, 255, 255, 0.2);
+            margin: 0 8px;
+            flex-shrink: 0;
+        }
+
+        /* Indicador de funcionamiento del template */
+        .template-status {
+            background: linear-gradient(45deg, #4caf50, #45a049);
+            color: white;
+            padding: 8px 16px;
+            text-align: center;
+            font-weight: 500;
+            font-size: 14px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* RESPONSIVE DESIGN - SOLO AGREGADO AL FINAL */
+        @media (max-width: 1400px) {
+            .nav-menu {
+                gap: 6px;
+            }
+            .nav-link {
+                padding: 8px 10px;
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .nav-menu {
+                gap: 4px;
+            }
+            .nav-link {
+                padding: 8px 8px;
+                font-size: 12px;
+            }
+            .module-divider {
+                margin: 0 4px;
+            }
+            .logo {
+                font-size: 18px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .nav-menu {
+                gap: 2px;
+            }
+            .nav-link {
+                padding: 6px 6px;
+                font-size: 11px;
+            }
+            .nav-link span:last-child {
+                display: none; /* Ocultar texto, solo iconos */
+            }
+            .app-bar-left {
+                gap: 12px;
+            }
+            .module-divider {
+                margin: 0 2px;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .nav-menu {
+                display: none;
+            }
+            .mobile-menu {
+                display: block;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-bar {
+                padding: 0 12px;
+                height: 56px;
+            }
+            .app-bar-right .mdc-button {
+                display: none;
+            }
+            .main-content {
+                padding: 16px 12px;
+            }
+            .mdc-snackbar {
+                top: 72px;
+                left: 12px;
+                right: 12px;
+                transform: none;
+                max-width: none;
+                min-width: auto;
+            }
+            .mobile-drawer {
+                width: min(280px, 85vw);
+            }
+            .mdc-menu {
+                max-width: calc(100vw - 20px);
+                right: 10px;
+            }
+            #userMenu {
+                min-width: 250px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .app-bar {
+                padding: 0 8px;
+                height: 52px;
+            }
+            .main-content {
+                padding: 12px 8px;
+            }
+            .logo {
+                font-size: 16px;
+            }
+            .app-bar-left {
+                gap: 8px;
+            }
+            .mdc-snackbar {
+                left: 8px;
+                right: 8px;
+                top: 60px;
+            }
+            .mdc-icon-button {
+                width: 40px;
+                height: 40px;
+            }
+            .material-icons {
+                font-size: 18px;
+            }
+            .mobile-drawer {
+                width: 90vw;
+            }
+            #userMenu {
+                right: 5px;
+                min-width: calc(100vw - 20px);
+            }
+        }
+
+        @media (max-width: 360px) {
+            .app-bar {
+                padding: 0 4px;
+            }
+            .logo span:last-child {
+                display: none; /* Solo icono en pantallas muy pequeñas */
+            }
+            .app-bar-right {
+                gap: 4px;
+            }
         }
     </style>
     
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    {% load static %}
-    
     <!-- Top App Bar -->
     {% if user.is_authenticated %}
     <header class="mdc-top-app-bar">
@@ -362,117 +566,276 @@
                 </button>
                 
                 <!-- Logo/Brand -->
-                <a class="logo" href="{% url 'core:dashboard' %}">
-                    {% if current_company and current_company.logo %}
-                        <img src="{{ current_company.logo.url }}" alt="{{ current_company.business_name }}" height="30">
-                    {% else %}
-                        <span class="material-icons">store</span>
-                    {% endif %}
+                <a class="logo" href="/dashboard/">
+                    <span class="material-icons">store</span>
                     VENDO
                 </a>
                 
                 <!-- Desktop Navigation -->
                 <nav class="nav-menu">
-                    {% if menu_items %}
-                        {% for menu_item in menu_items %}
-                        <div class="nav-item">
-                            <a class="nav-link" href="{% url menu_item.url %}">
-                                <span class="material-icons">{{ menu_item.icon }}</span>
-                                {{ menu_item.title }}
+                    <!-- Menú de módulos principales -->
+                    <div class="nav-item">
+                        <a class="nav-link" href="/dashboard/">
+                            <span class="material-icons">dashboard</span>
+                            Dashboard
+                        </a>
+                    </div>
+
+                    <div class="module-divider"></div>
+
+                    <!-- Módulo de Inventario -->
+                    <div class="nav-item">
+                        <a class="nav-link" href="/inventory/">
+                            <span class="material-icons">inventory_2</span>
+                            Inventario
+                        </a>
+                        <div class="module-submenu">
+                            <a class="mdc-menu-item" href="/inventory/products/">
+                                <span class="material-icons">category</span>
+                                Productos
+                            </a>
+                            <a class="mdc-menu-item" href="/inventory/categories/">
+                                <span class="material-icons">label</span>
+                                Categorías
+                            </a>
+                            <a class="mdc-menu-item" href="/inventory/brands/">
+                                <span class="material-icons">star</span>
+                                Marcas
+                            </a>
+                            <a class="mdc-menu-item" href="/inventory/suppliers/">
+                                <span class="material-icons">local_shipping</span>
+                                Proveedores
+                            </a>
+                            <div class="mdc-menu-divider"></div>
+                            <a class="mdc-menu-item" href="/inventory/stock/movements/">
+                                <span class="material-icons">swap_horiz</span>
+                                Movimientos
+                            </a>
+                            <a class="mdc-menu-item" href="/inventory/stock/alerts/">
+                                <span class="material-icons">warning</span>
+                                Alertas
+                            </a>
+                            <a class="mdc-menu-item" href="/inventory/reports/">
+                                <span class="material-icons">assessment</span>
+                                Reportes
                             </a>
                         </div>
-                        {% endfor %}
-                    {% else %}
-                        <!-- Menú básico si no hay menu_items -->
-                        <div class="nav-item">
-                            <a class="nav-link" href="{% url 'core:dashboard' %}">
+                    </div>
+
+                    <!-- Módulo POS -->
+                    <div class="nav-item">
+                        <a class="nav-link" href="#" onclick="showComingSoon('POS')">
+                            <span class="material-icons">point_of_sale</span>
+                            POS
+                        </a>
+                        <div class="module-submenu">
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Nueva Venta')">
+                                <span class="material-icons">add_shopping_cart</span>
+                                Nueva Venta
+                            </a>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Ventas del Día')">
+                                <span class="material-icons">today</span>
+                                Ventas del Día
+                            </a>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Caja')">
+                                <span class="material-icons">account_balance_wallet</span>
+                                Caja
+                            </a>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Sesiones POS')">
+                                <span class="material-icons">schedule</span>
+                                Sesiones
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Módulo de Facturación -->
+                    <div class="nav-item">
+                        <a class="nav-link" href="#" onclick="showComingSoon('Facturación')">
+                            <span class="material-icons">receipt_long</span>
+                            Facturación
+                        </a>
+                        <div class="module-submenu">
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Facturas')">
+                                <span class="material-icons">receipt</span>
+                                Facturas
+                            </a>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Notas de Crédito')">
+                                <span class="material-icons">assignment_return</span>
+                                Notas de Crédito
+                            </a>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Notas de Débito')">
+                                <span class="material-icons">assignment_late</span>
+                                Notas de Débito
+                            </a>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Guías de Remisión')">
+                                <span class="material-icons">local_shipping</span>
+                                Guías de Remisión
+                            </a>
+                            <div class="mdc-menu-divider"></div>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('SRI')">
+                                <span class="material-icons">cloud_upload</span>
+                                Envío SRI
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="module-divider"></div>
+
+                    <!-- Módulo de Compras -->
+                    <div class="nav-item">
+                        <a class="nav-link" href="#" onclick="showComingSoon('Compras')">
+                            <span class="material-icons">shopping_cart</span>
+                            Compras
+                        </a>
+                        <div class="module-submenu">
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Órdenes de Compra')">
+                                <span class="material-icons">note_add</span>
+                                Órdenes de Compra
+                            </a>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Recepción')">
+                                <span class="material-icons">inventory</span>
+                                Recepción
+                            </a>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Liquidaciones')">
+                                <span class="material-icons">account_balance</span>
+                                Liquidaciones
+                            </a>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Gastos')">
+                                <span class="material-icons">money_off</span>
+                                Gastos
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Módulo de Contabilidad -->
+                    <div class="nav-item">
+                        <a class="nav-link" href="#" onclick="showComingSoon('Contabilidad')">
+                            <span class="material-icons">account_balance</span>
+                            Contabilidad
+                        </a>
+                        <div class="module-submenu">
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Cuentas por Cobrar')">
+                                <span class="material-icons">attach_money</span>
+                                Cuentas por Cobrar
+                            </a>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Cuentas por Pagar')">
+                                <span class="material-icons">money_off</span>
+                                Cuentas por Pagar
+                            </a>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Transacciones')">
+                                <span class="material-icons">sync_alt</span>
+                                Transacciones
+                            </a>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Plan de Cuentas')">
+                                <span class="material-icons">account_tree</span>
+                                Plan de Cuentas
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Módulo de Cotizaciones -->
+                    <div class="nav-item">
+                        <a class="nav-link" href="#" onclick="showComingSoon('Cotizaciones')">
+                            <span class="material-icons">request_quote</span>
+                            Cotizaciones
+                        </a>
+                        <div class="module-submenu">
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Nueva Cotización')">
+                                <span class="material-icons">add</span>
+                                Nueva Cotización
+                            </a>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Mis Cotizaciones')">
+                                <span class="material-icons">list</span>
+                                Mis Cotizaciones
+                            </a>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Plantillas')">
+                                <span class="material-icons">description</span>
+                                Plantillas
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="module-divider"></div>
+
+                    <!-- Módulo de Reportes -->
+                    <div class="nav-item">
+                        <a class="nav-link" href="#" onclick="showComingSoon('Reportes')">
+                            <span class="material-icons">assessment</span>
+                            Reportes
+                        </a>
+                        <div class="module-submenu">
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Dashboard')">
                                 <span class="material-icons">dashboard</span>
                                 Dashboard
                             </a>
-                        </div>
-                        <div class="nav-item">
-                            <a class="nav-link" href="{% url 'core:company_list' %}">
-                                <span class="material-icons">business</span>
-                                Empresas
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Ventas')">
+                                <span class="material-icons">trending_up</span>
+                                Ventas
+                            </a>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Inventario')">
+                                <span class="material-icons">inventory_2</span>
+                                Inventario
+                            </a>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Financieros')">
+                                <span class="material-icons">account_balance</span>
+                                Financieros
+                            </a>
+                            <div class="mdc-menu-divider"></div>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Reportes Personalizados')">
+                                <span class="material-icons">tune</span>
+                                Personalizados
                             </a>
                         </div>
-                        <div class="nav-item">
-                            <a class="nav-link" href="{% url 'core:branch_list' %}">
+                    </div>
+
+                    <!-- Módulo de Configuraciones -->
+                    <div class="nav-item">
+                        <a class="nav-link" href="#" onclick="showComingSoon('Configuraciones')">
+                            <span class="material-icons">settings</span>
+                            Configuración
+                        </a>
+                        <div class="module-submenu">
+                            <a class="mdc-menu-item" href="/admin/">
+                                <span class="material-icons">business</span>
+                                Admin
+                            </a>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Sucursales')">
                                 <span class="material-icons">store</span>
                                 Sucursales
                             </a>
+                            <div class="mdc-menu-divider"></div>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Impuestos')">
+                                <span class="material-icons">calculate</span>
+                                Impuestos
+                            </a>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Sistema')">
+                                <span class="material-icons">computer</span>
+                                Sistema
+                            </a>
+                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Integraciones')">
+                                <span class="material-icons">extension</span>
+                                Integraciones
+                            </a>
                         </div>
-                    {% endif %}
+                    </div>
                 </nav>
             </div>
             
             <div class="app-bar-right">
-                <!-- Company Selector -->
-                {% if current_company %}
-                <div class="nav-item">
-                    <button class="mdc-button" onclick="toggleCompanyMenu()">
-                        <span class="material-icons">business</span>
-                        {{ current_company.business_name|truncatechars:20 }}
-                        <span class="material-icons">expand_more</span>
-                    </button>
-                    <div id="companyMenu" class="mdc-menu">
-                        {% if available_companies %}
-                            {% for company in available_companies %}
-                            <!-- NOTA: URL comentada hasta implementar la función switch_company -->
-                            <div class="mdc-menu-item {% if company == current_company %}active{% endif %}">
-                                {{ company.business_name }}
-                            </div>
-                            {% endfor %}
-                        {% else %}
-                            <div class="mdc-menu-item">No hay empresas disponibles</div>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
-                
-                <!-- Branch Selector -->
-                {% if current_branch and user_branches %}
-                <div class="nav-item">
-                    <button class="mdc-button" onclick="toggleBranchMenu()">
-                        <span class="material-icons">location_on</span>
-                        {{ current_branch.name|truncatechars:15 }}
-                        <span class="material-icons">expand_more</span>
-                    </button>
-                    <div id="branchMenu" class="mdc-menu">
-                        {% for branch in user_branches %}
-                        <!-- NOTA: URL comentada hasta implementar la función switch_branch -->
-                        <div class="mdc-menu-item {% if branch == current_branch %}active{% endif %}">
-                            {{ branch.name }}
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
-                
                 <!-- Notifications -->
                 <div class="nav-item">
                     <button class="mdc-icon-button" onclick="toggleNotificationsMenu()" style="position: relative;">
                         <span class="material-icons">notifications</span>
-                        {% if unread_notifications > 0 %}
-                        <span class="badge">{{ unread_notifications }}</span>
-                        {% endif %}
+                        <span class="badge">3</span>
                     </button>
                     <div id="notificationsMenu" class="mdc-menu">
                         <div class="mdc-menu-item" style="font-weight: 500; pointer-events: none;">
                             Notificaciones
                         </div>
                         <div class="mdc-menu-divider"></div>
-                        {% if recent_notifications %}
-                            {% for notification in recent_notifications %}
-                            <a class="mdc-menu-item" href="#">
-                                {{ notification.message|truncatechars:50 }}
-                            </a>
-                            {% endfor %}
-                        {% else %}
-                            <div class="mdc-menu-item" style="color: var(--text-secondary); pointer-events: none;">
-                                No hay notificaciones
-                            </div>
-                        {% endif %}
+                        <div class="mdc-menu-item" style="color: var(--text-secondary); pointer-events: none;">
+                            No hay notificaciones
+                        </div>
                     </div>
                 </div>
                 
@@ -483,15 +846,43 @@
                     </button>
                     <div id="userMenu" class="mdc-menu">
                         <div class="mdc-menu-item" style="font-weight: 500; pointer-events: none;">
-                            {{ user_full_name|default:user.username }}
+                            {{ user.get_full_name|default:user.username }}
                         </div>
                         <div class="mdc-menu-divider"></div>
-                        <a class="mdc-menu-item" href="{% url 'core:user_profile' %}">
+                        <a class="mdc-menu-item" href="/admin/">
                             <span class="material-icons">person</span>
                             Mi Perfil
                         </a>
-                        <!-- CORREGIDO: Usar users:logout en lugar de admin:logout -->
-                        <a class="mdc-menu-item" href="{% url 'users:logout' %}">
+                        <div class="mdc-menu-divider"></div>
+                        <div class="mdc-menu-item" style="font-weight: 500; pointer-events: none; font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">
+                            Administración
+                        </div>
+                        <a class="mdc-menu-item" href="/admin/">
+                            <span class="material-icons">admin_panel_settings</span>
+                            Panel de Admin
+                        </a>
+                        <a class="mdc-menu-item" href="/admin/auth/user/">
+                            <span class="material-icons">group</span>
+                            Usuarios
+                        </a>
+                        <a class="mdc-menu-item" href="/admin/auth/group/">
+                            <span class="material-icons">security</span>
+                            Permisos
+                        </a>
+                        <a class="mdc-menu-item" href="#" onclick="showComingSoon('Configuración del Sistema')">
+                            <span class="material-icons">settings</span>
+                            Configuración
+                        </a>
+                        <a class="mdc-menu-item" href="#" onclick="showComingSoon('Respaldos')">
+                            <span class="material-icons">backup</span>
+                            Respaldos
+                        </a>
+                        <a class="mdc-menu-item" href="#" onclick="showComingSoon('Logs del Sistema')">
+                            <span class="material-icons">bug_report</span>
+                            Logs
+                        </a>
+                        <div class="mdc-menu-divider"></div>
+                        <a class="mdc-menu-item" href="/users/logout/" style="color: #d32f2f;">
                             <span class="material-icons">logout</span>
                             Cerrar Sesión
                         </a>
@@ -513,52 +904,64 @@
             </div>
         </div>
         <div style="padding: 8px 0;">
-            {% if menu_items %}
-                {% for menu_item in menu_items %}
-                <a class="mdc-menu-item" href="{% url menu_item.url %}" style="padding: 12px 16px;">
-                    <span class="material-icons">{{ menu_item.icon }}</span>
-                    {{ menu_item.title }}
-                </a>
-                {% endfor %}
-            {% else %}
-                <!-- Menú móvil básico -->
-                <a class="mdc-menu-item" href="{% url 'core:dashboard' %}" style="padding: 12px 16px;">
-                    <span class="material-icons">dashboard</span>
-                    Dashboard
-                </a>
-                <a class="mdc-menu-item" href="{% url 'core:company_list' %}" style="padding: 12px 16px;">
-                    <span class="material-icons">business</span>
-                    Empresas
-                </a>
-                <a class="mdc-menu-item" href="{% url 'core:branch_list' %}" style="padding: 12px 16px;">
-                    <span class="material-icons">store</span>
-                    Sucursales
-                </a>
-            {% endif %}
+            <!-- Menú móvil con módulos -->
+            <a class="mdc-menu-item" href="/dashboard/" style="padding: 12px 16px;">
+                <span class="material-icons">dashboard</span>
+                Dashboard
+            </a>
+            
+            <!-- Inventario -->
+            <div style="padding: 8px 16px; font-weight: 500; color: var(--text-secondary); font-size: 12px; text-transform: uppercase;">
+                Inventario
+            </div>
+            <a class="mdc-menu-item" href="/inventory/" style="padding: 8px 16px; padding-left: 32px;">
+                <span class="material-icons">dashboard</span>
+                Dashboard Inventario
+            </a>
+            <a class="mdc-menu-item" href="/inventory/products/" style="padding: 8px 16px; padding-left: 32px;">
+                <span class="material-icons">category</span>
+                Productos
+            </a>
+            <a class="mdc-menu-item" href="/inventory/categories/" style="padding: 8px 16px; padding-left: 32px;">
+                <span class="material-icons">label</span>
+                Categorías
+            </a>
+            <a class="mdc-menu-item" href="/inventory/brands/" style="padding: 8px 16px; padding-left: 32px;">
+                <span class="material-icons">star</span>
+                Marcas
+            </a>
+            <a class="mdc-menu-item" href="/inventory/suppliers/" style="padding: 8px 16px; padding-left: 32px;">
+                <span class="material-icons">local_shipping</span>
+                Proveedores
+            </a>
+            
+            <!-- Configuración -->
+            <div style="padding: 8px 16px; font-weight: 500; color: var(--text-secondary); font-size: 12px; text-transform: uppercase; margin-top: 8px;">
+                Configuración
+            </div>
+            <a class="mdc-menu-item" href="/admin/" style="padding: 8px 16px; padding-left: 32px;">
+                <span class="material-icons">business</span>
+                Admin
+            </a>
+            
+            <!-- Administración -->
+            <div style="padding: 8px 16px; font-weight: 500; color: var(--text-secondary); font-size: 12px; text-transform: uppercase; margin-top: 8px;">
+                Administración
+            </div>
+            <a class="mdc-menu-item" href="/admin/auth/user/" style="padding: 8px 16px; padding-left: 32px;">
+                <span class="material-icons">group</span>
+                Usuarios
+            </a>
+            <a class="mdc-menu-item" href="/admin/auth/group/" style="padding: 8px 16px; padding-left: 32px;">
+                <span class="material-icons">security</span>
+                Permisos
+            </a>
         </div>
     </nav>
     {% endif %}
     
     <!-- Main Content -->
     <main class="{% if user.is_authenticated %}main-content{% else %}main-content{% endif %}">
-        <!-- Breadcrumbs -->
-        {% if user.is_authenticated and breadcrumbs %}
-        <nav class="mdc-breadcrumbs">
-            <a href="{% url 'core:dashboard' %}" class="breadcrumb-item">
-                <span class="material-icons" style="font-size: 16px;">home</span>
-                Inicio
-            </a>
-            {% for breadcrumb in breadcrumbs %}
-                <span class="breadcrumb-separator">›</span>
-                {% if breadcrumb.is_active %}
-                    <span class="breadcrumb-item active">{{ breadcrumb.title }}</span>
-                {% else %}
-                    <a href="{{ breadcrumb.url }}" class="breadcrumb-item">{{ breadcrumb.title }}</a>
-                {% endif %}
-            {% endfor %}
-        </nav>
-        {% endif %}
-        
         <!-- Messages -->
         {% if messages %}
         {% for message in messages %}
@@ -591,16 +994,42 @@
         {% endif %}
         
         <!-- Page Content -->
-        {% block content %}{% endblock %}
+        {% block content %}
+        <div style="text-align: center; padding: 48px 0;">
+            <div style="background: white; padding: 32px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto;">
+                <span class="material-icons" style="font-size: 64px; color: var(--primary-color); margin-bottom: 16px;">check_circle</span>
+                <h2 style="color: var(--primary-color); margin-bottom: 16px;">¡Sistema VENDO Funcionando!</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 24px;">Bienvenido al sistema de gestión VENDO. El módulo de inventario está completamente funcional.</p>
+                
+                <!-- Acciones rápidas -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 24px 0;">
+                    <a href="/inventory/" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--primary-color); color: white; padding: 12px 16px; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 14px;">
+                        <span class="material-icons" style="font-size: 18px;">inventory_2</span>
+                        Inventario
+                    </a>
+                    <a href="/inventory/products/" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: #2e7d32; color: white; padding: 12px 16px; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 14px;">
+                        <span class="material-icons" style="font-size: 18px;">category</span>
+                        Productos
+                    </a>
+                    <a href="/admin/" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: #ed6c02; color: white; padding: 12px 16px; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 14px;">
+                        <span class="material-icons" style="font-size: 18px;">settings</span>
+                        Admin
+                    </a>
+                </div>
+                
+                <p style="font-size: 14px; color: var(--text-secondary);">Usuario: <strong>{{ user.username }}</strong></p>
+                <p style="font-size: 14px; color: var(--text-secondary);">Fecha: <strong>{{ "now"|date:"d/m/Y H:i:s" }}</strong></p>
+            </div>
+        </div>
+        {% endblock %}
     </main>
     
     <!-- Footer -->
     {% if user.is_authenticated %}
     <footer class="footer">
         <div>
-            &copy; {{ current_year|default:"2025" }} VENDO v{{ system_version|default:"1.0" }} - 
-            {% if current_company %}{{ current_company.business_name }}{% endif %}
-            {% if debug_mode %} - <span style="color: #ed6c02;">MODO DEBUG</span>{% endif %}
+            &copy; 2025 VENDO v1.0 - Sistema de Gestión
+            <span style="color: #ed6c02;"> - MODO DEBUG</span>
         </div>
     </footer>
     {% endif %}
@@ -613,14 +1042,6 @@
             const drawer = document.getElementById('mobileDrawer');
             overlay.classList.toggle('open');
             drawer.classList.toggle('open');
-        }
-
-        function toggleCompanyMenu() {
-            toggleMenu('companyMenu');
-        }
-
-        function toggleBranchMenu() {
-            toggleMenu('branchMenu');
         }
 
         function toggleNotificationsMenu() {
@@ -672,6 +1093,75 @@
                 }, 200);
             });
         }, 5000);
+
+        // Show coming soon notification
+        function showComingSoon(moduleName) {
+            // Create a temporary snackbar for coming soon
+            const snackbar = document.createElement('div');
+            snackbar.className = 'mdc-snackbar';
+            snackbar.innerHTML = `
+                <div class="alert alert-info">
+                    <span class="material-icons">info</span>
+                    <div>
+                        <div style="font-weight: 500;">Próximamente</div>
+                        <div>El módulo "${moduleName}" estará disponible pronto</div>
+                    </div>
+                    <button class="mdc-icon-button" onclick="this.parentElement.parentElement.remove()" style="margin-left: auto; color: inherit;">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(snackbar);
+            
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                if (snackbar.parentElement) {
+                    snackbar.remove();
+                }
+            }, 3000);
+        }
+
+        // Utility functions
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function showAlert(type, message) {
+            const snackbar = document.createElement('div');
+            snackbar.className = 'mdc-snackbar';
+            snackbar.innerHTML = `
+                <div class="alert alert-${type}">
+                    <span class="material-icons">${type === 'success' ? 'check_circle' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'info'}</span>
+                    <div>
+                        <div style="font-weight: 500;">${type === 'success' ? 'Éxito' : type === 'error' ? 'Error' : type === 'warning' ? 'Advertencia' : 'Información'}</div>
+                        <div>${message}</div>
+                    </div>
+                    <button class="mdc-icon-button" onclick="this.parentElement.parentElement.remove()" style="margin-left: auto; color: inherit;">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(snackbar);
+            
+            setTimeout(() => {
+                if (snackbar.parentElement) {
+                    snackbar.remove();
+                }
+            }, 5000);
+        }
     </script>
     
     {% block extra_js %}{% endblock %}

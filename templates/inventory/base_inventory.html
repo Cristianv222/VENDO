@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+    <link href="{% static 'inventory/css/inventory.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/datatables/dataTables.bootstrap5.min.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/fontawesome/css/all.min.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'vendor/jquery/jquery.min.js' %}"></script>
+    <script src="{% static 'vendor/datatables/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'vendor/datatables/dataTables.bootstrap5.min.js' %}"></script>
+    <script src="{% static 'inventory/js/inventory.js' %}"></script>
+    <script src="{% static 'inventory/js/barcode-scanner.js' %}"></script>
+{% endblock %}
+
+{% block sidebar %}
+    <div class="sidebar-section">
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+            <span>Inventario</span>
+        </h6>
+        <nav class="nav nav-pills flex-column">
+            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
+               href="{% url 'inventory:dashboard' %}">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a class="nav-link {% if 'product' in request.resolver_match.url_name %}active{% endif %}" 
+               href="{% url 'inventory:product_list' %}">
+                <i class="fas fa-boxes"></i> Productos
+            </a>
+            <a class="nav-link" href="#categoriesSubmenu" data-bs-toggle="collapse" aria-expanded="false">
+                <i class="fas fa-tags"></i> Gestión
+                <i class="fas fa-chevron-down ms-auto"></i>
+            </a>
+            <div class="collapse" id="categoriesSubmenu">
+                <nav class="nav nav-pills flex-column ms-3">
+                    <a class="nav-link" href="{% url 'inventory:category_list' %}">
+                        <i class="fas fa-list"></i> Categorías
+                    </a>
+                    <a class="nav-link" href="{% url 'inventory:brand_list' %}">
+                        <i class="fas fa-star"></i> Marcas
+                    </a>
+                    <a class="nav-link" href="{% url 'inventory:supplier_list' %}">
+                        <i class="fas fa-truck"></i> Proveedores
+                    </a>
+                </nav>
+            </div>
+            <a class="nav-link" href="{% url 'inventory:stock_movements' %}">
+                <i class="fas fa-exchange-alt"></i> Movimientos Stock
+            </a>
+            <a class="nav-link" href="{% url 'inventory:stock_alerts' %}">
+                <i class="fas fa-exclamation-triangle"></i> Alertas Stock
+                {% if active_alerts_count %}
+                    <span class="badge bg-danger ms-2">{{ active_alerts_count }}</span>
+                {% endif %}
+            </a>
+            <a class="nav-link" href="{% url 'inventory:reports' %}">
+                <i class="fas fa-chart-bar"></i> Reportes
+            </a>
+        </nav>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        {% include 'includes/messages.html' %}
+        
+        {% block inventory_content %}
+        {% endblock %}
+    </div>
+{% endblock %}

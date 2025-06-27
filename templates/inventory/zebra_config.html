@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Configuración Impresora Zebra{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e0e0e0;">
+    <h1 style="color: var(--primary-color); margin: 0; display: flex; align-items: center; gap: 12px;">
+        <span class="material-icons" style="font-size: 32px;">print</span>
+        Configuración Impresora Zebra
+    </h1>
+    <a href="{% url 'inventory:dashboard' %}" style="display: flex; align-items: center; gap: 8px; background: transparent; color: var(--text-secondary); border: 1px solid #ddd; padding: 12px 16px; border-radius: 6px; text-decoration: none; font-weight: 500;">
+        <span class="material-icons" style="font-size: 18px;">arrow_back</span>
+        Volver
+    </a>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+    <!-- Estado actual -->
+    <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+            <h5 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                <span class="material-icons">info</span>
+                Estado Actual
+            </h5>
+        </div>
+        <div style="padding: 20px;">
+            <div style="margin-bottom: 16px;">
+                <label style="font-weight: 500; color: var(--text-secondary); font-size: 14px; margin-bottom: 4px; display: block;">Puerto Detectado</label>
+                <div id="detectedPort" style="font-size: 16px; color: var(--text-primary);">
+                    {% if zebra_port %}
+                        <span style="color: #28a745;">{{ zebra_port }}</span>
+                    {% else %}
+                        <span style="color: #dc3545;">No detectado</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 16px;">
+                <label style="font-weight: 500; color: var(--text-secondary); font-size: 14px; margin-bottom: 4px; display: block;">Puerto Configurado</label>
+                <div style="font-size: 16px; color: var(--text-primary);">
+                    {{ configured_port|default:"Detección automática" }}
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="font-weight: 500; color: var(--text-secondary); font-size: 14px; margin-bottom: 4px; display: block;">Nombre de Impresora</label>
+                <div style="font-size: 16px; color: var(--text-primary);">{{ printer_name }}</div>
+            </div>
+            
+            <div style="display: grid; gap: 8px;">
+                <button onclick="testConnection()" style="background: var(--primary-color); color: white; border: none; padding: 12px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span class="material-icons" style="font-size: 16px;">print</span>
+                    Probar Conexión
+                </button>
+                <button onclick="refreshPorts()" style="background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 12px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span class="material-icons" style="font-size: 16px;">refresh</span>
+                    Actualizar Puertos
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Puertos disponibles -->
+    <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+            <h5 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                <span class="material-icons">usb</span>
+                Puertos Seriales Disponibles
+            </h5>
+        </div>
+        <div style="padding: 20px;">
+            <div id="portsList">
+                {% if available_ports %}
+                    {% for port in available_ports %}
+                    <div style="border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 8px;">
+                        <div style="font-weight: 500; color: var(--text-primary);">{{ port.device }}</div>
+                        <div style="font-size: 14px; color: var(--text-secondary);">{{ port.description }}</div>
+                        {% if port.manufacturer != 'N/A' %}
+                            <div style="font-size: 12px; color: var(--text-secondary);">Fabricante: {{ port.manufacturer }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align: center; color: var(--text-secondary); padding: 20px;">
+                        <span class="material-icons" style="font-size: 48px; margin-bottom: 8px; opacity: 0.5;">usb_off</span>
+                        <p>No se encontraron puertos seriales</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Información de ayuda -->
+<div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 24px;">
+    <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+        <h5 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <span class="material-icons">help</span>
+            Guía de Configuración
+        </h5>
+    </div>
+    <div style="padding: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            <div>
+                <h6 style="color: var(--text-primary); margin-bottom: 8px;">1. Instalación de Drivers</h6>
+                <p style="font-size: 14px; color: var(--text-secondary); margin: 0;">Descarga e instala los drivers oficiales de Zebra desde su sitio web. La impresora debe aparecer en "Dispositivos y Impresoras".</p>
+            </div>
+            <div>
+                <h6 style="color: var(--text-primary); margin-bottom: 8px;">2. Conexión USB</h6>
+                <p style="font-size: 14px; color: var(--text-secondary); margin: 0;">Conecta la impresora por USB y verifica que esté encendida. El sistema detectará automáticamente el puerto COM.</p>
+            </div>
+            <div>
+                <h6 style="color: var(--text-primary); margin-bottom: 8px;">3. Configuración Manual</h6>
+                <p style="font-size: 14px; color: var(--text-secondary); margin: 0;">Si no se detecta automáticamente, configura el puerto específico en <code>settings.py</code> usando <code>ZEBRA_USB_PORT</code>.</p>
+            </div>
+            <div>
+                <h6 style="color: var(--text-primary); margin-bottom: 8px;">4. Solución de Problemas</h6>
+                <p style="font-size: 14px; color: var(--text-secondary); margin: 0;">Si hay problemas, verifica que no esté siendo usada por otra aplicación y que tengas permisos de administrador.</p>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px; padding: 16px; background: #e3f2fd; border-radius: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span class="material-icons" style="color: var(--primary-color);">code</span>
+                <strong style="color: var(--primary-color);">Configuración en settings.py</strong>
+            </div>
+            <pre style="background: #f8f9fa; padding: 12px; border-radius: 4px; margin: 0; font-size: 12px; overflow-x: auto;"><code># Configuración Zebra USB
+ZEBRA_USB_PORT = 'COM3'              # Puerto específico (Windows)
+ZEBRA_BAUDRATE = 9600                # Velocidad de comunicación  
+ZEBRA_TIMEOUT = 5                    # Timeout en segundos
+ZEBRA_PRINTER_NAME = 'ZDesigner'     # Nombre de impresora</code></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+function testConnection() {
+    const button = event.target.closest('button');
+    const originalContent = button.innerHTML;
+    button.innerHTML = '<span class="material-icons rotating" style="font-size: 16px;">print</span> Probando...';
+    button.disabled = true;
+    
+    fetch('{% url "inventory:test_zebra_printer" %}', {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', data.message);
+        } else {
+            showAlert('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Error al probar la conexión');
+    })
+    .finally(() => {
+        button.innerHTML = originalContent;
+        button.disabled = false;
+    });
+}
+
+function refreshPorts() {
+    const button = event.target.closest('button');
+    const originalContent = button.innerHTML;
+    button.innerHTML = '<span class="material-icons rotating" style="font-size: 16px;">refresh</span> Actualizando...';
+    button.disabled = true;
+    
+    fetch('{% url "inventory:available_ports" %}')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updatePortsList(data.ports);
+            showAlert('success', 'Puertos actualizados');
+        } else {
+            showAlert('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Error al actualizar puertos');
+    })
+    .finally(() => {
+        button.innerHTML = originalContent;
+        button.disabled = false;
+    });
+}
+
+function updatePortsList(ports) {
+    const portsList = document.getElementById('portsList');
+    
+    if (ports.length === 0) {
+        portsList.innerHTML = `
+            <div style="text-align: center; color: var(--text-secondary); padding: 20px;">
+                <span class="material-icons" style="font-size: 48px; margin-bottom: 8px; opacity: 0.5;">usb_off</span>
+                <p>No se encontraron puertos seriales</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    ports.forEach(port => {
+        html += `
+            <div style="border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 8px;">
+                <div style="font-weight: 500; color: var(--text-primary);">${port.device}</div>
+                <div style="font-size: 14px; color: var(--text-secondary);">${port.description}</div>
+                ${port.manufacturer !== 'N/A' ? `<div style="font-size: 12px; color: var(--text-secondary);">Fabricante: ${port.manufacturer}</div>` : ''}
+            </div>
+        `;
+    });
+    
+    portsList.innerHTML = html;
+}
+
+// Agregar estilos para animación de rotación
+const style = document.createElement('style');
+style.textContent = `
+    .rotating {
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

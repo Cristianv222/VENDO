@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Productos - Inventario{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e0e0e0;">
+    <h1 style="color: var(--primary-color); margin: 0; display: flex; align-items: center; gap: 12px;">
+        <span class="material-icons" style="font-size: 32px;">category</span>
+        Productos
+    </h1>
+    <div style="display: flex; gap: 8px;">
+        <a href="{% url 'inventory:product_create' %}" style="display: flex; align-items: center; gap: 8px; background: var(--primary-color); color: white; padding: 12px 16px; border-radius: 6px; text-decoration: none; font-weight: 500;">
+            <span class="material-icons" style="font-size: 18px;">add</span>
+            Nuevo Producto
+        </a>
+        <button type="button" onclick="showComingSoon('Importar productos')" style="display: flex; align-items: center; gap: 8px; background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 12px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+            <span class="material-icons" style="font-size: 18px;">upload</span>
+            Importar
+        </button>
+        <button type="button" onclick="showComingSoon('Exportar productos')" style="display: flex; align-items: center; gap: 8px; background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 12px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+            <span class="material-icons" style="font-size: 18px;">download</span>
+            Exportar
+        </button>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 24px;">
+    <form method="get" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+        <div>
+            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Buscar</label>
+            <input type="text" name="search" value="{{ search }}" placeholder="Nombre, SKU o código de barras" 
+                   style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+        </div>
+        <div>
+            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Categoría</label>
+            <select name="category" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                <option value="">Todas las categorías</option>
+                {% for cat in categories %}
+                    <option value="{{ cat.pk }}" {% if cat.pk|stringformat:"s" == selected_category %}selected{% endif %}>
+                        {{ cat.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Marca</label>
+            <select name="brand" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                <option value="">Todas las marcas</option>
+                {% for brand in brands %}
+                    <option value="{{ brand.pk }}" {% if brand.pk|stringformat:"s" == selected_brand %}selected{% endif %}>
+                        {{ brand.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Stock</label>
+            <select name="low_stock" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                <option value="">Todos</option>
+                <option value="true" {% if request.GET.low_stock == 'true' %}selected{% endif %}>Stock bajo</option>
+            </select>
+        </div>
+        <div style="display: flex; align-items: end; gap: 8px;">
+            <button type="submit" style="background: var(--primary-color); color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+                <span class="material-icons" style="font-size: 18px;">search</span>
+                Filtrar
+            </button>
+            <a href="{% url 'inventory:product_list' %}" style="background: transparent; color: var(--text-secondary); border: 1px solid #ddd; padding: 12px 20px; border-radius: 4px; text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+                <span class="material-icons" style="font-size: 18px;">clear</span>
+                Limpiar
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Tabla de productos -->
+<div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <div style="padding: 20px; border-bottom: 1px solid #e0e0e0;">
+        <h2 style="margin: 0; color: var(--text-primary); font-size: 18px;">Lista de Productos</h2>
+        <p style="margin: 8px 0 0 0; color: var(--text-secondary); font-size: 14px;">
+            {% if products %}
+                Mostrando {{ products|length }} productos
+            {% else %}
+                No se encontraron productos
+            {% endif %}
+        </p>
+    </div>
+    
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 16px; text-align: left; border-bottom: 1px solid #e0e0e0; font-weight: 600; color: var(--text-primary);">Imagen</th>
+                    <th style="padding: 16px; text-align: left; border-bottom: 1px solid #e0e0e0; font-weight: 600; color: var(--text-primary);">Producto</th>
+                    <th style="padding: 16px; text-align: left; border-bottom: 1px solid #e0e0e0; font-weight: 600; color: var(--text-primary);">Categoría</th>
+                    <th style="padding: 16px; text-align: left; border-bottom: 1px solid #e0e0e0; font-weight: 600; color: var(--text-primary);">Marca</th>
+                    <th style="padding: 16px; text-align: left; border-bottom: 1px solid #e0e0e0; font-weight: 600; color: var(--text-primary);">Precio Costo</th>
+                    <th style="padding: 16px; text-align: left; border-bottom: 1px solid #e0e0e0; font-weight: 600; color: var(--text-primary);">Precio Venta</th>
+                    <th style="padding: 16px; text-align: left; border-bottom: 1px solid #e0e0e0; font-weight: 600; color: var(--text-primary);">Stock</th>
+                    <th style="padding: 16px; text-align: left; border-bottom: 1px solid #e0e0e0; font-weight: 600; color: var(--text-primary);">Estado</th>
+                    <th style="padding: 16px; text-align: center; border-bottom: 1px solid #e0e0e0; font-weight: 600; color: var(--text-primary);">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr style="border-bottom: 1px solid #f0f0f0;">
+                    <td style="padding: 16px;">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" alt="{{ product.name }}" 
+                                 style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        {% else %}
+                            <div style="width: 50px; height: 50px; background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                                <span class="material-icons" style="color: #ccc; font-size: 24px;">image</span>
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 16px;">
+                        <div>
+                            <a href="{% url 'inventory:product_detail' product.pk %}" style="font-weight: 600; color: var(--primary-color); text-decoration: none;">
+                                {{ product.name }}
+                            </a>
+                            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                                SKU: {{ product.sku }}
+                                {% if product.barcode %}
+                                    | Código: {{ product.barcode }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td style="padding: 16px; color: var(--text-primary);">{{ product.category.name }}</td>
+                    <td style="padding: 16px; color: var(--text-primary);">{{ product.brand.name }}</td>
+                    <td style="padding: 16px; color: var(--text-primary);">${{ product.cost_price|floatformat:2 }}</td>
+                    <td style="padding: 16px;">
+                        <div style="font-weight: 600; color: var(--text-primary);">${{ product.sale_price|floatformat:2 }}</div>
+                        <div style="font-size: 12px; color: #28a745;">+{{ product.profit_percentage|floatformat:1 }}%</div>
+                    </td>
+                    <td style="padding: 16px;">
+                        {% if product.track_stock %}
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; 
+                                    {% if product.current_stock <= 0 %}background: #ffebee; color: #c62828;
+                                    {% elif product.current_stock <= product.min_stock %}background: #fff3e0; color: #ef6c00;
+                                    {% else %}background: #e8f5e8; color: #2e7d32;{% endif %}">
+                                    {{ product.current_stock|default:0 }}
+                                </span>
+                                {% if product.is_low_stock %}
+                                    <span class="material-icons" style="color: #ef6c00; font-size: 16px;" title="Stock bajo">warning</span>
+                                {% elif product.is_out_of_stock %}
+                                    <span class="material-icons" style="color: #c62828; font-size: 16px;" title="Sin stock">error</span>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <span style="color: var(--text-secondary); font-size: 12px;">No controlado</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 16px;">
+                        {% if product.is_active %}
+                            <span style="padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; background: #e8f5e8; color: #2e7d32;">Activo</span>
+                        {% else %}
+                            <span style="padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; background: #f5f5f5; color: #666;">Inactivo</span>
+                        {% endif %}
+                        {% if not product.is_for_sale %}
+                            <div style="margin-top: 4px;">
+                                <span style="padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; background: #fff3e0; color: #ef6c00;">No disponible</span>
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 16px; text-align: center;">
+                        <div style="display: flex; gap: 4px; justify-content: center;">
+                            <a href="{% url 'inventory:product_detail' product.pk %}" 
+                               style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid var(--primary-color); color: var(--primary-color); border-radius: 4px; text-decoration: none;" 
+                               title="Ver detalles">
+                                <span class="material-icons" style="font-size: 16px;">visibility</span>
+                            </a>
+                            <a href="{% url 'inventory:product_edit' product.pk %}" 
+                               style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid #6c757d; color: #6c757d; border-radius: 4px; text-decoration: none;" 
+                               title="Editar">
+                                <span class="material-icons" style="font-size: 16px;">edit</span>
+                            </a>
+                            {% if product.track_stock %}
+                                <button type="button" 
+                                        onclick="showComingSoon('Ajustar stock')" 
+                                        style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid #17a2b8; color: #17a2b8; background: transparent; border-radius: 4px; cursor: pointer;" 
+                                        title="Ajustar stock">
+                                    <span class="material-icons" style="font-size: 16px;">inventory</span>
+                                </button>
+                            {% endif %}
+                            <button type="button" 
+                                    onclick="showComingSoon('Imprimir código de barras')" 
+                                    style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid #28a745; color: #28a745; background: transparent; border-radius: 4px; cursor: pointer;" 
+                                    title="Imprimir código de barras">
+                                <span class="material-icons" style="font-size: 16px;">qr_code</span>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" style="padding: 60px 20px; text-align: center; color: var(--text-secondary);">
+                        <span class="material-icons" style="font-size: 64px; margin-bottom: 16px; opacity: 0.5;">inventory_2</span>
+                        <div style="font-size: 18px; margin-bottom: 8px;">No se encontraron productos</div>
+                        <div style="font-size: 14px; margin-bottom: 24px;">
+                            {% if search or selected_category or selected_brand %}
+                                Intenta ajustar los filtros o 
+                                <a href="{% url 'inventory:product_list' %}" style="color: var(--primary-color); text-decoration: none;">ver todos los productos</a>
+                            {% else %}
+                                Comienza agregando tu primer producto
+                            {% endif %}
+                        </div>
+                        <a href="{% url 'inventory:product_create' %}" style="display: inline-flex; align-items: center; gap: 8px; background: var(--primary-color); color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 500;">
+                            <span class="material-icons" style="font-size: 18px;">add</span>
+                            Crear primer producto
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paginación -->
+    {% if is_paginated %}
+    <div style="padding: 20px; border-top: 1px solid #e0e0e0;">
+        <nav style="display: flex; justify-content: center;">
+            <div style="display: flex; gap: 8px; align-items: center;">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.brand %}&brand={{ request.GET.brand }}{% endif %}" 
+                       style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: var(--text-primary);">Primera</a>
+                    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.brand %}&brand={{ request.GET.brand }}{% endif %}" 
+                       style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: var(--text-primary);">Anterior</a>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <span style="padding: 8px 12px; background: var(--primary-color); color: white; border-radius: 4px; font-weight: 500;">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.brand %}&brand={{ request.GET.brand }}{% endif %}" 
+                           style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: var(--text-primary);">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.brand %}&brand={{ request.GET.brand }}{% endif %}" 
+                       style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: var(--text-primary);">Siguiente</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.brand %}&brand={{ request.GET.brand }}{% endif %}" 
+                       style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: var(--text-primary);">Última</a>
+                {% endif %}
+            </div>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Navegación rápida -->
+<div style="margin-top: 24px; display: flex; gap: 16px; justify-content: center;">
+    <a href="{% url 'inventory:dashboard' %}" style="display: flex; align-items: center; gap: 8px; color: var(--text-secondary); text-decoration: none;">
+        <span class="material-icons">arrow_back</span>
+        Volver al Dashboard
+    </a>
+    <a href="{% url 'inventory:category_list' %}" style="display: flex; align-items: center; gap: 8px; color: var(--primary-color); text-decoration: none;">
+        <span class="material-icons">label</span>
+        Gestionar Categorías
+    </a>
+    <a href="{% url 'inventory:brand_list' %}" style="display: flex; align-items: center; gap: 8px; color: var(--primary-color); text-decoration: none;">
+        <span class="material-icons">star</span>
+        Gestionar Marcas
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Alertas de Stock{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e0e0e0;">
+    <h1 style="color: var(--primary-color); margin: 0; display: flex; align-items: center; gap: 12px;">
+        <span class="material-icons" style="font-size: 32px;">warning</span>
+        Alertas de Stock
+        {% if active_alerts_count %}
+            <span style="background: #dc3545; color: white; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 500;">
+                {{ active_alerts_count }}
+            </span>
+        {% endif %}
+    </h1>
+    <div style="display: flex; gap: 12px;">
+        <button type="button" onclick="resolveAllAlerts()" style="display: flex; align-items: center; gap: 8px; background: #28a745; color: white; border: none; padding: 12px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;" {% if not active_alerts_count %}disabled{% endif %}>
+            <span class="material-icons" style="font-size: 18px;">check_circle</span>
+            Resolver Todas
+        </button>
+        <button type="button" onclick="exportAlerts()" style="display: flex; align-items: center; gap: 8px; background: transparent; color: #17a2b8; border: 1px solid #17a2b8; padding: 12px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+            <span class="material-icons" style="font-size: 18px;">download</span>
+            Exportar
+        </button>
+        <a href="{% url 'inventory:product_list' %}" style="display: flex; align-items: center; gap: 8px; background: transparent; color: var(--text-secondary); border: 1px solid #ddd; padding: 12px 16px; border-radius: 6px; text-decoration: none; font-weight: 500;">
+            <span class="material-icons" style="font-size: 18px;">arrow_back</span>
+            Volver a Productos
+        </a>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 24px;">
+    <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+        <h5 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <span class="material-icons">filter_list</span>
+            Filtros
+        </h5>
+    </div>
+    <div style="padding: 20px;">
+        <form method="get" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; align-items: end;">
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Tipo de Alerta</label>
+                <select name="alert_type" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">Todos los tipos</option>
+                    <option value="OUT_OF_STOCK" {% if request.GET.alert_type == "OUT_OF_STOCK" %}selected{% endif %}>Sin stock</option>
+                    <option value="LOW_STOCK" {% if request.GET.alert_type == "LOW_STOCK" %}selected{% endif %}>Stock bajo</option>
+                    <option value="OVERSTOCK" {% if request.GET.alert_type == "OVERSTOCK" %}selected{% endif %}>Sobrestock</option>
+                </select>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Estado</label>
+                <select name="is_resolved" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">Todas las alertas</option>
+                    <option value="false" {% if request.GET.is_resolved == "false" %}selected{% endif %}>Activas</option>
+                    <option value="true" {% if request.GET.is_resolved == "true" %}selected{% endif %}>Resueltas</option>
+                </select>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Categoría</label>
+                <select name="category" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">Todas las categorías</option>
+                    {% for category in categories %}
+                        <option value="{{ category.pk }}" {% if request.GET.category == category.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Fecha desde</label>
+                <input type="date" name="date_from" value="{{ request.GET.date_from }}" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button type="submit" style="background: var(--primary-color); color: white; border: none; padding: 10px 16px; border-radius: 4px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons" style="font-size: 16px;">search</span>
+                    Filtrar
+                </button>
+                <a href="{% url 'inventory:stock_alerts' %}" style="background: transparent; color: var(--text-secondary); border: 1px solid #ddd; padding: 10px 16px; border-radius: 4px; text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons" style="font-size: 16px;">clear</span>
+                    Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Resumen de alertas -->
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
+    <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 20px; text-align: center;">
+        <h3 style="margin: 0 0 8px 0; color: #dc3545; font-size: 24px;">{{ out_of_stock_count }}</h3>
+        <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Sin Stock</p>
+    </div>
+    <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 20px; text-align: center;">
+        <h3 style="margin: 0 0 8px 0; color: #ffc107; font-size: 24px;">{{ low_stock_count }}</h3>
+        <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Stock Bajo</p>
+    </div>
+    <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 20px; text-align: center;">
+        <h3 style="margin: 0 0 8px 0; color: #17a2b8; font-size: 24px;">{{ overstock_count }}</h3>
+        <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Sobrestock</p>
+    </div>
+    <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 20px; text-align: center;">
+        <h3 style="margin: 0 0 8px 0; color: var(--primary-color); font-size: 24px;">{{ total_alerts_count }}</h3>
+        <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Total Alertas</p>
+    </div>
+</div>
+
+<!-- Lista de alertas -->
+<div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+        <h5 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <span class="material-icons">list</span>
+            Alertas de Stock
+            {% if object_list.count %}
+                <span style="background: var(--primary-color); color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">
+                    {{ object_list.count }}
+                </span>
+            {% endif %}
+        </h5>
+        {% if page_obj %}
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <span style="font-size: 14px; color: var(--text-secondary);">
+                Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }}
+            </span>
+        </div>
+        {% endif %}
+    </div>
+    <div style="padding: 20px;">
+        {% if object_list %}
+            <div style="display: grid; gap: 16px;">
+                {% for alert in object_list %}
+                <div style="border: 1px solid 
+                    {% if alert.alert_type == 'OUT_OF_STOCK' %}#f44336{% elif alert.alert_type == 'LOW_STOCK' %}#ffcc02{% else %}#2196f3{% endif %}; 
+                    border-radius: 8px; padding: 20px; 
+                    background: {% if alert.alert_type == 'OUT_OF_STOCK' %}#ffebee{% elif alert.alert_type == 'LOW_STOCK' %}#fff3e0{% else %}#e3f2fd{% endif %}; 
+                    {% if alert.is_resolved %}opacity: 0.6; filter: grayscale(30%);{% endif %}">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span class="material-icons" style="font-size: 24px; color: 
+                                {% if alert.alert_type == 'OUT_OF_STOCK' %}#c62828{% elif alert.alert_type == 'LOW_STOCK' %}#ef6c00{% else %}#1976d2{% endif %};">
+                                {% if alert.alert_type == 'OUT_OF_STOCK' %}error{% elif alert.alert_type == 'LOW_STOCK' %}warning{% else %}info{% endif %}
+                            </span>
+                            <div>
+                                <h6 style="margin: 0 0 4px 0; color: 
+                                    {% if alert.alert_type == 'OUT_OF_STOCK' %}#c62828{% elif alert.alert_type == 'LOW_STOCK' %}#ef6c00{% else %}#1976d2{% endif %}; 
+                                    font-size: 16px; font-weight: 600;">
+                                    {{ alert.get_alert_type_display }}
+                                </h6>
+                                <p style="margin: 0; font-size: 12px; color: var(--text-secondary);">
+                                    {{ alert.created_at|date:"d/m/Y H:i" }}
+                                    {% if alert.is_resolved %}
+                                        • Resuelta el {{ alert.resolved_at|date:"d/m/Y H:i" }}
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 8px;">
+                            {% if not alert.is_resolved %}
+                                <button onclick="resolveAlert({{ alert.pk }})" style="background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 4px;">
+                                    <span class="material-icons" style="font-size: 16px;">check</span>
+                                    Resolver
+                                </button>
+                            {% else %}
+                                <span style="background: #28a745; color: white; padding: 8px 12px; border-radius: 4px; font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 4px;">
+                                    <span class="material-icons" style="font-size: 16px;">check_circle</span>
+                                    Resuelta
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 24px; align-items: center;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                <a href="{% url 'inventory:product_detail' alert.product.pk %}" style="color: var(--primary-color); text-decoration: none; font-weight: 600; font-size: 16px;">
+                                    {{ alert.product.name }}
+                                </a>
+                                <code style="background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px;">
+                                    {{ alert.product.sku }}
+                                </code>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <span style="background: var(--primary-color); color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 500;">
+                                    {{ alert.product.category.name }}
+                                </span>
+                                <span style="background: #6c757d; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 500;">
+                                    {{ alert.product.brand.name }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: 600; margin-bottom: 4px; color: 
+                                {% if alert.current_stock <= 0 %}#dc3545{% elif alert.current_stock <= alert.product.min_stock %}#ffc107{% else %}#28a745{% endif %};">
+                                {{ alert.current_stock|default:0 }}
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">Stock Actual</div>
+                            <div style="font-size: 10px; color: var(--text-secondary); margin-top: 4px;">
+                                Min: {{ alert.product.min_stock }} | Max: {{ alert.product.max_stock }}
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center;">
+                            <a href="{% url 'inventory:product_detail' alert.product.pk %}" style="background: var(--primary-color); color: white; border: none; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <span class="material-icons" style="font-size: 16px;">visibility</span>
+                                Ver Producto
+                            </a>
+                        </div>
+                    </div>
+                    
+                    {% if alert.notes %}
+                    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(0,0,0,0.1);">
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Notas:</div>
+                        <div style="font-size: 14px; color: var(--text-primary);">{{ alert.notes }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Paginación -->
+            {% if page_obj.has_other_pages %}
+            <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                {% if page_obj.has_previous %}
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; color: var(--text-secondary); text-decoration: none; display: flex; align-items: center;">
+                        <span class="material-icons" style="font-size: 16px;">first_page</span>
+                    </a>
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; color: var(--text-secondary); text-decoration: none; display: flex; align-items: center;">
+                        <span class="material-icons" style="font-size: 16px;">chevron_left</span>
+                    </a>
+                {% endif %}
+
+                <span style="padding: 8px 16px; background: var(--primary-color); color: white; border-radius: 4px; font-weight: 500;">
+                    {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                </span>
+
+                {% if page_obj.has_next %}
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; color: var(--text-secondary); text-decoration: none; display: flex; align-items: center;">
+                        <span class="material-icons" style="font-size: 16px;">chevron_right</span>
+                    </a>
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; color: var(--text-secondary); text-decoration: none; display: flex; align-items: center;">
+                        <span class="material-icons" style="font-size: 16px;">last_page</span>
+                    </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        {% else %}
+            <div style="text-align: center; color: var(--text-secondary); padding: 40px 0;">
+                <span class="material-icons" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">notifications_none</span>
+                <p style="margin: 0 0 16px 0;">No hay alertas de stock</p>
+                <p style="margin: 0; font-size: 14px;">¡Excelente! Todos los productos tienen niveles de stock adecuados.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function resolveAlert(alertId) {
+    if (confirm('¿Está seguro de que desea resolver esta alerta?')) {
+        const button = event.target.closest('button');
+        const originalContent = button.innerHTML;
+        button.innerHTML = '<span class="material-icons rotating" style="font-size: 16px;">hourglass_empty</span> Resolviendo...';
+        button.disabled = true;
+        
+        // Construir URL dinámicamente
+        const baseUrl = '{% url "inventory:stock_alerts" %}';
+        const resolveUrl = `${baseUrl}${alertId}/resolve/`;
+        
+        fetch(resolveUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.message);
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('error', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('error', 'Error al resolver la alerta');
+        })
+        .finally(() => {
+            button.innerHTML = originalContent;
+            button.disabled = false;
+        });
+    }
+}
+
+function resolveAllAlerts() {
+    const activeCount = {{ active_alerts_count|default:0 }};
+    if (activeCount === 0) {
+        showAlert('info', 'No hay alertas activas para resolver');
+        return;
+    }
+    
+    if (confirm(`¿Está seguro de que desea resolver todas las ${activeCount} alertas activas?`)) {
+        const button = event.target;
+        const originalContent = button.innerHTML;
+        button.innerHTML = '<span class="material-icons rotating" style="font-size: 18px;">hourglass_empty</span> Resolviendo...';
+        button.disabled = true;
+        
+        fetch('{% url "inventory:stock_alerts" %}resolve-all/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.message);
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('error', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('error', 'Error al resolver las alertas');
+        })
+        .finally(() => {
+            button.innerHTML = originalContent;
+            button.disabled = false;
+        });
+    }
+}
+
+function exportAlerts() {
+    // Construir URL con parámetros actuales
+    const params = new URLSearchParams(window.location.search);
+    params.set('export', 'excel');
+    
+    window.location.href = `{% url 'inventory:stock_alerts' %}?${params.toString()}`;
+}
+
+// Agregar estilos para animación de rotación
+const style = document.createElement('style');
+style.textContent = `
+    .rotating {
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

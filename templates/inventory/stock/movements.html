@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Movimientos de Stock{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e0e0e0;">
+    <h1 style="color: var(--primary-color); margin: 0; display: flex; align-items: center; gap: 12px;">
+        <span class="material-icons" style="font-size: 32px;">swap_horiz</span>
+        Movimientos de Stock
+    </h1>
+    <div style="display: flex; gap: 12px;">
+        <button type="button" onclick="showStockModal()" style="display: flex; align-items: center; gap: 8px; background: var(--primary-color); color: white; border: none; padding: 12px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+            <span class="material-icons" style="font-size: 18px;">add</span>
+            Nuevo Movimiento
+        </button>
+        <button type="button" onclick="exportMovements()" style="display: flex; align-items: center; gap: 8px; background: transparent; color: #28a745; border: 1px solid #28a745; padding: 12px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+            <span class="material-icons" style="font-size: 18px;">download</span>
+            Exportar
+        </button>
+        <a href="{% url 'inventory:product_list' %}" style="display: flex; align-items: center; gap: 8px; background: transparent; color: var(--text-secondary); border: 1px solid #ddd; padding: 12px 16px; border-radius: 6px; text-decoration: none; font-weight: 500;">
+            <span class="material-icons" style="font-size: 18px;">arrow_back</span>
+            Volver a Productos
+        </a>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 24px;">
+    <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+        <h5 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <span class="material-icons">filter_list</span>
+            Filtros
+        </h5>
+    </div>
+    <div style="padding: 20px;">
+        <form method="get" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; align-items: end;">
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Producto</label>
+                <select name="product" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">Todos los productos</option>
+                    {% for product in products %}
+                        <option value="{{ product.pk }}" {% if request.GET.product == product.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ product.name }} ({{ product.sku }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Tipo</label>
+                <select name="movement_type" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">Todos los tipos</option>
+                    <option value="IN" {% if request.GET.movement_type == "IN" %}selected{% endif %}>Entrada</option>
+                    <option value="OUT" {% if request.GET.movement_type == "OUT" %}selected{% endif %}>Salida</option>
+                    <option value="ADJUSTMENT" {% if request.GET.movement_type == "ADJUSTMENT" %}selected{% endif %}>Ajuste</option>
+                </select>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Motivo</label>
+                <select name="reason" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">Todos los motivos</option>
+                    <option value="PURCHASE" {% if request.GET.reason == "PURCHASE" %}selected{% endif %}>Compra</option>
+                    <option value="SALE" {% if request.GET.reason == "SALE" %}selected{% endif %}>Venta</option>
+                    <option value="ADJUSTMENT" {% if request.GET.reason == "ADJUSTMENT" %}selected{% endif %}>Ajuste de inventario</option>
+                    <option value="DAMAGED" {% if request.GET.reason == "DAMAGED" %}selected{% endif %}>Producto dañado</option>
+                    <option value="EXPIRED" {% if request.GET.reason == "EXPIRED" %}selected{% endif %}>Producto vencido</option>
+                    <option value="RETURN" {% if request.GET.reason == "RETURN" %}selected{% endif %}>Devolución</option>
+                </select>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Fecha desde</label>
+                <input type="date" name="date_from" value="{{ request.GET.date_from }}" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Fecha hasta</label>
+                <input type="date" name="date_to" value="{{ request.GET.date_to }}" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button type="submit" style="background: var(--primary-color); color: white; border: none; padding: 10px 16px; border-radius: 4px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons" style="font-size: 16px;">search</span>
+                    Filtrar
+                </button>
+                <a href="{% url 'inventory:stock_movements' %}" style="background: transparent; color: var(--text-secondary); border: 1px solid #ddd; padding: 10px 16px; border-radius: 4px; text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons" style="font-size: 16px;">clear</span>
+                    Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Resumen estadísticas -->
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
+    <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 20px; text-align: center;">
+        <h3 style="margin: 0 0 8px 0; color: #28a745; font-size: 24px;">{{ total_entries }}</h3>
+        <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Entradas Totales</p>
+    </div>
+    <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 20px; text-align: center;">
+        <h3 style="margin: 0 0 8px 0; color: #dc3545; font-size: 24px;">{{ total_exits }}</h3>
+        <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Salidas Totales</p>
+    </div>
+    <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 20px; text-align: center;">
+        <h3 style="margin: 0 0 8px 0; color: #ffc107; font-size: 24px;">{{ total_adjustments }}</h3>
+        <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Ajustes Totales</p>
+    </div>
+    <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 20px; text-align: center;">
+        <h3 style="margin: 0 0 8px 0; color: var(--primary-color); font-size: 24px;">{{ total_movements }}</h3>
+        <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Total Movimientos</p>
+    </div>
+</div>
+
+<!-- Lista de movimientos -->
+<div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+        <h5 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <span class="material-icons">list</span>
+            Movimientos de Stock
+            {% if object_list.count %}
+                <span style="background: var(--primary-color); color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">
+                    {{ object_list.count }}
+                </span>
+            {% endif %}
+        </h5>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <span style="font-size: 14px; color: var(--text-secondary);">
+                Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }}
+            </span>
+        </div>
+    </div>
+    <div style="padding: 20px;">
+        {% if object_list %}
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #e0e0e0;">
+                            <th style="text-align: left; padding: 12px 8px; font-weight: 500; color: var(--text-secondary);">Fecha</th>
+                            <th style="text-align: left; padding: 12px 8px; font-weight: 500; color: var(--text-secondary);">Producto</th>
+                            <th style="text-align: left; padding: 12px 8px; font-weight: 500; color: var(--text-secondary);">SKU</th>
+                            <th style="text-align: left; padding: 12px 8px; font-weight: 500; color: var(--text-secondary);">Tipo</th>
+                            <th style="text-align: left; padding: 12px 8px; font-weight: 500; color: var(--text-secondary);">Motivo</th>
+                            <th style="text-align: center; padding: 12px 8px; font-weight: 500; color: var(--text-secondary);">Cantidad</th>
+                            <th style="text-align: left; padding: 12px 8px; font-weight: 500; color: var(--text-secondary);">Usuario</th>
+                            <th style="text-align: left; padding: 12px 8px; font-weight: 500; color: var(--text-secondary);">Notas</th>
+                            <th style="text-align: center; padding: 12px 8px; font-weight: 500; color: var(--text-secondary);">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for movement in object_list %}
+                        <tr style="border-bottom: 1px solid #f0f0f0;">
+                            <td style="padding: 12px 8px; font-size: 14px;">{{ movement.created_at|date:"d/m/Y H:i" }}</td>
+                            <td style="padding: 12px 8px;">
+                                <a href="{% url 'inventory:product_detail' movement.product.pk %}" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">
+                                    {{ movement.product.name }}
+                                </a>
+                            </td>
+                            <td style="padding: 12px 8px;">
+                                <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px;">
+                                    {{ movement.product.sku }}
+                                </code>
+                            </td>
+                            <td style="padding: 12px 8px;">
+                                <span style="padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;
+                                    {% if movement.movement_type == 'IN' %}background: #d4edda; color: #155724;
+                                    {% elif movement.movement_type == 'OUT' %}background: #f8d7da; color: #721c24;
+                                    {% else %}background: #fff3cd; color: #856404;{% endif %}">
+                                    {{ movement.get_movement_type_display }}
+                                </span>
+                            </td>
+                            <td style="padding: 12px 8px; font-size: 14px;">{{ movement.get_reason_display }}</td>
+                            <td style="padding: 12px 8px; text-align: center; font-weight: 500;
+                                {% if movement.quantity > 0 %}color: #28a745;{% else %}color: #dc3545;{% endif %}">
+                                {% if movement.quantity > 0 %}+{% endif %}{{ movement.quantity }}
+                            </td>
+                            <td style="padding: 12px 8px; font-size: 14px;">{{ movement.user.get_full_name|default:movement.user.username }}</td>
+                            <td style="padding: 12px 8px; font-size: 14px; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ movement.notes }}">
+                                {{ movement.notes|default:"-" }}
+                            </td>
+                            <td style="padding: 12px 8px; text-align: center;">
+                                <div style="display: flex; gap: 4px; justify-content: center;">
+                                    <a href="{% url 'inventory:product_detail' movement.product.pk %}" title="Ver producto" style="padding: 4px 8px; background: transparent; border: 1px solid var(--primary-color); border-radius: 4px; color: var(--primary-color); text-decoration: none; display: flex; align-items: center;">
+                                        <span class="material-icons" style="font-size: 16px;">visibility</span>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            {% if page_obj.has_other_pages %}
+            <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                {% if page_obj.has_previous %}
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; color: var(--text-secondary); text-decoration: none; display: flex; align-items: center;">
+                        <span class="material-icons" style="font-size: 16px;">first_page</span>
+                    </a>
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; color: var(--text-secondary); text-decoration: none; display: flex; align-items: center;">
+                        <span class="material-icons" style="font-size: 16px;">chevron_left</span>
+                    </a>
+                {% endif %}
+
+                <span style="padding: 8px 16px; background: var(--primary-color); color: white; border-radius: 4px; font-weight: 500;">
+                    {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                </span>
+
+                {% if page_obj.has_next %}
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; color: var(--text-secondary); text-decoration: none; display: flex; align-items: center;">
+                        <span class="material-icons" style="font-size: 16px;">chevron_right</span>
+                    </a>
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; color: var(--text-secondary); text-decoration: none; display: flex; align-items: center;">
+                        <span class="material-icons" style="font-size: 16px;">last_page</span>
+                    </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        {% else %}
+            <div style="text-align: center; color: var(--text-secondary); padding: 40px 0;">
+                <span class="material-icons" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">history</span>
+                <p style="margin: 0 0 16px 0;">No hay movimientos de stock registrados</p>
+                <button type="button" onclick="showStockModal()" style="background: var(--primary-color); color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                    <span class="material-icons" style="font-size: 16px; vertical-align: middle; margin-right: 8px;">add</span>
+                    Registrar primer movimiento
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal de nuevo movimiento de stock -->
+<div id="stockModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 90%; max-width: 500px; max-height: 90%; overflow-y: auto;">
+        <div style="padding: 20px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
+            <h5 style="margin: 0; color: var(--text-primary);">Nuevo Movimiento de Stock</h5>
+            <button onclick="hideStockModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">
+                <span class="material-icons">close</span>
+            </button>
+        </div>
+        <form id="stockForm">
+            <div style="padding: 20px;">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Producto</label>
+                    <select id="stockProductId" name="product_id" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">Seleccionar producto</option>
+                        {% for product in products %}
+                            <option value="{{ product.pk }}">{{ product.name }} ({{ product.sku }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Tipo</label>
+                        <select id="movementType" name="movement_type" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="IN">Entrada</option>
+                            <option value="OUT">Salida</option>
+                            <option value="ADJUSTMENT">Ajuste</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Motivo</label>
+                        <select id="reason" name="reason" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="PURCHASE">Compra</option>
+                            <option value="SALE">Venta</option>
+                            <option value="ADJUSTMENT">Ajuste de inventario</option>
+                            <option value="DAMAGED">Producto dañado</option>
+                            <option value="EXPIRED">Producto vencido</option>
+                            <option value="RETURN">Devolución</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Cantidad</label>
+                    <input type="number" id="quantity" name="quantity" min="1" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Notas</label>
+                    <textarea id="notes" name="notes" rows="3" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; resize: vertical;"></textarea>
+                </div>
+            </div>
+            <div style="padding: 20px; border-top: 1px solid #e0e0e0; display: flex; justify-content: end; gap: 12px;">
+                <button type="button" onclick="hideStockModal()" style="background: transparent; color: var(--text-secondary); border: 1px solid #ddd; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                    Cancelar
+                </button>
+                <button type="submit" style="background: var(--primary-color); color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons" style="font-size: 16px;">save</span>
+                    Guardar Movimiento
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showStockModal() {
+    document.getElementById('stockModal').style.display = 'flex';
+}
+
+function hideStockModal() {
+    document.getElementById('stockModal').style.display = 'none';
+    document.getElementById('stockForm').reset();
+}
+
+function exportMovements() {
+    // Construir URL con parámetros actuales
+    const params = new URLSearchParams(window.location.search);
+    params.set('export', 'excel');
+    
+    window.location.href = `{% url 'inventory:stock_movements' %}?${params.toString()}`;
+}
+
+// Manejar formulario de stock
+document.getElementById('stockForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        product_id: document.getElementById('stockProductId').value,
+        movement_type: document.getElementById('movementType').value,
+        reason: document.getElementById('reason').value,
+        quantity: document.getElementById('quantity').value,
+        notes: document.getElementById('notes').value
+    };
+    
+    const submitButton = e.target.querySelector('button[type="submit"]');
+    const originalContent = submitButton.innerHTML;
+    submitButton.innerHTML = '<span class="material-icons rotating" style="font-size: 16px;">hourglass_empty</span> Guardando...';
+    submitButton.disabled = true;
+    
+    fetch('{% url "inventory:stock_movement" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', data.message);
+            hideStockModal();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Error al guardar el movimiento');
+    })
+    .finally(() => {
+        submitButton.innerHTML = originalContent;
+        submitButton.disabled = false;
+    });
+});
+
+// Cerrar modal al hacer clic fuera
+document.getElementById('stockModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        hideStockModal();
+    }
+});
+
+// Agregar estilos para animación de rotación
+const style = document.createElement('style');
+style.textContent = `
+    .rotating {
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

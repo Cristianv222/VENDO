@@ -1,0 +1,848 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{% if object %}Editar {% else %}Crear {% endif %}Producto - Inventario{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e0e0e0;">
+    <h1 style="color: var(--primary-color); margin: 0; display: flex; align-items: center; gap: 12px;">
+        {% if object %}
+            <span class="material-icons" style="font-size: 32px;">edit</span>
+            Editar Producto
+        {% else %}
+            <span class="material-icons" style="font-size: 32px;">add</span>
+            Crear Producto
+        {% endif %}
+    </h1>
+    <div style="display: flex; gap: 12px;">
+        {% if object %}
+            <a href="{% url 'inventory:product_detail' object.pk %}" style="display: flex; align-items: center; gap: 8px; background: transparent; color: #17a2b8; border: 1px solid #17a2b8; padding: 12px 16px; border-radius: 6px; text-decoration: none; font-weight: 500;">
+                <span class="material-icons" style="font-size: 18px;">visibility</span>
+                Ver Detalle
+            </a>
+        {% endif %}
+        <a href="{% url 'inventory:product_list' %}" style="display: flex; align-items: center; gap: 8px; background: transparent; color: var(--text-secondary); border: 1px solid #ddd; padding: 12px 16px; border-radius: 6px; text-decoration: none; font-weight: 500;">
+            <span class="material-icons" style="font-size: 18px;">arrow_back</span>
+            Volver a la lista
+        </a>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 350px; gap: 24px;">
+    <div>
+        <form method="post" enctype="multipart/form-data" id="productForm" novalidate>
+            {% csrf_token %}
+            
+            <!-- Información básica -->
+            <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 24px;">
+                <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+                    <h5 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                        <span class="material-icons">info</span>
+                        Información Básica
+                    </h5>
+                </div>
+                <div style="padding: 20px;">
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">
+                                Nombre del Producto <span style="color: #dc3545;">*</span>
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="field-error">{{ form.name.errors.0 }}</div>
+                            {% endif %}
+                            <small style="color: var(--text-secondary); font-size: 12px;">Nombre comercial del producto</small>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">
+                                Unidad <span style="color: #dc3545;">*</span>
+                            </label>
+                            {{ form.unit }}
+                            {% if form.unit.errors %}
+                                <div class="field-error">{{ form.unit.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">
+                            Descripción
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="field-error">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                        <small style="color: var(--text-secondary); font-size: 12px;">Descripción detallada del producto</small>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">
+                                Peso (kg)
+                            </label>
+                            {{ form.weight }}
+                            {% if form.weight.errors %}
+                                <div class="field-error">{{ form.weight.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">
+                                Dimensiones
+                            </label>
+                            {{ form.dimensions }}
+                            {% if form.dimensions.errors %}
+                                <div class="field-error">{{ form.dimensions.errors.0 }}</div>
+                            {% endif %}
+                            <small style="color: var(--text-secondary); font-size: 12px;">Ej: 20cm x 15cm x 10cm</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clasificación -->
+            <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 24px;">
+                <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+                    <h5 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                        <span class="material-icons">label</span>
+                        Clasificación
+                    </h5>
+                </div>
+                <div style="padding: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">
+                                Categoría <span style="color: #dc3545;">*</span>
+                            </label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                                <div class="field-error">{{ form.category.errors.0 }}</div>
+                            {% endif %}
+                            <div id="categoryProfitInfo" style="margin-top: 4px; font-size: 12px;"></div>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">
+                                Marca <span style="color: #dc3545;">*</span>
+                            </label>
+                            {{ form.brand }}
+                            {% if form.brand.errors %}
+                                <div class="field-error">{{ form.brand.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">
+                                Proveedor <span style="color: #dc3545;">*</span>
+                            </label>
+                            {{ form.supplier }}
+                            {% if form.supplier.errors %}
+                                <div class="field-error">{{ form.supplier.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Códigos de Identificación -->
+            <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 24px;">
+                <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+                    <h5 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                        <span class="material-icons">qr_code</span>
+                        Códigos de Identificación
+                    </h5>
+                </div>
+                <div style="padding: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">
+                                SKU <span style="color: #dc3545;">*</span>
+                            </label>
+                            <div style="display: flex; gap: 8px;">
+                                {{ form.sku }}
+                                <button type="button" onclick="generateSKU()" style="padding: 12px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;" title="Generar SKU automático">
+                                    <span class="material-icons" style="font-size: 16px;">auto_awesome</span>
+                                </button>
+                            </div>
+                            {% if form.sku.errors %}
+                                <div class="field-error">{{ form.sku.errors.0 }}</div>
+                            {% endif %}
+                            <small style="color: var(--text-secondary); font-size: 12px;">Código único del producto (Stock Keeping Unit)</small>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">
+                                Código de Barras
+                            </label>
+                            <div style="display: flex; gap: 8px;">
+                                {{ form.barcode }}
+                                <button type="button" onclick="generateBarcode()" style="padding: 12px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;" title="Generar código de barras">
+                                    <span class="material-icons" style="font-size: 16px;">qr_code</span>
+                                </button>
+                            </div>
+                            {% if form.barcode.errors %}
+                                <div class="field-error">{{ form.barcode.errors.0 }}</div>
+                            {% endif %}
+                            <small style="color: var(--text-secondary); font-size: 12px;">Código de barras para escaneo (opcional)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Precios -->
+            <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 24px;">
+                <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+                    <h5 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                        <span class="material-icons">attach_money</span>
+                        Precios y Costos
+                    </h5>
+                </div>
+                <div style="padding: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">
+                                Precio de Costo <span style="color: #dc3545;">*</span>
+                            </label>
+                            <div style="display: flex;">
+                                <span style="padding: 12px; background: #f8f9fa; border: 1px solid #ddd; border-right: none; border-radius: 4px 0 0 4px;">$</span>
+                                {{ form.cost_price }}
+                            </div>
+                            {% if form.cost_price.errors %}
+                                <div class="field-error">{{ form.cost_price.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">
+                                Precio de Venta <span style="color: #dc3545;">*</span>
+                            </label>
+                            <div style="display: flex;">
+                                <span style="padding: 12px; background: #f8f9fa; border: 1px solid #ddd; border-right: none; border-radius: 4px 0 0 0;">$</span>
+                                {{ form.sale_price }}
+                                <button type="button" onclick="calculateSalePrice()" 
+                                        style="padding: 12px; background: #f8f9fa; border: 1px solid #ddd; border-left: none; border-radius: 0 4px 4px 0; cursor: pointer;" 
+                                        title="Calcular automáticamente">
+                                    <span class="material-icons" style="font-size: 16px;">calculate</span>
+                                </button>
+                            </div>
+                            {% if form.sale_price.errors %}
+                                <div class="field-error">{{ form.sale_price.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Ganancia</label>
+                            <div style="display: flex;">
+                                <span style="padding: 12px; background: #f8f9fa; border: 1px solid #ddd; border-right: none; border-radius: 4px 0 0 0;">$</span>
+                                <input type="text" id="profitAmount" readonly style="padding: 12px; border: 1px solid #ddd; border-left: none; border-right: none; background: #f8f9fa; flex: 1;">
+                                <span id="profitPercentage" style="padding: 12px; background: #f8f9fa; border: 1px solid #ddd; border-left: none; border-radius: 0 4px 4px 0;">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: #e3f2fd; border: 1px solid #90caf9; border-radius: 4px; padding: 16px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <span class="material-icons" style="color: var(--primary-color);">info</span>
+                            <strong style="color: var(--primary-color);">Sugerencias de precio:</strong>
+                        </div>
+                        <div id="priceSuggestions"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control de Stock -->
+            <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 24px;">
+                <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+                    <h5 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                        <span class="material-icons">inventory</span>
+                        Control de Inventario
+                    </h5>
+                </div>
+                <div style="padding: 20px;">
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            {{ form.track_stock }}
+                            <span style="font-weight: 500; color: var(--text-primary);">Controlar stock de este producto</span>
+                        </label>
+                    </div>
+                    
+                    <div id="stockFields" style="display: none;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Stock Mínimo</label>
+                                {{ form.min_stock }}
+                                {% if form.min_stock.errors %}
+                                    <div class="field-error">{{ form.min_stock.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Stock Máximo</label>
+                                {{ form.max_stock }}
+                                {% if form.max_stock.errors %}
+                                    <div class="field-error">{{ form.max_stock.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            {% if not object %}
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Stock Inicial</label>
+                                <input type="number" name="initial_stock" min="0" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Stock inicial del producto</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estado -->
+            <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 24px;">
+                <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+                    <h5 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                        <span class="material-icons">toggle_on</span>
+                        Estado del Producto
+                    </h5>
+                </div>
+                <div style="padding: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                {{ form.is_active }}
+                                <span style="font-weight: 500; color: var(--text-primary);">Producto activo</span>
+                            </label>
+                            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Los productos inactivos no aparecen en el POS</div>
+                        </div>
+                        <div>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                {{ form.is_for_sale }}
+                                <span style="font-weight: 500; color: var(--text-primary);">Disponible para venta</span>
+                            </label>
+                            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Controla si el producto se puede vender</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <div style="padding: 20px;">
+                    <div style="display: flex; justify-content: end; gap: 12px;">
+                        <a href="{% url 'inventory:product_list' %}" style="display: flex; align-items: center; gap: 8px; background: transparent; color: var(--text-secondary); border: 1px solid #ddd; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 500;">
+                            <span class="material-icons" style="font-size: 18px;">close</span>
+                            Cancelar
+                        </a>
+                        <button type="button" onclick="previewProduct()" style="display: flex; align-items: center; gap: 8px; background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                            <span class="material-icons" style="font-size: 18px;">visibility</span>
+                            Vista Previa
+                        </button>
+                        <button type="submit" style="display: flex; align-items: center; gap: 8px; background: var(--primary-color); color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                            <span class="material-icons" style="font-size: 18px;">save</span>
+                            {% if object %}Actualizar{% else %}Crear{% endif %} Producto
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Panel lateral -->
+    <div>
+        <!-- Imagen del producto -->
+        <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 24px;">
+            <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+                <h6 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons">image</span>
+                    Imagen del Producto
+                </h6>
+            </div>
+            <div style="padding: 20px; text-align: center;">
+                <div id="imagePreview" style="border: 2px dashed #ddd; border-radius: 8px; padding: 20px; margin-bottom: 16px; min-height: 200px; display: flex; align-items: center; justify-content: center;">
+                    {% if object.image %}
+                        <img src="{{ object.image.url }}" alt="{{ object.name }}" 
+                             style="max-height: 200px; max-width: 100%; border-radius: 4px;">
+                    {% else %}
+                        <div style="text-align: center; color: var(--text-secondary);">
+                            <span class="material-icons" style="font-size: 48px; margin-bottom: 8px; opacity: 0.5;">image</span>
+                            <p>Sin imagen</p>
+                        </div>
+                    {% endif %}
+                </div>
+                <div style="position: relative; display: block;">
+                    {{ form.image }}
+                    {% if form.image.errors %}
+                        <div class="field-error" style="margin-top: 8px;">{{ form.image.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Códigos (solo para edición) -->
+        {% if object %}
+        <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 24px;">
+            <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+                <h6 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons">qr_code</span>
+                    Códigos
+                </h6>
+            </div>
+            <div style="padding: 20px;">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">SKU</label>
+                    <div style="display: flex;">
+                        <input type="text" value="{{ object.sku }}" readonly style="flex: 1; padding: 12px; border: 1px solid #ddd; border-right: none; border-radius: 4px 0 0 4px; background: #f8f9fa;">
+                        <button type="button" onclick="copyToClipboard('{{ object.sku }}')" style="padding: 12px; background: #f8f9fa; border: 1px solid #ddd; border-left: none; border-radius: 0 4px 4px 0; cursor: pointer;">
+                            <span class="material-icons" style="font-size: 16px;">content_copy</span>
+                        </button>
+                    </div>
+                </div>
+                
+                {% if object.barcode %}
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Código de Barras</label>
+                    <div style="display: flex;">
+                        <input type="text" value="{{ object.barcode }}" readonly style="flex: 1; padding: 12px; border: 1px solid #ddd; border-right: none; border-radius: 4px 0 0 4px; background: #f8f9fa;">
+                        <button type="button" onclick="copyToClipboard('{{ object.barcode }}')" style="padding: 12px; background: #f8f9fa; border: 1px solid #ddd; border-left: none; border-radius: 0 4px 4px 0; cursor: pointer;">
+                            <span class="material-icons" style="font-size: 16px;">content_copy</span>
+                        </button>
+                    </div>
+                    {% if object.barcode_image %}
+                    <div style="text-align: center; margin-top: 16px;">
+                        <img src="{{ object.barcode_image.url }}" alt="Código de barras" style="max-width: 100%;">
+                        <br>
+                        <button type="button" onclick="printBarcode()" style="margin-top: 8px; padding: 8px 16px; background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); border-radius: 4px; cursor: pointer;">
+                            <span class="material-icons" style="font-size: 16px; vertical-align: middle;">print</span>
+                            Imprimir
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Stock actual -->
+        {% if object.track_stock %}
+        <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 24px;">
+            <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+                <h6 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons">inventory</span>
+                    Stock Actual
+                </h6>
+            </div>
+            <div style="padding: 20px; text-align: center;">
+                <h3 style="margin: 0 0 8px 0;">
+                    <span style="padding: 8px 16px; border-radius: 20px; font-size: 18px; font-weight: 500; 
+                        {% if object.current_stock <= 0 %}background: #ffebee; color: #c62828;
+                        {% elif object.current_stock <= object.min_stock %}background: #fff3e0; color: #ef6c00;
+                        {% else %}background: #e8f5e8; color: #2e7d32;{% endif %}">
+                        {{ object.current_stock }}
+                    </span>
+                </h3>
+                <p style="color: var(--text-secondary); margin: 0 0 16px 0;">unidades disponibles</p>
+                
+                {% if object.is_low_stock %}
+                    <div style="background: #fff3e0; border: 1px solid #ffcc02; border-radius: 4px; padding: 12px; margin-bottom: 16px;">
+                        <span class="material-icons" style="color: #ef6c00; vertical-align: middle;">warning</span>
+                        Stock bajo (mínimo: {{ object.min_stock }})
+                    </div>
+                {% elif object.is_out_of_stock %}
+                    <div style="background: #ffebee; border: 1px solid #f44336; border-radius: 4px; padding: 12px; margin-bottom: 16px;">
+                        <span class="material-icons" style="color: #c62828; vertical-align: middle;">error</span>
+                        Sin stock disponible
+                    </div>
+                {% endif %}
+                
+                <button type="button" onclick="adjustStock()" style="padding: 8px 16px; background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); border-radius: 4px; cursor: pointer;">
+                    <span class="material-icons" style="font-size: 16px; vertical-align: middle;">edit</span>
+                    Ajustar Stock
+                </button>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        <!-- Tips -->
+        <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+                <h6 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons">lightbulb</span>
+                    Consejos
+                </h6>
+            </div>
+            <div style="padding: 20px;">
+                <ul style="list-style: none; padding: 0; margin: 0; font-size: 14px;">
+                    <li style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <span class="material-icons" style="color: #28a745; font-size: 16px;">check</span>
+                        Use nombres descriptivos y únicos
+                    </li>
+                    <li style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <span class="material-icons" style="color: #28a745; font-size: 16px;">check</span>
+                        Las categorías determinan el margen automático
+                    </li>
+                    <li style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <span class="material-icons" style="color: #28a745; font-size: 16px;">check</span>
+                        El SKU y código de barras se generan automáticamente
+                    </li>
+                    <li style="display: flex; align-items: center; gap: 8px;">
+                        <span class="material-icons" style="color: #28a745; font-size: 16px;">check</span>
+                        Configure stock mínimo para alertas automáticas
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Vista Previa -->
+<div id="previewModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 90%; max-width: 600px; max-height: 90%; overflow-y: auto;">
+        <div style="padding: 20px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
+            <h5 style="margin: 0; color: var(--text-primary);">Vista Previa del Producto</h5>
+            <button onclick="closePreview()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">
+                <span class="material-icons">close</span>
+            </button>
+        </div>
+        <div id="previewContent" style="padding: 20px;"></div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar campos
+    toggleStockFields();
+    calculateProfit();
+    
+    // Event listeners
+    const trackStockCheckbox = document.getElementById('id_track_stock');
+    if (trackStockCheckbox) {
+        trackStockCheckbox.addEventListener('change', toggleStockFields);
+    }
+    
+    const costPriceInput = document.getElementById('id_cost_price');
+    const salePriceInput = document.getElementById('id_sale_price');
+    if (costPriceInput) costPriceInput.addEventListener('input', calculateProfit);
+    if (salePriceInput) salePriceInput.addEventListener('input', calculateProfit);
+    
+    const categorySelect = document.getElementById('id_category');
+    if (categorySelect) {
+        categorySelect.addEventListener('change', function() {
+            loadCategoryProfit(this.value);
+        });
+        // Cargar información inicial
+        if (categorySelect.value) {
+            loadCategoryProfit(categorySelect.value);
+        }
+    }
+    
+    const imageInput = document.getElementById('id_image');
+    if (imageInput) {
+        imageInput.addEventListener('change', previewImage);
+    }
+
+    // Agregar estilos CSS
+    addFormStyles();
+});
+
+function addFormStyles() {
+    if (document.getElementById('formStyles')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'formStyles';
+    style.textContent = `
+        .field-error {
+            color: #dc3545;
+            font-size: 12px;
+            margin-top: 4px;
+            display: block;
+        }
+        
+        .field-error:empty {
+            display: none;
+        }
+        
+        .rotating {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Estilos para campos del formulario */
+        #productForm input[type="text"],
+        #productForm input[type="number"],
+        #productForm input[type="email"],
+        #productForm textarea,
+        #productForm select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        #productForm input:focus,
+        #productForm textarea:focus,
+        #productForm select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+        }
+        
+        #productForm input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function toggleStockFields() {
+    const trackStock = document.getElementById('id_track_stock');
+    const stockFields = document.getElementById('stockFields');
+    
+    if (trackStock && stockFields) {
+        stockFields.style.display = trackStock.checked ? 'block' : 'none';
+        
+        const minStockInput = document.getElementById('id_min_stock');
+        const maxStockInput = document.getElementById('id_max_stock');
+        
+        if (minStockInput && maxStockInput) {
+            minStockInput.required = trackStock.checked;
+            maxStockInput.required = trackStock.checked;
+        }
+    }
+}
+
+function loadCategoryProfit(categoryId) {
+    const categoryProfitInfo = document.getElementById('categoryProfitInfo');
+    
+    if (!categoryId || !categoryProfitInfo) {
+        if (categoryProfitInfo) categoryProfitInfo.innerHTML = '';
+        return;
+    }
+    
+    // Simular carga de información de categoría con 40% de margen
+    setTimeout(() => {
+        categoryProfitInfo.innerHTML = 
+            `<span style="padding: 4px 8px; background: #e3f2fd; color: var(--primary-color); border-radius: 12px; font-size: 12px; font-weight: 500;">Margen automático: 40%</span>`;
+    }, 300);
+}
+
+function calculateSalePrice() {
+    const costPrice = parseFloat(document.getElementById('id_cost_price').value) || 0;
+    
+    if (costPrice > 0) {
+        // Margen corregido al 40%
+        const profitPercentage = 40;
+        const profitAmount = costPrice * (profitPercentage / 100);
+        const salePrice = costPrice + profitAmount;
+        
+        document.getElementById('id_sale_price').value = salePrice.toFixed(2);
+        calculateProfit();
+        
+        showAlert('success', `Precio calculado con margen del ${profitPercentage}%`);
+    } else {
+        showAlert('warning', 'Ingrese primero el precio de costo');
+    }
+}
+
+function calculateProfit() {
+    const costPrice = parseFloat(document.getElementById('id_cost_price').value) || 0;
+    const salePrice = parseFloat(document.getElementById('id_sale_price').value) || 0;
+    
+    const profitAmountInput = document.getElementById('profitAmount');
+    const profitPercentageSpan = document.getElementById('profitPercentage');
+    
+    if (costPrice > 0 && salePrice > 0) {
+        const profitAmount = salePrice - costPrice;
+        const profitPercentage = (profitAmount / costPrice) * 100;
+        
+        if (profitAmountInput) profitAmountInput.value = profitAmount.toFixed(2);
+        if (profitPercentageSpan) profitPercentageSpan.textContent = profitPercentage.toFixed(1) + '%';
+        
+        // Mostrar sugerencias
+        showPriceSuggestions(costPrice);
+    } else {
+        if (profitAmountInput) profitAmountInput.value = '0.00';
+        if (profitPercentageSpan) profitPercentageSpan.textContent = '0%';
+        document.getElementById('priceSuggestions').innerHTML = '';
+    }
+}
+
+function showPriceSuggestions(costPrice) {
+    const margins = [25, 50, 75, 100];
+    let suggestions = '';
+    
+    margins.forEach(margin => {
+        const price = costPrice * (1 + margin / 100);
+        suggestions += `
+            <button type="button" onclick="setSalePrice(${price.toFixed(2)})" style="margin: 4px 8px 4px 0; padding: 6px 12px; background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); border-radius: 4px; cursor: pointer; font-size: 12px;">
+                ${margin}%: $${price.toFixed(2)}
+            </button>
+        `;
+    });
+    
+    document.getElementById('priceSuggestions').innerHTML = suggestions;
+}
+
+function setSalePrice(price) {
+    document.getElementById('id_sale_price').value = price;
+    calculateProfit();
+}
+
+function generateSKU() {
+    const name = document.getElementById('id_name').value.trim();
+    const categorySelect = document.getElementById('id_category');
+    const category = categorySelect.selectedOptions[0]?.text || '';
+    
+    if (!name) {
+        showAlert('warning', 'Ingrese primero el nombre del producto');
+        document.getElementById('id_name').focus();
+        return;
+    }
+    
+    // Generar SKU: 3 letras del nombre + 2 de categoría + timestamp
+    const namePrefix = name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'XXX').padEnd(3, 'X');
+    const categoryPrefix = category.substring(0, 2).toUpperCase().replace(/[^A-Z]/g, 'XX').padEnd(2, 'X');
+    const timestamp = Date.now().toString().slice(-4);
+    
+    const sku = `${namePrefix}${categoryPrefix}${timestamp}`;
+    
+    const skuInput = document.getElementById('id_sku');
+    if (skuInput) {
+        skuInput.value = sku;
+        showAlert('success', `SKU generado: ${sku}`);
+    } else {
+        showAlert('error', 'Error: Campo SKU no encontrado');
+    }
+}
+
+function generateBarcode() {
+    // Generar código de barras EAN-13 simplificado
+    const timestamp = Date.now().toString();
+    const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const barcode = '789' + timestamp.slice(-7) + randomNum.slice(-3);
+    
+    const barcodeInput = document.getElementById('id_barcode');
+    if (barcodeInput) {
+        barcodeInput.value = barcode;
+        showAlert('success', `Código de barras generado: ${barcode}`);
+    } else {
+        showAlert('error', 'Error: Campo código de barras no encontrado');
+    }
+}
+
+function previewImage(event) {
+    const file = event.target.files[0];
+    const imagePreview = document.getElementById('imagePreview');
+    
+    if (file && imagePreview) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            imagePreview.innerHTML = 
+                `<img src="${e.target.result}" alt="Vista previa" style="max-height: 200px; max-width: 100%; border-radius: 4px;">`;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function previewProduct() {
+    const formData = new FormData(document.getElementById('productForm'));
+    const data = Object.fromEntries(formData.entries());
+    
+    const previewContent = document.getElementById('previewContent');
+    previewContent.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div>
+                <h6>Información Básica</h6>
+                <p><strong>Nombre:</strong> ${data.name || 'Sin nombre'}</p>
+                <p><strong>SKU:</strong> ${data.sku || 'Sin SKU'}</p>
+                <p><strong>Categoría:</strong> ${document.getElementById('id_category').selectedOptions[0]?.text || 'Sin categoría'}</p>
+                <p><strong>Marca:</strong> ${document.getElementById('id_brand').selectedOptions[0]?.text || 'Sin marca'}</p>
+            </div>
+            <div>
+                <h6>Precios</h6>
+                <p><strong>Costo:</strong> $${data.cost_price || '0.00'}</p>
+                <p><strong>Venta:</strong> $${data.sale_price || '0.00'}</p>
+                <p><strong>Estado:</strong> ${data.is_active ? 'Activo' : 'Inactivo'}</p>
+                <p><strong>Para venta:</strong> ${data.is_for_sale ? 'Sí' : 'No'}</p>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('previewModal').style.display = 'flex';
+}
+
+function closePreview() {
+    document.getElementById('previewModal').style.display = 'none';
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showAlert('success', 'Copiado al portapapeles');
+    }).catch(err => {
+        console.error('Error copying to clipboard:', err);
+    });
+}
+
+function printBarcode() {
+    showAlert('info', 'Funcionalidad de impresión próximamente disponible');
+}
+
+function adjustStock() {
+    showAlert('info', 'Redirigiendo a ajuste de stock...');
+    // Aquí podrías redirigir a la página de detalle del producto
+    {% if object %}
+    window.location.href = '{% url "inventory:product_detail" object.pk %}';
+    {% endif %}
+}
+
+// Validación del formulario
+document.getElementById('productForm').addEventListener('submit', function(e) {
+    const costPrice = parseFloat(document.getElementById('id_cost_price').value) || 0;
+    const salePrice = parseFloat(document.getElementById('id_sale_price').value) || 0;
+    
+    if (salePrice <= costPrice) {
+        e.preventDefault();
+        showAlert('error', 'El precio de venta debe ser mayor al precio de costo');
+        return false;
+    }
+    
+    // Mostrar indicador de carga
+    const submitBtn = document.querySelector('button[type="submit"]');
+    const originalContent = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<span class="material-icons rotating" style="font-size: 18px;">hourglass_empty</span> Guardando...';
+    submitBtn.disabled = true;
+    
+    return true;
+});
+
+function showAlert(type, message) {
+    const alertStyles = {
+        success: { bg: '#d4edda', color: '#155724' },
+        error: { bg: '#f8d7da', color: '#721c24' },
+        warning: { bg: '#fff3cd', color: '#856404' },
+        info: { bg: '#d1ecf1', color: '#0c5460' }
+    };
+    
+    const style = alertStyles[type] || alertStyles.success;
+    
+    const alert = document.createElement('div');
+    alert.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        background: ${style.bg};
+        color: ${style.color};
+        border-radius: 6px;
+        z-index: 9999;
+        max-width: 400px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    `;
+    alert.textContent = message;
+    
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+        alert.remove();
+    }, 3000);
+}
+</script>
+{% endblock %}

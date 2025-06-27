@@ -1,0 +1,665 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ product.name }} - Detalle del Producto{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e0e0e0;">
+    <h1 style="color: var(--primary-color); margin: 0; display: flex; align-items: center; gap: 12px;">
+        <span class="material-icons" style="font-size: 32px;">inventory_2</span>
+        {{ product.name }}
+    </h1>
+    <div style="display: flex; gap: 12px;">
+        <a href="{% url 'inventory:product_edit' product.pk %}" style="display: flex; align-items: center; gap: 8px; background: var(--primary-color); color: white; border: none; padding: 12px 16px; border-radius: 6px; text-decoration: none; font-weight: 500;">
+            <span class="material-icons" style="font-size: 18px;">edit</span>
+            Editar
+        </a>
+        {% if product.track_stock %}
+            <button type="button" onclick="showStockModal()" style="display: flex; align-items: center; gap: 8px; background: transparent; color: #17a2b8; border: 1px solid #17a2b8; padding: 12px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                <span class="material-icons" style="font-size: 18px;">inventory</span>
+                Ajustar Stock
+            </button>
+        {% endif %}
+        <button type="button" onclick="printBarcodeZebra()" style="display: flex; align-items: center; gap: 8px; background: transparent; color: #28a745; border: 1px solid #28a745; padding: 12px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+            <span class="material-icons" style="font-size: 18px;">print</span>
+            Imprimir Código
+        </button>
+        <a href="{% url 'inventory:product_list' %}" style="display: flex; align-items: center; gap: 8px; background: transparent; color: var(--text-secondary); border: 1px solid #ddd; padding: 12px 16px; border-radius: 6px; text-decoration: none; font-weight: 500;">
+            <span class="material-icons" style="font-size: 18px;">arrow_back</span>
+            Volver
+        </a>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 350px; gap: 24px;">
+    <!-- Contenido principal -->
+    <div>
+        <!-- Información del producto -->
+        <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 24px;">
+            <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+                <h5 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons">info</span>
+                    Información del Producto
+                </h5>
+            </div>
+            <div style="padding: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                    <div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-weight: 500; color: var(--text-secondary); font-size: 14px; margin-bottom: 4px; display: block;">Nombre</label>
+                            <div style="font-size: 16px; color: var(--text-primary);">{{ product.name }}</div>
+                        </div>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-weight: 500; color: var(--text-secondary); font-size: 14px; margin-bottom: 4px; display: block;">SKU</label>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <code style="background: #f8f9fa; padding: 4px 8px; border-radius: 4px; font-family: 'Courier New', monospace;">{{ product.sku }}</code>
+                                <button onclick="copyToClipboard('{{ product.sku }}')" style="padding: 4px 8px; background: transparent; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;">
+                                    <span class="material-icons" style="font-size: 16px;">content_copy</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {% if product.barcode %}
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-weight: 500; color: var(--text-secondary); font-size: 14px; margin-bottom: 4px; display: block;">Código de Barras</label>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <code style="background: #f8f9fa; padding: 4px 8px; border-radius: 4px; font-family: 'Courier New', monospace;">{{ product.barcode }}</code>
+                                <button onclick="copyToClipboard('{{ product.barcode }}')" style="padding: 4px 8px; background: transparent; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;">
+                                    <span class="material-icons" style="font-size: 16px;">content_copy</span>
+                                </button>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-weight: 500; color: var(--text-secondary); font-size: 14px; margin-bottom: 4px; display: block;">Categoría</label>
+                            <span style="background: var(--primary-color); color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">{{ product.category.name }}</span>
+                        </div>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-weight: 500; color: var(--text-secondary); font-size: 14px; margin-bottom: 4px; display: block;">Marca</label>
+                            <div style="font-size: 16px; color: var(--text-primary);">{{ product.brand.name }}</div>
+                        </div>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-weight: 500; color: var(--text-secondary); font-size: 14px; margin-bottom: 4px; display: block;">Proveedor</label>
+                            <div style="font-size: 16px; color: var(--text-primary);">{{ product.supplier.name }}</div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-weight: 500; color: var(--text-secondary); font-size: 14px; margin-bottom: 4px; display: block;">Unidad</label>
+                            <div style="font-size: 16px; color: var(--text-primary);">{{ product.get_unit_display }}</div>
+                        </div>
+                        
+                        {% if product.weight %}
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-weight: 500; color: var(--text-secondary); font-size: 14px; margin-bottom: 4px; display: block;">Peso</label>
+                            <div style="font-size: 16px; color: var(--text-primary);">{{ product.weight }} kg</div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if product.dimensions %}
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-weight: 500; color: var(--text-secondary); font-size: 14px; margin-bottom: 4px; display: block;">Dimensiones</label>
+                            <div style="font-size: 16px; color: var(--text-primary);">{{ product.dimensions }}</div>
+                        </div>
+                        {% endif %}
+                        
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-weight: 500; color: var(--text-secondary); font-size: 14px; margin-bottom: 4px; display: block;">Estado</label>
+                            <div style="display: flex; gap: 8px;">
+                                {% if product.is_active %}
+                                    <span style="background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">Activo</span>
+                                {% else %}
+                                    <span style="background: #d1ecf1; color: #0c5460; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">Inactivo</span>
+                                {% endif %}
+                                
+                                {% if product.is_for_sale %}
+                                    <span style="background: #cce5ff; color: #004085; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">Para venta</span>
+                                {% else %}
+                                    <span style="background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">No disponible</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-weight: 500; color: var(--text-secondary); font-size: 14px; margin-bottom: 4px; display: block;">Creado</label>
+                            <div style="font-size: 14px; color: var(--text-primary);">{{ product.created_at|date:"d/m/Y H:i" }}</div>
+                        </div>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-weight: 500; color: var(--text-secondary); font-size: 14px; margin-bottom: 4px; display: block;">Actualizado</label>
+                            <div style="font-size: 14px; color: var(--text-primary);">{{ product.updated_at|date:"d/m/Y H:i" }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if product.description %}
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                    <label style="font-weight: 500; color: var(--text-secondary); font-size: 14px; margin-bottom: 8px; display: block;">Descripción</label>
+                    <p style="color: var(--text-primary); margin: 0; line-height: 1.5;">{{ product.description }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Precios y ganancia -->
+        <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 24px;">
+            <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+                <h5 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons">attach_money</span>
+                    Precios y Rentabilidad
+                </h5>
+            </div>
+            <div style="padding: 20px;">
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; text-align: center;">
+                    <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+                        <h3 style="margin: 0 0 8px 0; color: #6c757d; font-size: 24px;">${{ product.cost_price|floatformat:2 }}</h3>
+                        <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Precio de Costo</p>
+                    </div>
+                    <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+                        <h3 style="margin: 0 0 8px 0; color: var(--primary-color); font-size: 24px;">${{ product.sale_price|floatformat:2 }}</h3>
+                        <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Precio de Venta</p>
+                    </div>
+                    <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+                        <h3 style="margin: 0 0 8px 0; color: #28a745; font-size: 24px;">${{ product.profit_amount|floatformat:2 }}</h3>
+                        <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Ganancia</p>
+                    </div>
+                    <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+                        <h3 style="margin: 0 0 8px 0; color: #17a2b8; font-size: 24px;">{{ product.profit_percentage|floatformat:1 }}%</h3>
+                        <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Margen</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Movimientos de stock -->
+        <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 24px;">
+            <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                <h5 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons">swap_horiz</span>
+                    Movimientos de Stock
+                </h5>
+                {% if product.track_stock %}
+                    <button type="button" onclick="showStockModal()" style="display: flex; align-items: center; gap: 8px; background: var(--primary-color); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                        <span class="material-icons" style="font-size: 16px;">add</span>
+                        Nuevo Movimiento
+                    </button>
+                {% endif %}
+            </div>
+            <div style="padding: 20px;">
+                {% if stock_movements %}
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid #e0e0e0;">
+                                    <th style="text-align: left; padding: 12px 8px; font-weight: 500; color: var(--text-secondary);">Fecha</th>
+                                    <th style="text-align: left; padding: 12px 8px; font-weight: 500; color: var(--text-secondary);">Tipo</th>
+                                    <th style="text-align: left; padding: 12px 8px; font-weight: 500; color: var(--text-secondary);">Motivo</th>
+                                    <th style="text-align: center; padding: 12px 8px; font-weight: 500; color: var(--text-secondary);">Cantidad</th>
+                                    <th style="text-align: left; padding: 12px 8px; font-weight: 500; color: var(--text-secondary);">Usuario</th>
+                                    <th style="text-align: left; padding: 12px 8px; font-weight: 500; color: var(--text-secondary);">Notas</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for movement in stock_movements %}
+                                <tr style="border-bottom: 1px solid #f0f0f0;">
+                                    <td style="padding: 12px 8px; font-size: 14px;">{{ movement.created_at|date:"d/m/Y H:i" }}</td>
+                                    <td style="padding: 12px 8px;">
+                                        <span style="padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;
+                                            {% if movement.movement_type == 'IN' %}background: #d4edda; color: #155724;
+                                            {% elif movement.movement_type == 'OUT' %}background: #f8d7da; color: #721c24;
+                                            {% else %}background: #fff3cd; color: #856404;{% endif %}">
+                                            {{ movement.get_movement_type_display }}
+                                        </span>
+                                    </td>
+                                    <td style="padding: 12px 8px; font-size: 14px;">{{ movement.get_reason_display }}</td>
+                                    <td style="padding: 12px 8px; text-align: center; font-weight: 500;
+                                        {% if movement.quantity > 0 %}color: #28a745;{% else %}color: #dc3545;{% endif %}">
+                                        {% if movement.quantity > 0 %}+{% endif %}{{ movement.quantity }}
+                                    </td>
+                                    <td style="padding: 12px 8px; font-size: 14px;">{{ movement.user.get_full_name|default:movement.user.username }}</td>
+                                    <td style="padding: 12px 8px; font-size: 14px; color: var(--text-secondary);">{{ movement.notes|default:"-" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <a href="{% url 'inventory:stock_movements' %}?product={{ product.pk }}" style="background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 8px 16px; border-radius: 4px; text-decoration: none; font-weight: 500;">
+                            Ver todos los movimientos
+                        </a>
+                    </div>
+                {% else %}
+                    <div style="text-align: center; color: var(--text-secondary); padding: 40px 0;">
+                        <span class="material-icons" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">history</span>
+                        <p style="margin: 0 0 16px 0;">No hay movimientos de stock registrados</p>
+                        {% if product.track_stock %}
+                            <button type="button" onclick="showStockModal()" style="background: var(--primary-color); color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                                <span class="material-icons" style="font-size: 16px; vertical-align: middle; margin-right: 8px;">add</span>
+                                Registrar primer movimiento
+                            </button>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel lateral -->
+    <div>
+        <!-- Imagen y código de barras -->
+        <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 24px;">
+            <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+                <h6 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons">image</span>
+                    Imagen y Código
+                </h6>
+            </div>
+            <div style="padding: 20px; text-align: center;">
+                <!-- Imagen del producto -->
+                <div style="margin-bottom: 20px;">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}" 
+                             style="max-height: 200px; max-width: 100%; border-radius: 8px; border: 1px solid #e0e0e0;">
+                    {% else %}
+                        <div style="border: 2px dashed #ddd; border-radius: 8px; padding: 40px; color: var(--text-secondary);">
+                            <span class="material-icons" style="font-size: 48px; margin-bottom: 8px; opacity: 0.5;">image</span>
+                            <p style="margin: 0;">Sin imagen</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Código de barras -->
+                {% if product.barcode_image %}
+                <div style="margin-bottom: 20px;">
+                    <img src="{{ product.barcode_image.url }}" alt="Código de barras" style="max-width: 100%; border: 1px solid #e0e0e0; border-radius: 4px;">
+                    <p style="margin: 8px 0 0 0; font-size: 12px; color: var(--text-secondary); font-family: 'Courier New', monospace;">{{ product.barcode }}</p>
+                </div>
+                {% endif %}
+                
+                <div style="display: grid; gap: 8px;">
+                    <button type="button" onclick="printBarcodeZebra()" style="background: var(--primary-color); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span class="material-icons" style="font-size: 16px;">print</span>
+                        Imprimir en Zebra
+                    </button>
+                    <div style="display: flex; align-items: center; gap: 8px; justify-content: center;">
+                        <span style="font-size: 14px;">Copias:</span>
+                        <input type="number" id="printCopies" value="1" min="1" max="10" style="width: 60px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; text-align: center;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stock actual -->
+        {% if product.track_stock %}
+        <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 24px;">
+            <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+                <h6 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons">inventory</span>
+                    Inventario
+                </h6>
+            </div>
+            <div style="padding: 20px; text-align: center;">
+                <div style="margin-bottom: 20px;">
+                    <h2 style="margin: 0 0 8px 0;">
+                        <span style="padding: 12px 20px; border-radius: 20px; font-size: 24px; font-weight: 500; 
+                            {% if current_stock <= 0 %}background: #ffebee; color: #c62828;
+                            {% elif current_stock <= product.min_stock %}background: #fff3e0; color: #ef6c00;
+                            {% else %}background: #e8f5e8; color: #2e7d32;{% endif %}">
+                            {{ current_stock }}
+                        </span>
+                    </h2>
+                    <p style="margin: 0; color: var(--text-secondary);">unidades en stock</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; text-align: center;">
+                    <div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Mínimo</div>
+                        <div style="font-weight: 500; font-size: 16px;">{{ product.min_stock }}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Máximo</div>
+                        <div style="font-weight: 500; font-size: 16px;">{{ product.max_stock }}</div>
+                    </div>
+                </div>
+
+                <div style="background: #f0f0f0; border-radius: 10px; height: 10px; margin-bottom: 20px; overflow: hidden;">
+                    {% widthratio current_stock product.max_stock 100 as stock_percentage %}
+                    <div style="height: 100%; border-radius: 10px; transition: width 0.3s ease;
+                        {% if stock_percentage <= 20 %}background: #dc3545;
+                        {% elif stock_percentage <= 50 %}background: #ffc107;
+                        {% else %}background: #28a745;{% endif %}
+                        width: {{ stock_percentage|default:0 }}%;">
+                    </div>
+                </div>
+
+                {% if product.is_out_of_stock %}
+                    <div style="background: #ffebee; border: 1px solid #f44336; border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+                        <span class="material-icons" style="color: #c62828; vertical-align: middle; margin-right: 8px;">error</span>
+                        <strong style="color: #c62828;">Sin stock</strong>
+                    </div>
+                {% elif product.is_low_stock %}
+                    <div style="background: #fff3e0; border: 1px solid #ffcc02; border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+                        <span class="material-icons" style="color: #ef6c00; vertical-align: middle; margin-right: 8px;">warning</span>
+                        <strong style="color: #ef6c00;">Stock bajo</strong>
+                    </div>
+                {% endif %}
+
+                <button type="button" onclick="showStockModal()" style="background: var(--primary-color); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span class="material-icons" style="font-size: 16px;">edit</span>
+                    Ajustar Stock
+                </button>
+            </div>
+        </div>
+        {% else %}
+        <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 24px;">
+            <div style="padding: 40px; text-align: center;">
+                <span class="material-icons" style="font-size: 48px; color: var(--text-secondary); margin-bottom: 16px; opacity: 0.5;">info</span>
+                <p style="color: var(--text-secondary); margin: 0;">Este producto no controla stock</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Alertas activas -->
+        {% if stock_alerts %}
+        <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 24px;">
+            <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+                <h6 style="margin: 0; color: #dc3545; display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons">warning</span>
+                    Alertas Activas
+                </h6>
+            </div>
+            <div style="padding: 16px;">
+                {% for alert in stock_alerts %}
+                <div style="background: 
+                    {% if alert.alert_type == 'OUT_OF_STOCK' %}#ffebee; border: 1px solid #f44336;
+                    {% elif alert.alert_type == 'LOW_STOCK' %}#fff3e0; border: 1px solid #ffcc02;
+                    {% else %}#e3f2fd; border: 1px solid #2196f3;{% endif %}
+                    border-radius: 6px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="color: 
+                            {% if alert.alert_type == 'OUT_OF_STOCK' %}#c62828;
+                            {% elif alert.alert_type == 'LOW_STOCK' %}#ef6c00;
+                            {% else %}#1976d2;{% endif %}">{{ alert.get_alert_type_display }}</strong>
+                        <br>
+                        <small style="color: var(--text-secondary);">{{ alert.created_at|date:"d/m/Y H:i" }}</small>
+                    </div>
+                    <button onclick="resolveAlert({{ alert.pk }})" style="background: #28a745; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                        <span class="material-icons" style="font-size: 16px;">check</span>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Acciones rápidas -->
+        <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+                <h6 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons">flash_on</span>
+                    Acciones Rápidas
+                </h6>
+            </div>
+            <div style="padding: 16px; display: grid; gap: 8px;">
+                <a href="{% url 'inventory:product_edit' product.pk %}" style="background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 10px 16px; border-radius: 6px; text-decoration: none; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span class="material-icons" style="font-size: 16px;">edit</span>
+                    Editar Producto
+                </a>
+                {% if product.track_stock %}
+                    <button type="button" onclick="showStockModal()" style="background: transparent; color: #17a2b8; border: 1px solid #17a2b8; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span class="material-icons" style="font-size: 16px;">inventory</span>
+                        Movimiento de Stock
+                    </button>
+                {% endif %}
+                <button type="button" onclick="printBarcodeZebra()" style="background: transparent; color: #28a745; border: 1px solid #28a745; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span class="material-icons" style="font-size: 16px;">print</span>
+                    Imprimir Código
+                </button>
+                <button type="button" onclick="duplicateProduct()" style="background: transparent; color: #ffc107; border: 1px solid #ffc107; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span class="material-icons" style="font-size: 16px;">content_copy</span>
+                    Duplicar Producto
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de ajuste de stock -->
+<div id="stockModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 90%; max-width: 500px; max-height: 90%; overflow-y: auto;">
+        <div style="padding: 20px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
+            <h5 style="margin: 0; color: var(--text-primary);">Ajustar Stock - {{ product.name }}</h5>
+            <button onclick="hideStockModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">
+                <span class="material-icons">close</span>
+            </button>
+        </div>
+        <form id="stockForm">
+            <div style="padding: 20px;">
+                <input type="hidden" id="stockProductId" name="product_id" value="{{ product.pk }}">
+                
+                <div style="background: #e3f2fd; border: 1px solid #90caf9; border-radius: 6px; padding: 12px; margin-bottom: 20px;">
+                    <strong style="color: var(--primary-color);">Stock actual: {{ current_stock }} unidades</strong>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Tipo</label>
+                        <select id="movementType" name="movement_type" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="IN">Entrada</option>
+                            <option value="OUT">Salida</option>
+                            <option value="ADJUSTMENT">Ajuste</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Motivo</label>
+                        <select id="reason" name="reason" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="PURCHASE">Compra</option>
+                            <option value="SALE">Venta</option>
+                            <option value="ADJUSTMENT">Ajuste de inventario</option>
+                            <option value="DAMAGED">Producto dañado</option>
+                            <option value="EXPIRED">Producto vencido</option>
+                            <option value="RETURN">Devolución</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Cantidad</label>
+                    <input type="number" id="quantity" name="quantity" min="1" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Notas</label>
+                    <textarea id="notes" name="notes" rows="3" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; resize: vertical;"></textarea>
+                </div>
+            </div>
+            <div style="padding: 20px; border-top: 1px solid #e0e0e0; display: flex; justify-content: end; gap: 12px;">
+                <button type="button" onclick="hideStockModal()" style="background: transparent; color: var(--text-secondary); border: 1px solid #ddd; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                    Cancelar
+                </button>
+                <button type="submit" style="background: var(--primary-color); color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons" style="font-size: 16px;">save</span>
+                    Guardar Movimiento
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showStockModal() {
+    document.getElementById('stockModal').style.display = 'flex';
+}
+
+function hideStockModal() {
+    document.getElementById('stockModal').style.display = 'none';
+    document.getElementById('stockForm').reset();
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showAlert('success', 'Copiado al portapapeles');
+    }).catch(err => {
+        console.error('Error copying to clipboard:', err);
+        showAlert('error', 'Error al copiar al portapapeles');
+    });
+}
+
+function printBarcodeZebra() {
+    const barcode = '{{ product.barcode }}';
+    const productName = '{{ product.name }}';
+    const salePrice = '{{ product.sale_price }}';
+    const copies = parseInt(document.getElementById('printCopies').value) || 1;
+    
+    if (!barcode) {
+        showAlert('error', 'Este producto no tiene código de barras');
+        return;
+    }
+    
+    // Mostrar indicador de carga
+    const printButtons = document.querySelectorAll('button[onclick="printBarcodeZebra()"]');
+    printButtons.forEach(btn => {
+        btn.innerHTML = '<span class="material-icons rotating" style="font-size: 16px;">print</span> Imprimiendo...';
+        btn.disabled = true;
+    });
+    
+    fetch('{% url "inventory:print_barcode_zebra" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            barcode: barcode,
+            product_name: productName,
+            sale_price: salePrice,
+            copies: copies
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', `Código de barras enviado a la impresora Zebra (${copies} copia${copies > 1 ? 's' : ''})`);
+        } else {
+            showAlert('error', data.message || 'Error al imprimir');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Error de conexión. Verifique que la impresora Zebra esté conectada.');
+    })
+    .finally(() => {
+        // Restaurar botones
+        printButtons.forEach(btn => {
+            btn.innerHTML = '<span class="material-icons" style="font-size: 16px;">print</span> Imprimir en Zebra';
+            btn.disabled = false;
+        });
+    });
+}
+
+function duplicateProduct() {
+    if (confirm('¿Desea crear una copia de este producto?')) {
+        window.location.href = '{% url "inventory:product_create" %}?duplicate={{ product.pk }}';
+    }
+}
+
+function resolveAlert(alertId) {
+    if (confirm('¿Está seguro de que desea resolver esta alerta?')) {
+        // Construir URL dinámicamente
+        const baseUrl = '{% url "inventory:stock_alerts" %}';
+        const resolveUrl = `${baseUrl}${alertId}/resolve/`;
+        
+        fetch(resolveUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.message);
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('error', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('error', 'Error al resolver la alerta');
+        });
+    }
+}
+
+// Manejar formulario de stock
+document.getElementById('stockForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        product_id: document.getElementById('stockProductId').value,
+        movement_type: document.getElementById('movementType').value,
+        reason: document.getElementById('reason').value,
+        quantity: document.getElementById('quantity').value,
+        notes: document.getElementById('notes').value
+    };
+    
+    const submitButton = e.target.querySelector('button[type="submit"]');
+    const originalContent = submitButton.innerHTML;
+    submitButton.innerHTML = '<span class="material-icons rotating" style="font-size: 16px;">hourglass_empty</span> Guardando...';
+    submitButton.disabled = true;
+    
+    fetch('{% url "inventory:stock_movement" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', data.message);
+            hideStockModal();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Error al guardar el movimiento');
+    })
+    .finally(() => {
+        submitButton.innerHTML = originalContent;
+        submitButton.disabled = false;
+    });
+});
+
+// Cerrar modal al hacer clic fuera
+document.getElementById('stockModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        hideStockModal();
+    }
+});
+
+// Agregar estilos para animación de rotación
+const style = document.createElement('style');
+style.textContent = `
+    .rotating {
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

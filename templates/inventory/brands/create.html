@@ -1,0 +1,261 @@
+{% extends "inventory/base_inventory.html" %}
+{% load static %}
+
+{% block title %}{% if object %}Editar{% else %}Crear{% endif %} Marca - Inventario{% endblock %}
+
+{% block inventory_content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        {% if object %}
+            <i class="fas fa-edit"></i> Editar Marca
+        {% else %}
+            <i class="fas fa-plus"></i> Crear Marca
+        {% endif %}
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'inventory:brand_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Volver a Marcas
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <form method="post" enctype="multipart/form-data" id="brandForm" novalidate>
+            {% csrf_token %}
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Información de la Marca</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">
+                            Nombre de la Marca <span class="text-danger">*</span>
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.name.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">Descripción</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.description.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-check">
+                        {{ form.is_active }}
+                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                            Marca activa
+                        </label>
+                        <div class="form-text">Las marcas inactivas no aparecen en los formularios</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logo -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-image"></i> Logo de la Marca</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.logo.id_for_label }}" class="form-label">Subir Logo</label>
+                                {{ form.logo }}
+                                {% if form.logo.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.logo.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Formatos: JPG, PNG, GIF. Máximo 2MB. Tamaño recomendado: 300x300px</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="logoPreview" class="text-center">
+                                {% if object.logo %}
+                                    <img src="{{ object.logo.url }}" alt="{{ object.name }}" 
+                                         class="img-thumbnail mb-2" style="max-height: 150px;">
+                                    <br>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeLogo()">
+                                        <i class="fas fa-trash"></i> Quitar Logo
+                                    </button>
+                                {% else %}
+                                    <div class="border rounded p-4 text-muted" style="height: 150px;">
+                                        <div class="d-flex align-items-center justify-content-center h-100">
+                                            <div>
+                                                <i class="fas fa-image fa-3x mb-2"></i>
+                                                <p>Vista previa del logo</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'inventory:brand_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 
+                            {% if object %}Actualizar{% else %}Crear{% endif %} Marca
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Panel lateral -->
+    <div class="col-lg-4">
+        {% if object %}
+        <!-- Productos de esta marca -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-boxes"></i> Productos de esta Marca</h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <h3 class="mb-0">{{ object.product_set.count }}</h3>
+                    <p class="text-muted">productos</p>
+                    
+                    {% if object.product_set.count > 0 %}
+                        <a href="{% url 'inventory:product_list' %}?brand={{ object.pk }}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-eye"></i> Ver Productos
+                        </a>
+                    {% endif %}
+                </div>
+                
+                {% if object.product_set.count > 0 %}
+                    <hr>
+                    <h6>Últimos Productos</h6>
+                    {% for product in object.product_set.all|slice:":5" %}
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small">{{ product.name|truncatechars:30 }}</span>
+                            <span class="badge bg-secondary">${{ product.sale_price }}</span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-chart-bar"></i> Estadísticas</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border rounded p-2 mb-2">
+                            <h6 class="mb-0">{{ object.created_at|date:"d/m/Y" }}</h6>
+                            <small class="text-muted">Creada</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border rounded p-2 mb-2">
+                            <h6 class="mb-0">{{ object.updated_at|date:"d/m/Y" }}</h6>
+                            <small class="text-muted">Actualizada</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Lista de marcas existentes -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-star"></i> Marcas Existentes</h6>
+            </div>
+            <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                {% for brand in all_brands %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center">
+                            {% if brand.logo %}
+                                <img src="{{ brand.logo.url }}" alt="{{ brand.name }}" 
+                                     class="me-2" style="width: 30px; height: 30px; object-fit: cover; border-radius: 4px;">
+                            {% else %}
+                                <div class="bg-light me-2" style="width: 30px; height: 30px; border-radius: 4px;"></div>
+                            {% endif %}
+                            <span class="small">{{ brand.name }}</span>
+                        </div>
+                        <span class="badge bg-secondary">{{ brand.product_set.count }}</span>
+                    </div>
+                {% empty %}
+                    <p class="text-muted small">No hay otras marcas</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Tips -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-lightbulb"></i> Consejos</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled small">
+                    <li><i class="fas fa-check text-success"></i> Use nombres únicos y reconocibles</li>
+                    <li><i class="fas fa-check text-success"></i> El logo ayuda a identificar productos rápidamente</li>
+                    <li><i class="fas fa-check text-success"></i> Agregue una descripción detallada</li>
+                    <li><i class="fas fa-check text-success"></i> Mantenga activas solo las marcas en uso</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Preview del logo
+    $('#id_logo').change(function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                $('#logoPreview').html(`
+                    <img src="${e.target.result}" alt="Logo preview" 
+                         class="img-thumbnail mb-2" style="max-height: 150px;">
+                    <br>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeLogo()">
+                        <i class="fas fa-trash"></i> Quitar Logo
+                    </button>
+                `);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+});
+
+function removeLogo() {
+    $('#id_logo').val('');
+    $('#logoPreview').html(`
+        <div class="border rounded p-4 text-muted" style="height: 150px;">
+            <div class="d-flex align-items-center justify-content-center h-100">
+                <div>
+                    <i class="fas fa-image fa-3x mb-2"></i>
+                    <p>Vista previa del logo</p>
+                </div>
+            </div>
+        </div>
+    `);
+}
+</script>
+{% endblock %}

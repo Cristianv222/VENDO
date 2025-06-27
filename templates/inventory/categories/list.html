@@ -1,0 +1,383 @@
+<!-- templates/inventory/categories/list.html -->
+{% extends "inventory/base_inventory.html" %}
+{% load static %}
+
+{% block title %}Categorías - Inventario{% endblock %}
+
+{% block inventory_content %}
+<style>
+    .content-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 24px;
+    }
+    
+    .content-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #e0e0e0;
+        background: #f8f9fa;
+        border-radius: 8px 8px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .content-body {
+        padding: 20px;
+    }
+    
+    .btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+    }
+    
+    .btn-primary {
+        background: var(--primary-color);
+        color: white;
+    }
+    
+    .btn-outline {
+        background: transparent;
+        color: var(--primary-color);
+        border: 1px solid var(--primary-color);
+    }
+    
+    .btn-secondary {
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1px solid #ddd;
+    }
+    
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        text-align: center;
+        border-left: 4px solid;
+    }
+    
+    .stat-card.primary { border-left-color: var(--primary-color); }
+    .stat-card.success { border-left-color: #28a745; }
+    .stat-card.info { border-left-color: #17a2b8; }
+    .stat-card.warning { border-left-color: #ffc107; }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--primary-color);
+        margin-bottom: 8px;
+    }
+    
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+    }
+    
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .table th {
+        font-weight: 500;
+        color: var(--text-primary);
+        border-bottom: 2px solid #e0e0e0;
+        padding: 12px;
+        text-align: left;
+    }
+    
+    .table td {
+        padding: 12px;
+        border-bottom: 1px solid #f0f0f0;
+        vertical-align: middle;
+    }
+    
+    .badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .badge.success {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .badge.secondary {
+        background: #e2e3e5;
+        color: #383d41;
+    }
+    
+    .badge.info {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    .search-form {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr auto;
+        gap: 12px;
+        margin-bottom: 20px;
+        align-items: end;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .form-control {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.875rem;
+    }
+    
+    .form-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-secondary);
+    }
+    
+    @media (max-width: 768px) {
+        .search-form {
+            grid-template-columns: 1fr;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e0e0e0;">
+    <h1 style="color: var(--primary-color); margin: 0;">Gestión de Categorías</h1>
+    <a href="{% url 'inventory:category_create' %}" class="btn btn-primary">
+        <span class="material-icons" style="font-size: 18px;">add</span>
+        Nueva Categoría
+    </a>
+</div>
+
+<!-- Estadísticas -->
+<div class="stats-grid">
+    <div class="stat-card primary">
+        <div class="stat-number">{{ total_categories }}</div>
+        <div class="stat-label">Total Categorías</div>
+    </div>
+    <div class="stat-card success">
+        <div class="stat-number">{{ parent_categories }}</div>
+        <div class="stat-label">Categorías Padre</div>
+    </div>
+    <div class="stat-card info">
+        <div class="stat-number">{{ subcategories }}</div>
+        <div class="stat-label">Subcategorías</div>
+    </div>
+    <div class="stat-card warning">
+        <div class="stat-number">{{ avg_profit|floatformat:1 }}%</div>
+        <div class="stat-label">Margen Promedio</div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="content-card">
+    <div class="content-header">
+        <h6 style="margin: 0; font-weight: 600;">
+            <span class="material-icons" style="vertical-align: middle; margin-right: 8px;">filter_list</span>
+            Filtros
+        </h6>
+    </div>
+    <div class="content-body">
+        <form method="get" class="search-form">
+            <div class="form-group">
+                <label class="form-label">Buscar</label>
+                <input type="text" name="search" value="{{ search }}" placeholder="Nombre o descripción..." class="form-control">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Categoría Padre</label>
+                <select name="parent" class="form-control">
+                    <option value="">Todas</option>
+                    <option value="null" {% if request.GET.parent == 'null' %}selected{% endif %}>Sin padre</option>
+                    {% for cat in parent_categories_list %}
+                        <option value="{{ cat.pk }}" {% if cat.pk|stringformat:"s" == request.GET.parent %}selected{% endif %}>
+                            {{ cat.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Estado</label>
+                <select name="is_active" class="form-control">
+                    <option value="">Todos</option>
+                    <option value="true" {% if request.GET.is_active == 'true' %}selected{% endif %}>Activos</option>
+                    <option value="false" {% if request.GET.is_active == 'false' %}selected{% endif %}>Inactivos</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button type="submit" class="btn btn-outline">
+                    <span class="material-icons" style="font-size: 18px;">search</span>
+                    Filtrar
+                </button>
+                <a href="{% url 'inventory:category_list' %}" class="btn btn-secondary">
+                    <span class="material-icons" style="font-size: 18px;">clear</span>
+                    Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de categorías -->
+<div class="content-card">
+    <div class="content-header">
+        <h6 style="margin: 0; font-weight: 600;">
+            <span class="material-icons" style="vertical-align: middle; margin-right: 8px;">category</span>
+            Lista de Categorías
+        </h6>
+    </div>
+    <div class="content-body">
+        {% if categories %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Categoría</th>
+                        <th>Categoría Padre</th>
+                        <th>Productos</th>
+                        <th>Margen (%)</th>
+                        <th>Estado</th>
+                        <th>Creado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for category in categories %}
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                {% if category.parent %}
+                                    <span class="material-icons" style="color: #999; font-size: 16px;">subdirectory_arrow_right</span>
+                                {% endif %}
+                                <div>
+                                    <strong>{{ category.name }}</strong>
+                                    {% if category.description %}
+                                        <br>
+                                        <small style="color: var(--text-secondary);">{{ category.description|truncatechars:50 }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if category.parent %}
+                                <span class="badge secondary">{{ category.parent.name }}</span>
+                            {% else %}
+                                <span style="color: var(--text-secondary);">Raíz</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'inventory:product_list' %}?category={{ category.pk }}" 
+                               class="btn btn-sm btn-outline">
+                                {{ category.products_count }} productos
+                            </a>
+                        </td>
+                        <td>
+                            {% if category.profit_percentage > 0 %}
+                                <span class="badge success">{{ category.profit_percentage }}%</span>
+                            {% else %}
+                                <span style="color: var(--text-secondary);">No definido</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if category.is_active %}
+                                <span class="badge success">Activo</span>
+                            {% else %}
+                                <span class="badge secondary">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ category.created_at|date:"d/m/Y" }}</td>
+                        <td>
+                            <div style="display: flex; gap: 4px;">
+                                <a href="{% url 'inventory:category_detail' category.pk %}" class="btn btn-sm btn-outline" title="Ver detalles">
+                                    <span class="material-icons" style="font-size: 16px;">visibility</span>
+                                </a>
+                                <a href="{% url 'inventory:category_edit' category.pk %}" class="btn btn-sm btn-outline" title="Editar">
+                                    <span class="material-icons" style="font-size: 16px;">edit</span>
+                                </a>
+                                {% if category.products_count == 0 %}
+                                    <a href="{% url 'inventory:category_delete' category.pk %}" class="btn btn-sm btn-danger" title="Eliminar" onclick="return confirm('¿Está seguro de que desea eliminar esta categoría?')">
+                                        <span class="material-icons" style="font-size: 16px;">delete</span>
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- Paginación -->
+            {% if is_paginated %}
+            <div style="display: flex; justify-content: center; margin-top: 20px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    {% if page_obj.has_previous %}
+                        <a href="?{% if search %}search={{ search }}&{% endif %}{% if request.GET.parent %}parent={{ request.GET.parent }}&{% endif %}{% if request.GET.is_active %}is_active={{ request.GET.is_active }}&{% endif %}page=1" class="btn btn-outline btn-sm">Primera</a>
+                        <a href="?{% if search %}search={{ search }}&{% endif %}{% if request.GET.parent %}parent={{ request.GET.parent }}&{% endif %}{% if request.GET.is_active %}is_active={{ request.GET.is_active }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn btn-outline btn-sm">Anterior</a>
+                    {% endif %}
+                    
+                    <span style="padding: 8px 16px; background: #f8f9fa; border-radius: 4px; font-size: 0.875rem;">
+                        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                    </span>
+                    
+                    {% if page_obj.has_next %}
+                        <a href="?{% if search %}search={{ search }}&{% endif %}{% if request.GET.parent %}parent={{ request.GET.parent }}&{% endif %}{% if request.GET.is_active %}is_active={{ request.GET.is_active }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn btn-outline btn-sm">Siguiente</a>
+                        <a href="?{% if search %}search={{ search }}&{% endif %}{% if request.GET.parent %}parent={{ request.GET.parent }}&{% endif %}{% if request.GET.is_active %}is_active={{ request.GET.is_active }}&{% endif %}page={{ page_obj.paginator.num_pages }}" class="btn btn-outline btn-sm">Última</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <span class="material-icons" style="font-size: 3rem; margin-bottom: 16px; opacity: 0.5;">category</span>
+                <p>No hay categorías disponibles</p>
+                <a href="{% url 'inventory:category_create' %}" class="btn btn-primary">
+                    <span class="material-icons" style="font-size: 18px;">add</span>
+                    Crear primera categoría
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,666 @@
+{% extends "inventory/base_inventory.html" %}
+{% load static %}
+
+{% block title %}Dashboard - Inventario{% endblock %}
+
+{% block inventory_content %}
+<style>
+    .stats-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 24px;
+        margin-bottom: 24px;
+        border-left: 4px solid;
+    }
+    
+    .stats-card.primary { border-left-color: var(--primary-color); }
+    .stats-card.warning { border-left-color: #ffc107; }
+    .stats-card.danger { border-left-color: #dc3545; }
+    .stats-card.info { border-left-color: #17a2b8; }
+    
+    .stats-card .number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--text-primary);
+        margin: 8px 0;
+    }
+    
+    .stats-card .label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+    }
+    
+    .stats-card .icon {
+        font-size: 2.5rem;
+        opacity: 0.3;
+        float: right;
+    }
+    
+    .dashboard-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 24px;
+    }
+    
+    .dashboard-card-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #e0e0e0;
+        background: #f8f9fa;
+        border-radius: 8px 8px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .dashboard-card-body {
+        padding: 20px;
+    }
+    
+    .table {
+        width: 100%;
+        margin-bottom: 0;
+    }
+    
+    .table th {
+        font-weight: 500;
+        color: var(--text-primary);
+        border-bottom: 2px solid #e0e0e0;
+        padding: 12px;
+        font-size: 0.875rem;
+    }
+    
+    .table td {
+        padding: 12px;
+        border-bottom: 1px solid #f0f0f0;
+        vertical-align: middle;
+    }
+    
+    .badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .badge.success {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .badge.warning {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .badge.danger {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .badge.info {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    .btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+    }
+    
+    .btn-primary {
+        background: var(--primary-color);
+        color: white;
+    }
+    
+    .btn-outline-secondary {
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1px solid #ddd;
+    }
+    
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+    
+    .text-success { color: #28a745; }
+    .text-danger { color: #dc3545; }
+    .text-warning { color: #ffc107; }
+    .text-muted { color: var(--text-secondary); }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-secondary);
+    }
+    
+    .empty-state .icon {
+        font-size: 3rem;
+        margin-bottom: 16px;
+        opacity: 0.5;
+    }
+    
+    .grid {
+        display: grid;
+        gap: 24px;
+    }
+    
+    .grid-4 {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+    
+    .grid-2 {
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    }
+    
+    .config-item {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .config-item:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    @media (max-width: 768px) {
+        .grid-4,
+        .grid-2 {
+            grid-template-columns: 1fr;
+        }
+        
+        .stats-card .icon {
+            float: none;
+            display: block;
+            text-align: center;
+            margin-top: 16px;
+        }
+    }
+</style>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e0e0e0;">
+    <h1 style="color: var(--primary-color); margin: 0;">Dashboard de Inventario</h1>
+    <div style="display: flex; gap: 12px;">
+        <a href="{% url 'inventory:product_create' %}" class="btn btn-primary">
+            <span class="material-icons" style="font-size: 18px;">add</span>
+            Nuevo Producto
+        </a>
+        <button type="button" class="btn btn-outline-secondary" onclick="refreshDashboard()">
+            <span class="material-icons" style="font-size: 18px;">refresh</span>
+            Actualizar
+        </button>
+    </div>
+</div>
+
+<!-- Tarjetas de estadísticas -->
+<div class="grid grid-4">
+    <div class="stats-card primary">
+        <div class="label">Total Productos</div>
+        <div class="number">{{ total_products }}</div>
+        <span class="material-icons icon">inventory_2</span>
+    </div>
+
+    <div class="stats-card warning">
+        <div class="label">Stock Bajo</div>
+        <div class="number">{{ low_stock_products }}</div>
+        <span class="material-icons icon">warning</span>
+    </div>
+
+    <div class="stats-card danger">
+        <div class="label">Sin Stock</div>
+        <div class="number">{{ out_of_stock }}</div>
+        <span class="material-icons icon">error</span>
+    </div>
+
+    <div class="stats-card info">
+        <div class="label">Categorías</div>
+        <div class="number">{{ total_categories }}</div>
+        <span class="material-icons icon">category</span>
+    </div>
+</div>
+
+<!-- Configuración de Impresora -->
+<div class="dashboard-card">
+    <div class="dashboard-card-header">
+        <h6 style="margin: 0; font-weight: 600; color: var(--primary-color);">
+            <span class="material-icons" style="vertical-align: middle; margin-right: 8px;">print</span>
+            Configuración de Impresora
+        </h6>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="checkPrinterStatus()">
+            <span class="material-icons" style="font-size: 16px;">refresh</span>
+            Verificar Estado
+        </button>
+    </div>
+    <div class="dashboard-card-body">
+        <div class="grid grid-4">
+            <!-- Configuración Zebra -->
+            <div class="config-item">
+                <div style="margin-bottom: 16px;">
+                    <span class="material-icons" style="font-size: 48px; color: var(--primary-color);">print</span>
+                </div>
+                <h6 style="margin: 0 0 8px 0; color: var(--text-primary);">Impresora Zebra USB</h6>
+                <p style="margin: 0 0 16px 0; font-size: 14px; color: var(--text-secondary);">Configurar impresora USB para códigos de barras</p>
+                <div id="zebraStatus" style="margin: 12px 0;">
+                    <span class="badge info">Verificando...</span>
+                </div>
+                <div style="display: grid; gap: 8px;">
+                    <a href="{% url 'inventory:zebra_config' %}" class="btn btn-primary">
+                        <span class="material-icons" style="font-size: 16px;">settings</span>
+                        Configurar
+                    </a>
+                    <button type="button" onclick="testZebraPrinter()" class="btn btn-outline-secondary">
+                        <span class="material-icons" style="font-size: 16px;">print</span>
+                        Probar Impresión
+                    </button>
+                </div>
+            </div>
+
+            <!-- Estado de Puertos -->
+            <div class="config-item">
+                <div style="margin-bottom: 16px;">
+                    <span class="material-icons" style="font-size: 48px; color: #17a2b8;">usb</span>
+                </div>
+                <h6 style="margin: 0 0 8px 0; color: var(--text-primary);">Puertos USB</h6>
+                <p style="margin: 0 0 16px 0; font-size: 14px; color: var(--text-secondary);">Ver puertos seriales disponibles</p>
+                <div id="portCount" style="margin: 12px 0;">
+                    <span class="badge info">Cargando...</span>
+                </div>
+                <button type="button" onclick="showAvailablePorts()" class="btn btn-outline-secondary">
+                    <span class="material-icons" style="font-size: 16px;">visibility</span>
+                    Ver Puertos
+                </button>
+            </div>
+
+            <!-- Códigos de Barras -->
+            <div class="config-item">
+                <div style="margin-bottom: 16px;">
+                    <span class="material-icons" style="font-size: 48px; color: #28a745;">qr_code</span>
+                </div>
+                <h6 style="margin: 0 0 8px 0; color: var(--text-primary);">Códigos de Barras</h6>
+                <p style="margin: 0 0 16px 0; font-size: 14px; color: var(--text-secondary);">Generar y gestionar códigos únicos</p>
+                <div style="margin: 12px 0;">
+                    <span class="badge success">Activo</span>
+                </div>
+                <button type="button" onclick="generateTestBarcode()" class="btn btn-outline-secondary">
+                    <span class="material-icons" style="font-size: 16px;">refresh</span>
+                    Generar Código
+                </button>
+            </div>
+
+            <!-- Ayuda -->
+            <div class="config-item">
+                <div style="margin-bottom: 16px;">
+                    <span class="material-icons" style="font-size: 48px; color: #ffc107;">help</span>
+                </div>
+                <h6 style="margin: 0 0 8px 0; color: var(--text-primary);">Ayuda y Soporte</h6>
+                <p style="margin: 0 0 16px 0; font-size: 14px; color: var(--text-secondary);">Guías de configuración y solución de problemas</p>
+                <div style="margin: 12px 0;">
+                    <span class="badge info">Disponible</span>
+                </div>
+                <a href="{% url 'inventory:zebra_config' %}" class="btn btn-outline-secondary">
+                    <span class="material-icons" style="font-size: 16px;">help</span>
+                    Ver Guía
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contenido principal -->
+<div class="grid grid-2">
+    <!-- Productos con stock bajo -->
+    <div class="dashboard-card">
+        <div class="dashboard-card-header">
+            <h6 style="margin: 0; font-weight: 600; color: var(--primary-color);">
+                <span class="material-icons" style="vertical-align: middle; margin-right: 8px;">warning</span>
+                Productos con Stock Bajo
+            </h6>
+            <a href="{% url 'inventory:product_list' %}?low_stock=true" class="btn btn-sm btn-primary">Ver Todos</a>
+        </div>
+        <div class="dashboard-card-body">
+            {% if low_stock_list %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Stock Actual</th>
+                            <th>Stock Mínimo</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in low_stock_list %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'inventory:product_detail' product.pk %}" style="color: var(--primary-color); text-decoration: none;">
+                                    {{ product.name|truncatechars:30 }}
+                                </a>
+                                <br>
+                                <small class="text-muted">{{ product.sku }}</small>
+                            </td>
+                            <td>
+                                <span class="badge {% if product.current_stock <= 0 %}danger{% else %}warning{% endif %}">
+                                    {{ product.current_stock }}
+                                </span>
+                            </td>
+                            <td>{{ product.min_stock }}</td>
+                            <td>
+                                {% if product.current_stock <= 0 %}
+                                    <span class="badge danger">Sin stock</span>
+                                {% else %}
+                                    <span class="badge warning">Stock bajo</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="empty-state">
+                    <span class="material-icons icon">check_circle</span>
+                    <p>No hay productos con stock bajo</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Movimientos recientes -->
+    <div class="dashboard-card">
+        <div class="dashboard-card-header">
+            <h6 style="margin: 0; font-weight: 600; color: var(--primary-color);">
+                <span class="material-icons" style="vertical-align: middle; margin-right: 8px;">history</span>
+                Movimientos Recientes
+            </h6>
+            <a href="{% url 'inventory:stock_movements' %}" class="btn btn-sm btn-primary">Ver Todos</a>
+        </div>
+        <div class="dashboard-card-body">
+            {% if recent_movements %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Tipo</th>
+                            <th>Cantidad</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for movement in recent_movements %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'inventory:product_detail' movement.product.pk %}" style="color: var(--primary-color); text-decoration: none;">
+                                    {{ movement.product.name|truncatechars:30 }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge {% if movement.movement_type == 'IN' %}success{% else %}danger{% endif %}">
+                                    {{ movement.get_movement_type_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="{% if movement.quantity > 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {% if movement.quantity > 0 %}+{% endif %}{{ movement.quantity }}
+                                </span>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ movement.created_at|date:"d/m H:i" }}</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="empty-state">
+                    <span class="material-icons icon">history</span>
+                    <p>No hay movimientos recientes</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Alertas activas -->
+{% if active_alerts %}
+<div class="dashboard-card">
+    <div class="dashboard-card-header">
+        <h6 style="margin: 0; font-weight: 600; color: #dc3545;">
+            <span class="material-icons" style="vertical-align: middle; margin-right: 8px;">notification_important</span>
+            Alertas Activas
+        </h6>
+        <a href="{% url 'inventory:stock_alerts' %}" class="btn btn-sm" style="background: #dc3545; color: white;">Ver Todas</a>
+    </div>
+    <div class="dashboard-card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Tipo de Alerta</th>
+                    <th>Stock Actual</th>
+                    <th>Umbral</th>
+                    <th>Fecha</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for alert in active_alerts %}
+                <tr>
+                    <td>
+                        <a href="{% url 'inventory:product_detail' alert.product.pk %}" style="color: var(--primary-color); text-decoration: none;">
+                            {{ alert.product.name }}
+                        </a>
+                        <br>
+                        <small class="text-muted">{{ alert.product.sku }}</small>
+                    </td>
+                    <td>
+                        <span class="badge {% if alert.alert_type == 'OUT_OF_STOCK' %}danger{% elif alert.alert_type == 'LOW_STOCK' %}warning{% else %}info{% endif %}">
+                            {{ alert.get_alert_type_display }}
+                        </span>
+                    </td>
+                    <td>{{ alert.current_stock }}</td>
+                    <td>{{ alert.threshold }}</td>
+                    <td>
+                        <small class="text-muted">{{ alert.created_at|date:"d/m/Y H:i" }}</small>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-success" onclick="resolveAlert({{ alert.pk }})">
+                            <span class="material-icons" style="font-size: 16px;">check</span>
+                            Resolver
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<script>
+// Funciones existentes
+function refreshDashboard() {
+    location.reload();
+}
+
+function resolveAlert(alertId) {
+    if (confirm('¿Está seguro de que desea resolver esta alerta?')) {
+        fetch(`/inventory/api/stock-alerts/${alertId}/resolve/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                showAlert('success', data.message);
+                setTimeout(() => location.reload(), 1000);
+            }
+        })
+        .catch(error => {
+            showAlert('error', 'Error al resolver la alerta');
+        });
+    }
+}
+
+// Nuevas funciones para Zebra
+function checkPrinterStatus() {
+    fetch('/inventory/ajax/printer-status/')
+    .then(response => response.json())
+    .then(data => {
+        const statusElement = document.getElementById('zebraStatus');
+        const portElement = document.getElementById('portCount');
+        
+        if (data.success) {
+            if (data.zebra_port) {
+                statusElement.innerHTML = '<span class="badge success">Conectada: ' + data.zebra_port + '</span>';
+            } else {
+                statusElement.innerHTML = '<span class="badge warning">No detectada</span>';
+            }
+            
+            if (data.available_ports) {
+                portElement.innerHTML = '<span class="badge info">' + data.available_ports.length + ' puertos disponibles</span>';
+            }
+        } else {
+            statusElement.innerHTML = '<span class="badge danger">Error: ' + data.message + '</span>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('zebraStatus').innerHTML = '<span class="badge danger">Error de conexión</span>';
+    });
+}
+
+function testZebraPrinter() {
+    const button = event.target;
+    const originalContent = button.innerHTML;
+    button.innerHTML = '<span class="material-icons rotating" style="font-size: 16px;">print</span> Probando...';
+    button.disabled = true;
+    
+    fetch('/inventory/ajax/test-zebra-printer/', {
+        headers: {
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', data.message);
+        } else {
+            showAlert('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Error al probar la impresora');
+    })
+    .finally(() => {
+        button.innerHTML = originalContent;
+        button.disabled = false;
+    });
+}
+
+function showAvailablePorts() {
+    fetch('/inventory/ajax/available-ports/')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            let message = 'Puertos disponibles:\n';
+            data.ports.forEach(port => {
+                message += `\n• ${port.device}: ${port.description}`;
+            });
+            alert(message);
+        } else {
+            showAlert('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Error al obtener puertos');
+    });
+}
+
+function generateTestBarcode() {
+    fetch('/inventory/ajax/generate-barcode/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Código generado: ' + data.barcode);
+        } else {
+            showAlert('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Error al generar código');
+    });
+}
+
+// Función para obtener el token CSRF
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Función para mostrar alertas (debes implementarla según tu sistema)
+function showAlert(type, message) {
+    // Implementar según tu sistema de alertas
+    alert(message);
+}
+
+// Agregar estilos para animación de rotación
+const style = document.createElement('style');
+style.textContent = `
+    .rotating {
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+`;
+document.head.appendChild(style);
+
+// Cargar estado de la impresora al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    checkPrinterStatus();
+});
+</script>
+{% endblock %}

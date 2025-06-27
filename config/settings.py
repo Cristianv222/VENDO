@@ -67,8 +67,8 @@ LOCAL_APPS = [
     
     # Business modules (módulos de negocio)
     #'apps.pos',
-    #'apps.inventory',
     #'apps.invoicing',
+    'apps.inventory',
     #'apps.purchases',
     #'apps.accounting',
     #'apps.quotations',
@@ -186,7 +186,7 @@ try:
             'HOST': config('DB_HOST'),
             'PORT': config('DB_PORT'),
             'OPTIONS': {
-                'options': '-c search_path=vendo_core,public',
+                'options': '-c search_path=vendo_inventory,vendo_pos,vendo_invoicing,vendo_core,public',
             },
             'CONN_MAX_AGE': 60,  # Reutilizar conexiones por 60 segundos
             'CONN_HEALTH_CHECKS': True,  # Verificar salud de conexiones
@@ -538,3 +538,15 @@ print(f"APPS TOTALES: {len(INSTALLED_APPS)}")
 print(f"MIDDLEWARE STACK: {len(MIDDLEWARE)} middlewares")
 print(f"ESQUEMAS CONFIGURADOS: {len(DATABASE_APPS_MAPPING)}")
 print("OK: CONFIGURACIÓN COMPLETA DE VENDO CARGADA EXITOSAMENTE")
+
+# ==================== CONFIGURACIÓN IMPRESORA ZEBRA USB ====================
+# Configuración de impresora Zebra conectada por USB
+ZEBRA_USB_PORT = None                   # Puerto COM (None para detección automática)
+ZEBRA_BAUDRATE = 9600                   # Velocidad de comunicación
+ZEBRA_TIMEOUT = 5                       # Timeout en segundos
+ZEBRA_PRINTER_NAME = 'ZDesigner'        # Nombre de la impresora en Windows
+
+# Ejemplos de configuración:
+# ZEBRA_USB_PORT = 'COM3'              # Windows (puerto específico)
+# ZEBRA_USB_PORT = '/dev/ttyUSB0'      # Linux
+# ZEBRA_PRINTER_NAME = 'ZDesigner GK420t'  # Nombre específico en Windows

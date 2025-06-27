@@ -1,0 +1,522 @@
+<!-- templates/inventory/categories/create.html -->
+{% extends "inventory/base_inventory.html" %}
+{% load static %}
+
+{% block title %}{% if object %}Editar{% else %}Crear{% endif %} Categoría - Inventario{% endblock %}
+
+{% block inventory_content %}
+<style>
+    .form-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 24px;
+    }
+    
+    .form-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #e0e0e0;
+        background: #f8f9fa;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .form-body {
+        padding: 20px;
+    }
+    
+    .form-group {
+        margin-bottom: 16px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        box-sizing: border-box;
+        font-family: inherit;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+    }
+    
+    .btn {
+        padding: 12px 20px;
+        border-radius: 6px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+    }
+    
+    .btn-primary {
+        background: var(--primary-color);
+        color: white;
+    }
+    
+    .btn-secondary {
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1px solid #ddd;
+    }
+    
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid #e0e0e0;
+    }
+    
+    .required {
+        color: #dc3545;
+    }
+    
+    .help-text {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+    
+    .error {
+        color: #dc3545;
+        font-size: 14px;
+        margin-top: 4px;
+    }
+    
+    .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+    
+    .sidebar-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 24px;
+    }
+    
+    .sidebar-header {
+        padding: 12px 16px;
+        border-bottom: 1px solid #e0e0e0;
+        background: #f8f9fa;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .sidebar-body {
+        padding: 16px;
+    }
+    
+    .calculator-card {
+        background: #e3f2fd;
+        border: 1px solid #90caf9;
+        border-radius: 4px;
+        padding: 16px;
+        margin-top: 16px;
+        display: none;
+    }
+    
+    .calculator-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
+        margin-top: 12px;
+    }
+    
+    .input-group {
+        display: flex;
+    }
+    
+    .input-prefix {
+        padding: 12px;
+        background: #f8f9fa;
+        border: 1px solid #ddd;
+        border-right: none;
+        border-radius: 4px 0 0 4px;
+        font-weight: 500;
+    }
+    
+    .input-group .form-control {
+        border-radius: 0 4px 4px 0;
+        border-left: none;
+    }
+    
+    .main-layout {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+    
+    /* Pantallas grandes */
+    @media (min-width: 1200px) {
+        .main-layout {
+            grid-template-columns: 2fr 1fr;
+        }
+        .grid-2 {
+            grid-template-columns: 2fr 1fr;
+        }
+    }
+    
+    /* Pantallas medianas */
+    @media (max-width: 992px) {
+        .grid-2 {
+            grid-template-columns: 1fr;
+        }
+        .calculator-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    /* Pantallas pequeñas */
+    @media (max-width: 768px) {
+        .main-layout,
+        .grid-2,
+        .calculator-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-body {
+            padding: 16px;
+        }
+        
+        .form-header {
+            padding: 12px 16px;
+        }
+        
+        .btn-text {
+            display: none;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+        
+        .form-actions .btn {
+            justify-content: center;
+        }
+    }
+    
+    /* Pantallas extra pequeñas */
+    @media (max-width: 576px) {
+        .form-card {
+            margin-left: -12px;
+            margin-right: -12px;
+            border-radius: 0;
+        }
+        
+        .sidebar-card {
+            margin-left: -12px;
+            margin-right: -12px;
+            border-radius: 0;
+        }
+    }
+</style>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e0e0e0; flex-wrap: wrap; gap: 16px;">
+    <h1 style="color: var(--primary-color); margin: 0; display: flex; align-items: center; gap: 12px; font-size: clamp(1.5rem, 4vw, 2rem);">
+        {% if object %}
+            <span class="material-icons" style="font-size: clamp(24px, 6vw, 32px);">edit</span>
+            Editar Categoría
+        {% else %}
+            <span class="material-icons" style="font-size: clamp(24px, 6vw, 32px);">add</span>
+            Crear Categoría
+        {% endif %}
+    </h1>
+    <a href="{% url 'inventory:category_list' %}" class="btn btn-secondary" style="white-space: nowrap;">
+        <span class="material-icons" style="font-size: 18px;">arrow_back</span>
+        <span class="btn-text">Volver a Categorías</span>
+    </a>
+</div>
+
+<div class="main-layout">
+    <!-- Formulario principal -->
+    <div>
+        <form method="post" id="categoryForm">
+            {% csrf_token %}
+            
+            <!-- Información de la categoría -->
+            <div class="form-card">
+                <div class="form-header">
+                    <h5 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                        <span class="material-icons">info</span>
+                        Información de la Categoría
+                    </h5>
+                </div>
+                <div class="form-body">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label for="{{ form.name.id_for_label }}">
+                                Nombre de la Categoría <span class="required">*</span>
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="error">{{ form.name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.profit_percentage.id_for_label }}">
+                                Margen de Ganancia (%)
+                            </label>
+                            {{ form.profit_percentage }}
+                            {% if form.profit_percentage.errors %}
+                                <div class="error">{{ form.profit_percentage.errors.0 }}</div>
+                            {% endif %}
+                            <div class="help-text">Margen automático para productos de esta categoría</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.parent.id_for_label }}">Categoría Padre</label>
+                        {{ form.parent }}
+                        {% if form.parent.errors %}
+                            <div class="error">{{ form.parent.errors.0 }}</div>
+                        {% endif %}
+                        <div class="help-text">Seleccione una categoría padre para crear una subcategoría</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.description.id_for_label }}">Descripción</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="error">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            {{ form.is_active }}
+                            <span>Categoría activa</span>
+                        </label>
+                        {% if form.is_active.errors %}
+                            <div class="error">{{ form.is_active.errors.0 }}</div>
+                        {% endif %}
+                        <div class="help-text">Las categorías inactivas no aparecen en los formularios</div>
+                    </div>
+                    
+                    <!-- Calculadora de margen -->
+                    <div class="calculator-card" id="marginCalculator">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <span class="material-icons" style="color: var(--primary-color);">calculate</span>
+                            <strong style="color: var(--primary-color);">Calculadora de Margen</strong>
+                        </div>
+                        <div class="calculator-grid">
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-size: 0.875rem;">Precio de Costo</label>
+                                <div class="input-group">
+                                    <span class="input-prefix">$</span>
+                                    <input type="number" class="form-control" id="costExample" step="0.01" placeholder="10.00">
+                                </div>
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-size: 0.875rem;">Precio de Venta</label>
+                                <div class="input-group">
+                                    <span class="input-prefix">$</span>
+                                    <input type="text" class="form-control" id="saleExample" readonly>
+                                </div>
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-size: 0.875rem;">Ganancia</label>
+                                <div class="input-group">
+                                    <span class="input-prefix">$</span>
+                                    <input type="text" class="form-control" id="profitExample" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="form-card">
+                <div class="form-body">
+                    <div class="form-actions">
+                        <a href="{% url 'inventory:category_list' %}" class="btn btn-secondary">
+                            <span class="material-icons" style="font-size: 18px;">close</span>
+                            <span class="btn-text">Cancelar</span>
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <span class="material-icons" style="font-size: 18px;">save</span>
+                            <span class="btn-text">{% if object %}Actualizar{% else %}Crear{% endif %} Categoría</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Panel lateral -->
+    <div>
+        {% if object %}
+        <!-- Productos en esta categoría -->
+        <div class="sidebar-card">
+            <div class="sidebar-header">
+                <h6 style="margin: 0; font-weight: 600; color: var(--text-primary);">
+                    <span class="material-icons" style="vertical-align: middle; margin-right: 8px;">inventory_2</span>
+                    Productos en esta Categoría
+                </h6>
+            </div>
+            <div class="sidebar-body" style="text-align: center;">
+                <div style="font-size: 2rem; font-weight: bold; color: var(--primary-color); margin-bottom: 8px;">
+                    {{ object.product_set.count }}
+                </div>
+                <p style="color: var(--text-secondary); margin: 0 0 16px 0;">productos</p>
+                
+                {% if object.product_set.count > 0 %}
+                    <a href="{% url 'inventory:product_list' %}?category={{ object.pk }}" 
+                       style="padding: 8px 16px; background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); border-radius: 4px; text-decoration: none; font-size: 0.875rem;">
+                        <span class="material-icons" style="font-size: 16px; vertical-align: middle;">visibility</span>
+                        Ver Productos
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Subcategorías -->
+        {% if object.subcategories.exists %}
+        <div class="sidebar-card">
+            <div class="sidebar-header">
+                <h6 style="margin: 0; font-weight: 600; color: var(--text-primary);">
+                    <span class="material-icons" style="vertical-align: middle; margin-right: 8px;">account_tree</span>
+                    Subcategorías
+                </h6>
+            </div>
+            <div class="sidebar-body">
+                {% for subcategory in object.subcategories.all %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                        <div>
+                            <strong>{{ subcategory.name }}</strong>
+                            <br>
+                            <small style="color: var(--text-secondary);">{{ subcategory.product_set.count }} productos</small>
+                        </div>
+                        <div>
+                            {% if subcategory.profit_percentage %}
+                                <span style="padding: 4px 8px; background: #d1ecf1; color: #0c5460; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">
+                                    {{ subcategory.profit_percentage }}%
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        <!-- Tips -->
+        <div class="sidebar-card">
+            <div class="sidebar-header">
+                <h6 style="margin: 0; font-weight: 600; color: var(--text-primary);">
+                    <span class="material-icons" style="vertical-align: middle; margin-right: 8px;">lightbulb</span>
+                    Consejos
+                </h6>
+            </div>
+            <div class="sidebar-body">
+                <ul style="list-style: none; padding: 0; margin: 0; font-size: 14px;">
+                    <li style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <span class="material-icons" style="color: #28a745; font-size: 16px;">check</span>
+                        Use nombres descriptivos y únicos
+                    </li>
+                    <li style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <span class="material-icons" style="color: #28a745; font-size: 16px;">check</span>
+                        El margen se aplicará automáticamente a nuevos productos
+                    </li>
+                    <li style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <span class="material-icons" style="color: #28a745; font-size: 16px;">check</span>
+                        Las subcategorías heredan propiedades del padre
+                    </li>
+                    <li style="display: flex; align-items: center; gap: 8px;">
+                        <span class="material-icons" style="color: #28a745; font-size: 16px;">check</span>
+                        Organice por tipo de producto o departamento
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Aplicar clases CSS a los campos del formulario
+    const formElements = document.querySelectorAll('input, select, textarea');
+    formElements.forEach(element => {
+        if (!element.type || element.type !== 'checkbox') {
+            element.classList.add('form-control');
+        }
+    });
+    
+    // Estilo especial para checkboxes
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.style.marginRight = '8px';
+        checkbox.style.transform = 'scale(1.2)';
+    });
+    
+    // Mostrar calculadora cuando hay margen
+    const profitInput = document.getElementById('id_profit_percentage');
+    const costInput = document.getElementById('costExample');
+    const calculator = document.getElementById('marginCalculator');
+    
+    if (profitInput) {
+        profitInput.addEventListener('input', function() {
+            const margin = parseFloat(this.value);
+            if (margin > 0) {
+                calculator.style.display = 'block';
+                calculateExample();
+            } else {
+                calculator.style.display = 'none';
+            }
+        });
+        
+        // Mostrar calculadora al cargar si ya hay margen
+        if (profitInput.value && parseFloat(profitInput.value) > 0) {
+            calculator.style.display = 'block';
+            calculateExample();
+        }
+    }
+    
+    if (costInput) {
+        costInput.addEventListener('input', calculateExample);
+    }
+});
+
+function calculateExample() {
+    const costInput = document.getElementById('costExample');
+    const profitInput = document.getElementById('id_profit_percentage');
+    const saleInput = document.getElementById('saleExample');
+    const profitExampleInput = document.getElementById('profitExample');
+    
+    const cost = parseFloat(costInput.value) || 0;
+    const margin = parseFloat(profitInput.value) || 0;
+    
+    if (cost > 0 && margin > 0) {
+        const profitAmount = cost * (margin / 100);
+        const salePrice = cost + profitAmount;
+        
+        saleInput.value = salePrice.toFixed(2);
+        profitExampleInput.value = profitAmount.toFixed(2);
+    } else {
+        saleInput.value = '';
+        profitExampleInput.value = '';
+    }
+}
+</script>
+
+{% endblock %}
