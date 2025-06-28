@@ -149,9 +149,9 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # URLs de autenticación
-LOGIN_URL = '/accounts/login/'           # Cambiado para allauth
+LOGIN_URL = '/users/login/'           # Cambiado para allauth
 LOGIN_REDIRECT_URL = '/dashboard/'       # Después del login exitoso
-LOGOUT_REDIRECT_URL = '/accounts/login/' # Después del logout
+LOGOUT_REDIRECT_URL = '/users/login/' # Después del logout
 
 # Configuración de allauth
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
