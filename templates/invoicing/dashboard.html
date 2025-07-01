@@ -1,0 +1,401 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Facturación - VENDO{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 24px;
+        margin-bottom: 32px;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 24px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-left: 4px solid var(--primary-color);
+    }
+    
+    .stat-card.success {
+        border-left-color: #4caf50;
+    }
+    
+    .stat-card.warning {
+        border-left-color: #ff9800;
+    }
+    
+    .stat-card.danger {
+        border-left-color: #f44336;
+    }
+    
+    .stat-number {
+        font-size: 32px;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+    
+    .stat-label {
+        color: var(--text-secondary);
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+    
+    .stat-change {
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    .recent-invoices {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .section-header {
+        padding: 24px;
+        border-bottom: 1px solid rgba(0,0,0,0.12);
+        display: flex;
+        align-items: center;
+        justify-content: between;
+    }
+    
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 32px;
+    }
+    
+    .action-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        text-align: center;
+        text-decoration: none;
+        color: inherit;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .action-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        text-decoration: none;
+        color: inherit;
+    }
+    
+    .action-icon {
+        background: var(--primary-color);
+        color: white;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 12px;
+    }
+    
+    .table-container {
+        overflow-x: auto;
+    }
+    
+    .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .invoice-table th,
+    .invoice-table td {
+        padding: 12px 16px;
+        text-align: left;
+        border-bottom: 1px solid rgba(0,0,0,0.12);
+    }
+    
+    .invoice-table th {
+        background: #f5f5f5;
+        font-weight: 500;
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+    
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    .status-pending {
+        background: #fff3e0;
+        color: #e65100;
+    }
+    
+    .status-sent {
+        background: #e3f2fd;
+        color: #0d47a1;
+    }
+    
+    .status-authorized {
+        background: #e8f5e8;
+        color: #2e7d32;
+    }
+    
+    .status-rejected {
+        background: #ffebee;
+        color: #c62828;
+    }
+    
+    .config-alert {
+        background: #fff3e0;
+        border: 1px solid #ffcc02;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mdc-breadcrumbs">
+    <a href="/dashboard/" class="breadcrumb-item">Dashboard</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-item active">Facturación Electrónica</span>
+</div>
+
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px;">
+    <div>
+        <h1 style="margin: 0; font-size: 28px; font-weight: 500;">Dashboard de Facturación</h1>
+        <p style="color: var(--text-secondary); margin: 4px 0 0 0;">Gestiona tu facturación electrónica con el SRI</p>
+    </div>
+    <a href="{% url 'invoicing:invoice_create' %}" class="mdc-button" style="background: var(--primary-color); color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none;">
+        <span class="material-icons" style="margin-right: 8px;">add</span>
+        Nueva Factura
+    </a>
+</div>
+
+{% if not sri_configurado %}
+<div class="config-alert">
+    <span class="material-icons" style="color: #f57f17;">warning</span>
+    <div style="flex: 1;">
+        <strong>Configuración requerida</strong>
+        <p style="margin: 4px 0 0 0; font-size: 14px;">Debes configurar el SRI antes de poder emitir facturas electrónicas.</p>
+    </div>
+    <a href="{% url 'invoicing:sri_configuration' %}" class="mdc-button" style="background: var(--primary-color); color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none;">
+        Configurar SRI
+    </a>
+</div>
+{% endif %}
+
+<!-- Estadísticas -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Facturas</div>
+        <div class="stat-number" style="color: var(--primary-color);">{{ total_facturas }}</div>
+        <div class="stat-change" style="color: #4caf50;">
+            <span class="material-icons" style="font-size: 14px; vertical-align: middle;">trending_up</span>
+            Total emitidas
+        </div>
+    </div>
+    
+    <div class="stat-card success">
+        <div class="stat-label">Autorizadas</div>
+        <div class="stat-number" style="color: #4caf50;">{{ facturas_autorizadas }}</div>
+        <div class="stat-change" style="color: #4caf50;">
+            <span class="material-icons" style="font-size: 14px; vertical-align: middle;">check_circle</span>
+            Aprobadas por SRI
+        </div>
+    </div>
+    
+    <div class="stat-card warning">
+        <div class="stat-label">Pendientes</div>
+        <div class="stat-number" style="color: #ff9800;">{{ facturas_pendientes }}</div>
+        <div class="stat-change" style="color: #ff9800;">
+            <span class="material-icons" style="font-size: 14px; vertical-align: middle;">schedule</span>
+            En proceso
+        </div>
+    </div>
+    
+    <div class="stat-card danger">
+        <div class="stat-label">Rechazadas</div>
+        <div class="stat-number" style="color: #f44336;">{{ facturas_rechazadas }}</div>
+        <div class="stat-change" style="color: #f44336;">
+            <span class="material-icons" style="font-size: 14px; vertical-align: middle;">error</span>
+            Con errores
+        </div>
+    </div>
+</div>
+
+<!-- Acciones Rápidas -->
+<div class="quick-actions">
+    <a href="{% url 'invoicing:invoice_create' %}" class="action-card">
+        <div class="action-icon">
+            <span class="material-icons">add</span>
+        </div>
+        <h3 style="margin: 0 0 8px 0; font-size: 16px;">Nueva Factura</h3>
+        <p style="color: var(--text-secondary); margin: 0; font-size: 14px;">Crear factura electrónica</p>
+    </a>
+    
+    <a href="{% url 'invoicing:invoice_list' %}" class="action-card">
+        <div class="action-icon" style="background: #4caf50;">
+            <span class="material-icons">receipt_long</span>
+        </div>
+        <h3 style="margin: 0 0 8px 0; font-size: 16px;">Ver Facturas</h3>
+        <p style="color: var(--text-secondary); margin: 0; font-size: 14px;">Gestionar facturas existentes</p>
+    </a>
+    
+    <a href="{% url 'invoicing:customer_list' %}" class="action-card">
+        <div class="action-icon" style="background: #ff9800;">
+            <span class="material-icons">people</span>
+        </div>
+        <h3 style="margin: 0 0 8px 0; font-size: 16px;">Clientes</h3>
+        <p style="color: var(--text-secondary); margin: 0; font-size: 14px;">Administrar clientes</p>
+    </a>
+    
+    <a href="{% url 'invoicing:product_list' %}" class="action-card">
+        <div class="action-icon" style="background: #9c27b0;">
+            <span class="material-icons">inventory_2</span>
+        </div>
+        <h3 style="margin: 0 0 8px 0; font-size: 16px;">Productos</h3>
+        <p style="color: var(--text-secondary); margin: 0; font-size: 14px;">Catálogo de productos</p>
+    </a>
+    
+    <a href="{% url 'invoicing:sri_configuration' %}" class="action-card">
+        <div class="action-icon" style="background: #607d8b;">
+            <span class="material-icons">settings</span>
+        </div>
+        <h3 style="margin: 0 0 8px 0; font-size: 16px;">Configuración</h3>
+        <p style="color: var(--text-secondary); margin: 0; font-size: 14px;">Configurar SRI y email</p>
+    </a>
+</div>
+
+<!-- Facturas Recientes -->
+<div class="recent-invoices">
+    <div class="section-header">
+        <div>
+            <h2 style="margin: 0; font-size: 20px; font-weight: 500;">Facturas Recientes</h2>
+            <p style="color: var(--text-secondary); margin: 4px 0 0 0; font-size: 14px;">Últimas facturas emitidas</p>
+        </div>
+        <a href="{% url 'invoicing:invoice_list' %}" class="mdc-button" style="color: var(--primary-color);">
+            Ver todas
+            <span class="material-icons" style="margin-left: 8px;">arrow_forward</span>
+        </a>
+    </div>
+    
+    <div class="table-container">
+        <table class="invoice-table">
+            <thead>
+                <tr>
+                    <th>Número</th>
+                    <th>Cliente</th>
+                    <th>Fecha</th>
+                    <th>Monto</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in facturas_recientes %}
+                <tr>
+                    <td>
+                        <strong>{{ invoice.numero_factura }}</strong>
+                    </td>
+                    <td>
+                        <div>{{ invoice.customer.razon_social }}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">{{ invoice.customer.identificacion }}</div>
+                    </td>
+                    <td>{{ invoice.fecha_emision|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        <strong>${{ invoice.importe_total|floatformat:2 }}</strong>
+                    </td>
+                    <td>
+                        {% if invoice.estado_sri == 'PENDIENTE' %}
+                            <span class="status-badge status-pending">Pendiente</span>
+                        {% elif invoice.estado_sri == 'ENVIADO' %}
+                            <span class="status-badge status-sent">Enviado</span>
+                        {% elif invoice.estado_sri == 'AUTORIZADO' %}
+                            <span class="status-badge status-authorized">Autorizado</span>
+                        {% elif invoice.estado_sri == 'RECHAZADO' %}
+                            <span class="status-badge status-rejected">Rechazado</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 8px;">
+                            <a href="{% url 'invoicing:invoice_detail' invoice.pk %}" class="mdc-icon-button" title="Ver detalle">
+                                <span class="material-icons" style="font-size: 18px; color: var(--primary-color);">visibility</span>
+                            </a>
+                            {% if invoice.estado_sri == 'AUTORIZADO' %}
+                                <button class="mdc-icon-button" onclick="downloadPDF('{{ invoice.pk }}')" title="Descargar PDF">
+                                    <span class="material-icons" style="font-size: 18px; color: #4caf50;">picture_as_pdf</span>
+                                </button>
+                                {% if invoice.customer.email %}
+                                    <button class="mdc-icon-button" onclick="sendEmail('{{ invoice.pk }}')" title="Enviar por email">
+                                        <span class="material-icons" style="font-size: 18px; color: #ff9800;">email</span>
+                                    </button>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 48px; color: var(--text-secondary);">
+                        <span class="material-icons" style="font-size: 48px; display: block; margin-bottom: 16px; opacity: 0.5;">receipt_long</span>
+                        No hay facturas emitidas aún
+                        <br><br>
+                        <a href="{% url 'invoicing:invoice_create' %}" class="mdc-button" style="background: var(--primary-color); color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none;">
+                            Crear primera factura
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function downloadPDF(invoiceId) {
+        window.open(`/invoicing/invoices/${invoiceId}/download-pdf/`, '_blank');
+    }
+    
+    function sendEmail(invoiceId) {
+        if (confirm('¿Enviar factura por email al cliente?')) {
+            fetch(`/invoicing/invoices/${invoiceId}/send-email/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', 'Email enviado exitosamente');
+                } else {
+                    showAlert('error', data.message || 'Error enviando email');
+                }
+            })
+            .catch(error => {
+                showAlert('error', 'Error de conexión');
+            });
+        }
+    }
+    
+    // Auto-refresh stats every 30 seconds
+    setInterval(function() {
+        location.reload();
+    }, 30000);
+</script>
+{% endblock %}
