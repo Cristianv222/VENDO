@@ -1,0 +1,537 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Configuración SRI - VENDO{% endblock %}
+
+{% block extra_css %}
+<style>
+    .config-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .config-card {
+        background: white;
+        padding: 32px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 24px;
+    }
+    
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 16px;
+    }
+    
+    .status-success {
+        background: #e8f5e8;
+        color: #2e7d32;
+    }
+    
+    .status-warning {
+        background: #fff3e0;
+        color: #e65100;
+    }
+    
+    .status-error {
+        background: #ffebee;
+        color: #c62828;
+    }
+    
+    .form-group {
+        margin-bottom: 24px;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.2s;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+    }
+    
+    .form-select {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+    }
+    
+    .form-file {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+    
+    .form-help {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+    
+    .test-buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+    }
+    
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-primary {
+        background: var(--primary-color);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #1565c0;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+    
+    .btn-success {
+        background: #4caf50;
+        color: white;
+    }
+    
+    .btn-warning {
+        background: #ff9800;
+        color: white;
+    }
+    
+    .certificate-info {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 16px;
+        margin-top: 16px;
+    }
+    
+    .certificate-detail {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+    
+    .certificate-detail:last-child {
+        margin-bottom: 0;
+    }
+    
+    .loading {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+    
+    .alert {
+        padding: 16px;
+        border-radius: 6px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .alert-success {
+        background: #e8f5e8;
+        color: #2e7d32;
+        border: 1px solid #4caf50;
+    }
+    
+    .alert-warning {
+        background: #fff3e0;
+        color: #e65100;
+        border: 1px solid #ff9800;
+    }
+    
+    .alert-error {
+        background: #ffebee;
+        color: #c62828;
+        border: 1px solid #f44336;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mdc-breadcrumbs">
+    <a href="/dashboard/" class="breadcrumb-item">Dashboard</a>
+    <span class="breadcrumb-separator">/</span>
+    <a href="{% url 'invoicing:dashboard' %}" class="breadcrumb-item">Facturación</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-item active">Configuración SRI</span>
+</div>
+
+<div class="config-container">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px;">
+        <div>
+            <h1 style="margin: 0; font-size: 28px; font-weight: 500;">Configuración del SRI</h1>
+            <p style="color: var(--text-secondary); margin: 4px 0 0 0;">Configura la conexión con el Servicio de Rentas Internas</p>
+        </div>
+        <a href="{% url 'invoicing:dashboard' %}" class="btn btn-secondary">
+            <span class="material-icons">arrow_back</span>
+            Volver al Dashboard
+        </a>
+    </div>
+
+    <!-- Estado de Configuración -->
+    <div class="config-card">
+        <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 500;">Estado de la Configuración</h2>
+        
+        {% if sri_config %}
+            <div class="status-indicator status-success">
+                <span class="material-icons" style="font-size: 18px;">check_circle</span>
+                Configuración SRI activada
+            </div>
+            <p style="color: var(--text-secondary); margin: 0;">El SRI está configurado y listo para emitir facturas electrónicas.</p>
+        {% else %}
+            <div class="status-indicator status-warning">
+                <span class="material-icons" style="font-size: 18px;">warning</span>
+                Configuración SRI pendiente
+            </div>
+            <p style="color: var(--text-secondary); margin: 0;">Debes configurar el SRI para poder emitir facturas electrónicas.</p>
+        {% endif %}
+
+        <!-- Información del Certificado -->
+        {% if certificate_info %}
+        <div class="certificate-info">
+            <h3 style="margin: 0 0 12px 0; font-size: 16px;">Información del Certificado</h3>
+            <div class="certificate-detail">
+                <span><strong>Titular:</strong></span>
+                <span>{{ certificate_info.subject }}</span>
+            </div>
+            <div class="certificate-detail">
+                <span><strong>Válido hasta:</strong></span>
+                <span>{{ certificate_info.valid_until|date:"d/m/Y" }}</span>
+            </div>
+            <div class="certificate-detail">
+                <span><strong>Estado:</strong></span>
+                {% if certificate_info.is_valid %}
+                    <span style="color: #4caf50;">Válido</span>
+                {% else %}
+                    <span style="color: #f44336;">Expirado</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Botones de Prueba -->
+        {% if sri_config %}
+        <div class="test-buttons">
+            <button class="btn btn-success" onclick="testSRIConnection()">
+                <span class="material-icons">wifi_protected_setup</span>
+                Probar Conexión SRI
+            </button>
+            <button class="btn btn-warning" onclick="testEmailConnection()">
+                <span class="material-icons">email</span>
+                Probar Email
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Formulario de Configuración -->
+    <div class="config-card">
+        <h2 style="margin: 0 0 24px 0; font-size: 20px; font-weight: 500;">
+            {% if sri_config %}Actualizar Configuración{% else %}Nueva Configuración{% endif %}
+        </h2>
+
+        <form method="post" enctype="multipart/form-data" id="sri-form">
+            {% csrf_token %}
+            
+            <!-- Entorno -->
+            <div class="form-group">
+                <label for="id_environment" class="form-label">Entorno</label>
+                <select name="environment" id="id_environment" class="form-select" required>
+                    <option value="">Seleccionar entorno</option>
+                    <option value="test" {% if sri_config.environment == 'test' %}selected{% endif %}>Pruebas</option>
+                    <option value="production" {% if sri_config.environment == 'production' %}selected{% endif %}>Producción</option>
+                </select>
+                <div class="form-help">Selecciona el entorno del SRI (usar pruebas durante desarrollo)</div>
+            </div>
+
+            <!-- RUC -->
+            <div class="form-group">
+                <label for="id_ruc" class="form-label">RUC de la Empresa</label>
+                <input type="text" name="ruc" id="id_ruc" class="form-input" value="{{ sri_config.ruc|default:'' }}" required maxlength="13">
+                <div class="form-help">RUC de 13 dígitos de la empresa</div>
+            </div>
+
+            <!-- Razón Social -->
+            <div class="form-group">
+                <label for="id_razon_social" class="form-label">Razón Social</label>
+                <input type="text" name="razon_social" id="id_razon_social" class="form-input" value="{{ sri_config.razon_social|default:'' }}" required>
+                <div class="form-help">Razón social registrada en el SRI</div>
+            </div>
+
+            <!-- Nombre Comercial -->
+            <div class="form-group">
+                <label for="id_nombre_comercial" class="form-label">Nombre Comercial</label>
+                <input type="text" name="nombre_comercial" id="id_nombre_comercial" class="form-input" value="{{ sri_config.nombre_comercial|default:'' }}">
+                <div class="form-help">Nombre comercial (opcional)</div>
+            </div>
+
+            <!-- Certificado Digital -->
+            <div class="form-group">
+                <label for="id_certificate_file" class="form-label">Certificado Digital (.p12)</label>
+                <input type="file" name="certificate_file" id="id_certificate_file" class="form-file" accept=".p12,.pfx">
+                <div class="form-help">
+                    {% if sri_config.certificate_file %}
+                        Certificado actual: {{ sri_config.certificate_file.name }} - 
+                        <span style="color: var(--primary-color);">Subir nuevo archivo para reemplazar</span>
+                    {% else %}
+                        Sube tu certificado digital en formato .p12 o .pfx
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Contraseña del Certificado -->
+            <div class="form-group">
+                <label for="id_certificate_password" class="form-label">Contraseña del Certificado</label>
+                <input type="password" name="certificate_password" id="id_certificate_password" class="form-input" {% if not sri_config %}required{% endif %}>
+                <div class="form-help">
+                    {% if sri_config %}
+                        Dejar vacío para mantener la contraseña actual
+                    {% else %}
+                        Contraseña para desencriptar el certificado digital
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Configuración de Email -->
+            <div style="border-top: 1px solid #eee; padding-top: 24px; margin-top: 32px;">
+                <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 500;">Configuración de Email</h3>
+                <p style="color: var(--text-secondary); margin: 0 0 24px 0;">Configura el email para envío automático de facturas</p>
+
+                <!-- Servidor SMTP -->
+                <div class="form-group">
+                    <label for="id_smtp_server" class="form-label">Servidor SMTP</label>
+                    <input type="text" name="smtp_server" id="id_smtp_server" class="form-input" value="{{ sri_config.smtp_server|default:'' }}" placeholder="smtp.gmail.com">
+                    <div class="form-help">Servidor SMTP para envío de emails</div>
+                </div>
+
+                <!-- Puerto SMTP -->
+                <div class="form-group">
+                    <label for="id_smtp_port" class="form-label">Puerto SMTP</label>
+                    <input type="number" name="smtp_port" id="id_smtp_port" class="form-input" value="{{ sri_config.smtp_port|default:587 }}" min="1" max="65535">
+                    <div class="form-help">Puerto del servidor SMTP (587 para Gmail)</div>
+                </div>
+
+                <!-- Email -->
+                <div class="form-group">
+                    <label for="id_smtp_username" class="form-label">Email</label>
+                    <input type="email" name="smtp_username" id="id_smtp_username" class="form-input" value="{{ sri_config.smtp_username|default:'' }}">
+                    <div class="form-help">Email que se usará para enviar las facturas</div>
+                </div>
+
+                <!-- Contraseña Email -->
+                <div class="form-group">
+                    <label for="id_smtp_password" class="form-label">Contraseña de Email</label>
+                    <input type="password" name="smtp_password" id="id_smtp_password" class="form-input">
+                    <div class="form-help">
+                        {% if sri_config.smtp_password %}
+                            Dejar vacío para mantener la contraseña actual
+                        {% else %}
+                            Contraseña del email (usar contraseña de aplicación para Gmail)
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Usar TLS -->
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" name="smtp_use_tls" id="id_smtp_use_tls" {% if sri_config.smtp_use_tls %}checked{% endif %}>
+                        <span class="form-label" style="margin: 0;">Usar TLS/SSL</span>
+                    </label>
+                    <div class="form-help">Habilitar para conexiones seguras (recomendado)</div>
+                </div>
+            </div>
+
+            <!-- Botones -->
+            <div style="display: flex; gap: 12px; margin-top: 32px;">
+                <button type="submit" class="btn btn-primary">
+                    <span class="material-icons">save</span>
+                    {% if sri_config %}Actualizar Configuración{% else %}Guardar Configuración{% endif %}
+                </button>
+                <a href="{% url 'invoicing:dashboard' %}" class="btn btn-secondary">
+                    <span class="material-icons">cancel</span>
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Resultados -->
+<div id="result-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 24px; border-radius: 8px; max-width: 500px; width: 90%;">
+        <h3 id="modal-title" style="margin: 0 0 16px 0;"></h3>
+        <p id="modal-message" style="margin: 0 0 16px 0;"></p>
+        <div id="modal-details" style="background: #f8f9fa; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 12px; margin-bottom: 16px; display: none;"></div>
+        <button onclick="closeModal()" class="btn btn-primary">Cerrar</button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function testSRIConnection() {
+        const button = event.target;
+        const originalText = button.innerHTML;
+        
+        button.innerHTML = '<span class="material-icons">hourglass_empty</span> Probando...';
+        button.disabled = true;
+        
+        fetch("{% url 'invoicing:test_sri_connection' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            showModal(
+                data.success ? 'Conexión SRI Exitosa' : 'Error de Conexión SRI',
+                data.message,
+                data.certificate_info ? JSON.stringify(data.certificate_info, null, 2) : null
+            );
+        })
+        .catch(error => {
+            showModal('Error', 'Error de conexión: ' + error.message);
+        })
+        .finally(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    }
+    
+    function testEmailConnection() {
+        const button = event.target;
+        const originalText = button.innerHTML;
+        
+        button.innerHTML = '<span class="material-icons">hourglass_empty</span> Probando...';
+        button.disabled = true;
+        
+        fetch("{% url 'invoicing:test_email_connection' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            showModal(
+                data.success ? 'Conexión Email Exitosa' : 'Error de Conexión Email',
+                data.message
+            );
+        })
+        .catch(error => {
+            showModal('Error', 'Error de conexión: ' + error.message);
+        })
+        .finally(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    }
+    
+    function showModal(title, message, details = null) {
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-message').textContent = message;
+        
+        const detailsElement = document.getElementById('modal-details');
+        if (details) {
+            detailsElement.textContent = details;
+            detailsElement.style.display = 'block';
+        } else {
+            detailsElement.style.display = 'none';
+        }
+        
+        document.getElementById('result-modal').style.display = 'block';
+    }
+    
+    function closeModal() {
+        document.getElementById('result-modal').style.display = 'none';
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Validación del formulario
+    document.getElementById('sri-form').addEventListener('submit', function(e) {
+        const ruc = document.getElementById('id_ruc').value;
+        if (ruc && ruc.length !== 13) {
+            e.preventDefault();
+            showModal('Error de Validación', 'El RUC debe tener exactamente 13 dígitos');
+            return;
+        }
+        
+        // Agregar indicador de carga
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        submitButton.innerHTML = '<span class="material-icons">hourglass_empty</span> Guardando...';
+        submitButton.disabled = true;
+    });
+    
+    // Cerrar modal con ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
+</script>
+{% endblock %}

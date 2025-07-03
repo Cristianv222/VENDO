@@ -233,6 +233,28 @@ class User(AbstractUser):
         """Retorna el nombre completo del usuario"""
         return f"{self.first_name} {self.last_name}".strip() or self.username
     
+    # ✅ NUEVO: Property para acceder a la company por defecto
+    @property
+    def company(self):
+        """
+        Retorna la company por defecto del usuario.
+        Prioriza company donde es admin, sino retorna la primera.
+        """
+        # Primero busca si es admin en alguna company
+        admin_user_company = self.usercompany_set.filter(is_admin=True).first()
+        if admin_user_company:
+            return admin_user_company.company
+        
+        # Si no es admin en ninguna, retorna la primera company
+        user_company = self.usercompany_set.first()
+        return user_company.company if user_company else None
+    
+    def get_default_company(self):
+        """
+        Método explícito para obtener la company por defecto
+        """
+        return self.company
+    
     def get_companies(self):
         """Retorna las empresas a las que pertenece el usuario"""
         return self.companies.filter(is_active=True)

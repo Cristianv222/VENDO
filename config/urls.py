@@ -47,9 +47,7 @@ urlpatterns = [
     # Robots.txt para SEO
     path('robots.txt', robots_txt, name='robots_txt'),
     
-    # ==========================================¡
-    # MÓDULOS DE LA APLICACIÓN - ORDEN CORREGIDO
-
+    # ==========================================
     # AUTENTICACIÓN
     # ==========================================
     
@@ -62,13 +60,6 @@ urlpatterns = [
     # URLs de usuarios personalizadas
     path('users/', include('apps.users.urls')),
     
-
-    # Módulos de negocio (ANTES del core para evitar conflictos)
-    path('inventory/', include('apps.inventory.urls')),
-    
-    # Core (dashboard, empresas, sucursales)
-    # IMPORTANTE: Va después de los módulos específicos
-
     # Compatibilidad para URL /login/ (redirige a la correcta)
     path('login/', lambda request: redirect('users:login'), name='login_redirect'),
     
@@ -76,9 +67,12 @@ urlpatterns = [
     # MÓDULOS ACTIVOS DE LA APLICACIÓN
     # ==========================================
     
+    # Módulos de negocio (ANTES del core para evitar conflictos)
+    path('inventory/', include('apps.inventory.urls')),
+    path('invoicing/', include('apps.invoicing.urls')),  # ← ACTIVADO
+    
     # Core (dashboard, empresas, sucursales)
-    # IMPORTANTE: Va después de las rutas específicas
-
+    # IMPORTANTE: Va al final para no interferir con otros módulos
     path('', include('apps.core.urls')),
     
     # ==========================================
@@ -86,11 +80,10 @@ urlpatterns = [
     # ==========================================
     
     # Configuraciones del sistema
-    # path('settings/', include('apps.settings.urls')),
+    path('settings/', include('apps.settings.urls')),
     
-    # Módulos de negocio (descomentar cuando estén listos)
+    # Módulos de negocio adicionales (descomentar cuando estén listos)
     # path('pos/', include('apps.pos.urls')),
-    # path('invoicing/', include('apps.invoicing.urls')),
     # path('purchases/', include('apps.purchases.urls')),
     # path('accounting/', include('apps.accounting.urls')),
     # path('quotations/', include('apps.quotations.urls')),

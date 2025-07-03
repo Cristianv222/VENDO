@@ -1,5 +1,6 @@
 """
 Configuración del admin de Django para el módulo Core
+CORREGIDO: Eliminadas referencias a campos inexistentes
 """
 from django.contrib import admin
 from django.utils.html import format_html
@@ -52,21 +53,21 @@ class CompanyAdmin(admin.ModelAdmin):
     """
     Administración de empresas
     """
+    # ✅ CORREGIDO: Eliminada referencia a 'sri_environment' inexistente
     list_display = (
         'business_name',
         'ruc', 
         'trade_name',
         'email',
         'phone',
-        'sri_environment',
         'branch_count',
         'is_active_display',
         'created_at'
     )
     
+    # ✅ CORREGIDO: Eliminada referencia a 'sri_environment' inexistente
     list_filter = (
         ActiveFilter,
-        'sri_environment',
         'city',
         'province',
         'created_at'
@@ -81,43 +82,37 @@ class CompanyAdmin(admin.ModelAdmin):
     
     readonly_fields = (
         'id',
-        'schema_name',
         'created_at',
         'updated_at'
     )
     
+    # ✅ CORREGIDO: Eliminados campos SRI inexistentes del fieldset
     fieldsets = (
         (_('Información Básica'), {
             'fields': (
                 'ruc',
                 'business_name',
                 'trade_name',
-                'email',
-                'logo'
+                'email'
             )
         }),
         (_('Contacto'), {
             'fields': (
                 'phone',
-                'mobile',
                 'address',
                 'city',
-                'province',
-                'postal_code'
+                'province'
             )
         }),
-        (_('Configuración SRI'), {
+        (_('Configuración Contable'), {
             'fields': (
-                'sri_environment',
-                'sri_certificate',
-                'sri_password'
+                'obligado_contabilidad',
             ),
             'classes': ('collapse',)
         }),
         (_('Sistema'), {
             'fields': (
-                'schema_name',
-                'is_active'
+                'is_active',
             ),
             'classes': ('collapse',)
         }),
@@ -181,17 +176,15 @@ class CompanyAdmin(admin.ModelAdmin):
         """
         super().save_model(request, obj, form, change)
         
-        # Si es nueva empresa, crear esquema
+        # Si es nueva empresa, crear configuraciones por defecto
         if not change:
-            from .utils import create_schema
-            try:
-                create_schema(obj.schema_name)
-            except Exception as e:
-                self.message_user(
-                    request,
-                    f'Empresa creada pero error creando esquema: {e}',
-                    level='warning'
-                )
+            # Crear configuraciones por defecto cuando esté disponible
+            # try:
+            #     from apps.settings.models import SRIConfiguration
+            #     SRIConfiguration.objects.get_or_create(company=obj)
+            # except ImportError:
+            #     pass
+            pass
 
 
 @admin.register(Branch)
@@ -259,7 +252,8 @@ class BranchAdmin(admin.ModelAdmin):
         (_('Sistema'), {
             'fields': (
                 'is_active',
-            )
+            ),
+            'classes': ('collapse',)
         }),
         (_('Auditoría'), {
             'fields': (
@@ -325,9 +319,9 @@ class AuditLogAdmin(admin.ModelAdmin):
         'ip_address'
     )
     
+    # ✅ CORREGIDO: Usar nombres de campos correctos
     list_filter = (
         'action',
-        'content_type',
         'company',
         'created_at'
     )
@@ -340,19 +334,18 @@ class AuditLogAdmin(admin.ModelAdmin):
         'ip_address'
     )
     
+    # ✅ CORREGIDO: Usar nombres de campos correctos del modelo
     readonly_fields = (
         'id',
         'user',
         'company',
         'action',
-        'content_type',
         'object_id',
         'object_repr',
         'changes_display',
         'ip_address',
         'user_agent',
-        'created_at',
-        'updated_at'
+        'created_at'
     )
     
     fieldsets = (
@@ -367,7 +360,6 @@ class AuditLogAdmin(admin.ModelAdmin):
         }),
         (_('Objeto Afectado'), {
             'fields': (
-                'content_type',
                 'object_id',
                 'object_repr'
             )
@@ -380,8 +372,7 @@ class AuditLogAdmin(admin.ModelAdmin):
         (_('Información Técnica'), {
             'fields': (
                 'user_agent',
-                'id',
-                'updated_at'
+                'id'
             ),
             'classes': ('collapse',)
         })
@@ -412,11 +403,14 @@ class AuditLogAdmin(admin.ModelAdmin):
         Link al usuario
         """
         if obj.user:
-            url = reverse('admin:auth_user_change', args=[obj.user.id])
-            return format_html(
-                '<a href="{}">{}</a>',
-                url, obj.user.username
-            )
+            try:
+                url = reverse('admin:auth_user_change', args=[obj.user.id])
+                return format_html(
+                    '<a href="{}">{}</a>',
+                    url, obj.user.username
+                )
+            except:
+                return obj.user.username
         return '-'
     user_link.short_description = _('Usuario')
     
@@ -425,11 +419,14 @@ class AuditLogAdmin(admin.ModelAdmin):
         Link a la empresa
         """
         if obj.company:
-            url = reverse('admin:core_company_change', args=[obj.company.id])
-            return format_html(
-                '<a href="{}">{}</a>',
-                url, obj.company.business_name
-            )
+            try:
+                url = reverse('admin:core_company_change', args=[obj.company.id])
+                return format_html(
+                    '<a href="{}">{}</a>',
+                    url, obj.company.business_name
+                )
+            except:
+                return obj.company.business_name
         return '-'
     company_link.short_description = _('Empresa')
     
@@ -445,10 +442,11 @@ class AuditLogAdmin(admin.ModelAdmin):
             'LOGIN': 'purple',
             'LOGOUT': 'gray'
         }
+        # ✅ CORREGIDO: Usar obj.action en lugar de obj.action_type
         color = colors.get(obj.action, 'black')
         return format_html(
             '<span style="color: {}; font-weight: bold;">{}</span>',
-            color, obj.get_action_display()
+            color, obj.action
         )
     action_display.short_description = _('Acción')
     
@@ -461,21 +459,24 @@ class AuditLogAdmin(admin.ModelAdmin):
         
         import json
         try:
-            changes_html = '<ul>'
-            for field, change in obj.changes.items():
-                if isinstance(change, dict):
-                    if 'old' in change and 'new' in change:
-                        changes_html += f'<li><strong>{field}:</strong> {change["old"]} → {change["new"]}</li>'
-                    elif 'new' in change:
-                        changes_html += f'<li><strong>{field}:</strong> {change["new"]} (nuevo)</li>'
-                    elif 'deleted' in change:
-                        changes_html += f'<li><strong>{field}:</strong> {change["deleted"]} (eliminado)</li>'
-                else:
-                    changes_html += f'<li><strong>{field}:</strong> {change}</li>'
-            changes_html += '</ul>'
-            return mark_safe(changes_html)
+            if isinstance(obj.changes, dict):
+                changes_html = '<ul>'
+                for field, change in obj.changes.items():
+                    if isinstance(change, dict):
+                        if 'old' in change and 'new' in change:
+                            changes_html += f'<li><strong>{field}:</strong> {change["old"]} → {change["new"]}</li>'
+                        elif 'new' in change:
+                            changes_html += f'<li><strong>{field}:</strong> {change["new"]} (nuevo)</li>'
+                        elif 'deleted' in change:
+                            changes_html += f'<li><strong>{field}:</strong> {change["deleted"]} (eliminado)</li>'
+                    else:
+                        changes_html += f'<li><strong>{field}:</strong> {change}</li>'
+                changes_html += '</ul>'
+                return mark_safe(changes_html)
+            else:
+                return mark_safe(f'<pre>{json.dumps(obj.changes, indent=2, ensure_ascii=False)}</pre>')
         except Exception:
-            return mark_safe(f'<pre>{json.dumps(obj.changes, indent=2, ensure_ascii=False)}</pre>')
+            return str(obj.changes)
     changes_display.short_description = _('Cambios')
 
 

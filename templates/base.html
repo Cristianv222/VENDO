@@ -648,16 +648,48 @@
                         </div>
                     </div>
 
-                    <!-- Módulo de Facturación -->
+                    <!-- Módulo de Facturación - ACTUALIZADO -->
                     <div class="nav-item">
-                        <a class="nav-link" href="#" onclick="showComingSoon('Facturación')">
+                        <a class="nav-link" href="/invoicing/">
                             <span class="material-icons">receipt_long</span>
                             Facturación
                         </a>
                         <div class="module-submenu">
-                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('Facturas')">
+                            <a class="mdc-menu-item" href="/invoicing/">
+                                <span class="material-icons">dashboard</span>
+                                Dashboard Facturación
+                            </a>
+                            <div class="mdc-menu-divider"></div>
+                            <a class="mdc-menu-item" href="/invoicing/invoices/">
                                 <span class="material-icons">receipt</span>
                                 Facturas
+                            </a>
+                            <a class="mdc-menu-item" href="/invoicing/invoices/create/">
+                                <span class="material-icons">note_add</span>
+                                Nueva Factura
+                            </a>
+                            <div class="mdc-menu-divider"></div>
+                            <a class="mdc-menu-item" href="/invoicing/customers/">
+                                <span class="material-icons">person</span>
+                                Clientes
+                            </a>
+                            <a class="mdc-menu-item" href="/invoicing/customers/create/">
+                                <span class="material-icons">person_add</span>
+                                Nuevo Cliente
+                            </a>
+                            <div class="mdc-menu-divider"></div>
+                            <a class="mdc-menu-item" href="/invoicing/products/">
+                                <span class="material-icons">inventory</span>
+                                Productos
+                            </a>
+                            <a class="mdc-menu-item" href="/invoicing/products/create/">
+                                <span class="material-icons">add_box</span>
+                                Nuevo Producto
+                            </a>
+                            <div class="mdc-menu-divider"></div>
+                            <a class="mdc-menu-item" href="/invoicing/sri-configuration/">
+                                <span class="material-icons">settings</span>
+                                Configuración SRI
                             </a>
                             <a class="mdc-menu-item" href="#" onclick="showComingSoon('Notas de Crédito')">
                                 <span class="material-icons">assignment_return</span>
@@ -670,11 +702,6 @@
                             <a class="mdc-menu-item" href="#" onclick="showComingSoon('Guías de Remisión')">
                                 <span class="material-icons">local_shipping</span>
                                 Guías de Remisión
-                            </a>
-                            <div class="mdc-menu-divider"></div>
-                            <a class="mdc-menu-item" href="#" onclick="showComingSoon('SRI')">
-                                <span class="material-icons">cloud_upload</span>
-                                Envío SRI
                             </a>
                         </div>
                     </div>
@@ -935,6 +962,35 @@
                 Proveedores
             </a>
             
+            <!-- Facturación - ACTUALIZADO -->
+            <div style="padding: 8px 16px; font-weight: 500; color: var(--text-secondary); font-size: 12px; text-transform: uppercase; margin-top: 8px;">
+                Facturación
+            </div>
+            <a class="mdc-menu-item" href="/invoicing/" style="padding: 8px 16px; padding-left: 32px;">
+                <span class="material-icons">dashboard</span>
+                Dashboard Facturación
+            </a>
+            <a class="mdc-menu-item" href="/invoicing/invoices/" style="padding: 8px 16px; padding-left: 32px;">
+                <span class="material-icons">receipt</span>
+                Facturas
+            </a>
+            <a class="mdc-menu-item" href="/invoicing/invoices/create/" style="padding: 8px 16px; padding-left: 32px;">
+                <span class="material-icons">note_add</span>
+                Nueva Factura
+            </a>
+            <a class="mdc-menu-item" href="/invoicing/customers/" style="padding: 8px 16px; padding-left: 32px;">
+                <span class="material-icons">person</span>
+                Clientes
+            </a>
+            <a class="mdc-menu-item" href="/invoicing/products/" style="padding: 8px 16px; padding-left: 32px;">
+                <span class="material-icons">inventory</span>
+                Productos
+            </a>
+            <a class="mdc-menu-item" href="/invoicing/sri-configuration/" style="padding: 8px 16px; padding-left: 32px;">
+                <span class="material-icons">settings</span>
+                Configuración SRI
+            </a>
+            
             <!-- Configuración -->
             <div style="padding: 8px 16px; font-weight: 500; color: var(--text-secondary); font-size: 12px; text-transform: uppercase; margin-top: 8px;">
                 Configuración
@@ -999,7 +1055,7 @@
             <div style="background: white; padding: 32px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto;">
                 <span class="material-icons" style="font-size: 64px; color: var(--primary-color); margin-bottom: 16px;">check_circle</span>
                 <h2 style="color: var(--primary-color); margin-bottom: 16px;">¡Sistema VENDO Funcionando!</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 24px;">Bienvenido al sistema de gestión VENDO. El módulo de inventario está completamente funcional.</p>
+                <p style="color: var(--text-secondary); margin-bottom: 24px;">Bienvenido al sistema de gestión VENDO. Los módulos de inventario y facturación están funcionando.</p>
                 
                 <!-- Acciones rápidas -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 24px 0;">
@@ -1007,9 +1063,9 @@
                         <span class="material-icons" style="font-size: 18px;">inventory_2</span>
                         Inventario
                     </a>
-                    <a href="/inventory/products/" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: #2e7d32; color: white; padding: 12px 16px; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 14px;">
-                        <span class="material-icons" style="font-size: 18px;">category</span>
-                        Productos
+                    <a href="/invoicing/" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: #2e7d32; color: white; padding: 12px 16px; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 14px;">
+                        <span class="material-icons" style="font-size: 18px;">receipt_long</span>
+                        Facturación
                     </a>
                     <a href="/admin/" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: #ed6c02; color: white; padding: 12px 16px; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 14px;">
                         <span class="material-icons" style="font-size: 18px;">settings</span>
