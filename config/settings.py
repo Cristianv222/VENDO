@@ -11,6 +11,9 @@ VERSIÓN LIMPIA - Compatible con Python 3.13
 VERSIÓN CORREGIDA - Compatible con Python 3.13 - SIN REDIS NI CELERY
 ACTUALIZADO: Configuración de allauth corregida para evitar warnings
 PANEL ADMIN PERSONALIZADO: Agregadas configuraciones necesarias
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 """
 
@@ -154,11 +157,10 @@ USER_APPROVAL_SETTINGS = {
 }
 
 # ==========================================
-<<<<<<< Updated upstream
 # MIDDLEWARE CONFIGURATION
-=======
 # MIDDLEWARE CONFIGURATION (CORREGIDO)
->>>>>>> Stashed changes
+
+# MIDDLEWARE CONFIGURATION (CORREGIDO)
 # ==========================================
 
 MIDDLEWARE = [
@@ -188,9 +190,6 @@ MIDDLEWARE = [
     
     # Messages framework
     'django.contrib.messages.middleware.MessageMiddleware',
-    
-<<<<<<< Updated upstream
-=======
     # MIDDLEWARES PERSONALIZADOS (COMENTADOS HASTA CREAR)
     # 'apps.users.middleware.PendingUsersNotificationMiddleware',  # Para notificaciones
     # 'apps.users.middleware.UserApprovalMiddleware',              # Para redirecciones automáticas
@@ -198,8 +197,6 @@ MIDDLEWARE = [
     # 'apps.core.middleware.AuditMiddleware',                       # Auditoría automática
     # 'apps.core.middleware.SecurityMiddleware',                    # Seguridad adicional
     # 'apps.core.middleware.PerformanceMiddleware',                 # Monitoreo rendimiento
-    
->>>>>>> Stashed changes
     # Clickjacking protection (siempre al final)
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -439,10 +436,8 @@ print("=== DATABASES Y ROUTER CONFIGURADOS ===")
 # USER MODEL CONFIGURATION
 # ==========================================
 
-<<<<<<< Updated upstream
-=======
 # Custom User Model
->>>>>>> Stashed changes
+# Custom User Model
 AUTH_USER_MODEL = 'users.User'
 
 # ==========================================
@@ -706,7 +701,45 @@ REST_FRAMEWORK = {
     'DATETIME_FORMAT': '%d/%m/%Y %H:%M:%S',
     'DATE_FORMAT': '%d/%m/%Y',
 }
+# REST FRAMEWORK CONFIGURATION
+# ==========================================
 
+print("=== CONFIGURANDO REST FRAMEWORK ===")
+
+try:
+    REST_FRAMEWORK = {
+        'DEFAULT_AUTHENTICATION_CLASSES': [
+            'rest_framework.authentication.SessionAuthentication',
+            'rest_framework.authentication.TokenAuthentication',
+        ],
+        'DEFAULT_PERMISSION_CLASSES': [
+            # 'apps.core.permissions.IsAuthenticatedAndActive',  # Comentado hasta crear
+            # 'apps.core.permissions.HasCompanyAccess',          # Comentado hasta crear
+            'rest_framework.permissions.IsAuthenticated',  # Usar por defecto por ahora
+        ],
+        'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+        'PAGE_SIZE': 25,
+        'DEFAULT_FILTER_BACKENDS': [
+            'django_filters.rest_framework.DjangoFilterBackend',
+            'rest_framework.filters.SearchFilter',
+            'rest_framework.filters.OrderingFilter',
+        ],
+        'DEFAULT_RENDERER_CLASSES': [
+            'rest_framework.renderers.JSONRenderer',
+            'rest_framework.renderers.BrowsableAPIRenderer',
+        ],
+        'DEFAULT_PARSER_CLASSES': [
+            'rest_framework.parsers.JSONParser',
+            'rest_framework.parsers.FormParser',
+            'rest_framework.parsers.MultiPartParser',
+        ],
+        # 'EXCEPTION_HANDLER': 'apps.core.exceptions.custom_exception_handler',  # Comentado hasta crear
+        'DATETIME_FORMAT': '%d/%m/%Y %H:%M:%S',
+        'DATE_FORMAT': '%d/%m/%Y',
+    }
+    print("OK: REST_FRAMEWORK configurado")
+except Exception as e:
+    print(f"ERROR: Error en REST_FRAMEWORK: {e}")
 # ==========================================
 # CORS CONFIGURATION
 # ==========================================
@@ -717,6 +750,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:8080",
     "http://localhost:8000",
+    "http://localhost:3000",    # React dev server
+    "http://127.0.0.1:3000",
+    "http://localhost:8080",    # Vue dev server
+    "http://127.0.0.1:8080",
+    "http://localhost:8000",    # Django dev server
     "http://127.0.0.1:8000",
 ]
 
@@ -737,7 +775,6 @@ CORS_ALLOWED_HEADERS = [
 ]
 
 # ==========================================
-<<<<<<< Updated upstream
 # CACHE CONFIGURATION
 # ==========================================
 
@@ -802,12 +839,14 @@ if not DEBUG:
 # ==========================================
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-=======
 # EMAIL CONFIGURATION
 # ==========================================
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Desarrollo
->>>>>>> Stashed changes
+# EMAIL CONFIGURATION
+# ==========================================
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Desarrollo
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
