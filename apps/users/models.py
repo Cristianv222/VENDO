@@ -139,6 +139,137 @@ class User(AbstractUser):
         blank=True,
         verbose_name=_('Última actividad')
     )
+    # apps/users/models.py - SECCIÓN AGREGADA al modelo User existente
+
+# Agregar estos campos al modelo User existente (línea ~75 aprox, después de last_activity):
+
+    # ==========================================
+    # SISTEMA DE APROBACIÓN - SALA DE ESPERA
+    # ==========================================
+    
+    approval_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', _('Pendiente de aprobación')),
+            ('approved', _('Aprobado')),
+            ('rejected', _('Rechazado')),
+        ],
+        default='pending',
+        verbose_name=_('Estado de aprobación'),
+        help_text=_('Estado del usuario en el sistema de aprobación')
+    )
+    approved_by = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='approved_users',
+        verbose_name=_('Aprobado por'),
+        help_text=_('Administrador que aprobó/rechazó al usuario')
+    )
+    approved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Fecha de aprobación'),
+        help_text=_('Fecha y hora de aprobación o rechazo')
+    )
+    rejection_reason = models.TextField(
+        blank=True,
+        verbose_name=_('Motivo de rechazo'),
+        help_text=_('Razón por la cual se rechazó al usuario')
+    )
+
+# Agregar estos métodos al modelo User existente (antes de la clase Meta):
+
+    def is_pending_approval(self):
+        """Verifica si el usuario está pendiente de aprobación"""
+        return self.approval_status == 'pending'
+    
+    def is_approved(self):
+        """Verifica si el usuario ha sido aprobado"""
+        return self.approval_status == 'approved'
+    
+    def is_rejected(self):
+        """Verifica si el usuario ha sido rechazado"""
+        return self.approval_status == 'rejected'
+    
+    def can_login(self):
+        """Verifica si el usuario puede iniciar sesión"""
+        return self.is_active and self.is_approved()
+    
+    def approve_user(self, approved_by_user, send_notification=True):
+        """Aprueba al usuario"""
+        from django.utils import timezone
+        
+        self.approval_status = 'approved'
+        self.approved_by = approved_by_user
+        self.approved_at = timezone.now()
+        self.is_active = True  # También activarlo
+        self.save(update_fields=[
+            'approval_status', 'approved_by', 'approved_at', 'is_active'
+        ])
+        
+        if send_notification:
+            from .services import UserApprovalService
+            UserApprovalService.send_approval_notification(self)
+    
+    def reject_user(self, rejected_by_user, reason='', send_notification=True):
+        """Rechaza al usuario"""
+        from django.utils import timezone
+        
+        self.approval_status = 'rejected'
+        self.approved_by = rejected_by_user
+        self.approved_at = timezone.now()
+        self.rejection_reason = reason
+        self.is_active = False  # También desactivarlo
+        self.save(update_fields=[
+            'approval_status', 'approved_by', 'approved_at', 
+            'rejection_reason', 'is_active'
+        ])
+        
+        if send_notification:
+            from .services import UserApprovalService
+            UserApprovalService.send_rejection_notification(self, reason)
+
+    def get_approval_status_display_with_icon(self):
+        """Retorna el estado de aprobación con icono"""
+        status_icons = {
+            'pending': '⏳',
+            'approved': '✅',
+            'rejected': '❌',
+        }
+        icon = status_icons.get(self.approval_status, '❓')
+        display = self.get_approval_status_display()
+        return f"{icon} {display}"
+
+# Modificar el método save existente para agregar lógica de aprobación:
+# Reemplazar el método save() existente con este:
+
+    def save(self, *args, **kwargs):
+        """Sobrescribir save para lógica adicional"""
+        self.full_clean()  # Ejecutar validaciones
+        
+        # Normalizar email
+        if self.email:
+            self.email = self.email.lower().strip()
+        
+        # Lógica de usuarios nuevos - automáticamente en estado pendiente
+        if not self.pk:  # Usuario nuevo
+            # Solo los superusuarios y system_admin se aprueban automáticamente
+            if self.is_superuser or self.is_system_admin:
+                self.approval_status = 'approved'
+                self.approved_at = timezone.now()
+        
+        super().save(*args, **kwargs)
+        
+        # Crear perfil automáticamente
+        if not hasattr(self, 'profile'):
+            UserProfile.objects.create(user=self)
+        
+        # Notificar a admins sobre nuevo usuario pendiente
+        if not self.pk and self.approval_status == 'pending':
+            from .services import UserApprovalService
+            UserApprovalService.notify_admins_new_user(self)
     
     # Fechas de control
     created_at = models.DateTimeField(

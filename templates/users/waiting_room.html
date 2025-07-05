@@ -1,0 +1,537 @@
+<!-- templates/users/waiting_room.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuenta Pendiente de Aprobación - VENDO</title>
+    
+    <!-- Material UI CSS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #1976d2;
+            --secondary-color: #ffa726;
+            --warning-color: #ff9800;
+            --background-color: #f5f5f5;
+            --surface-color: #ffffff;
+            --text-primary: rgba(0, 0, 0, 0.87);
+            --text-secondary: rgba(0, 0, 0, 0.6);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .waiting-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            position: relative;
+        }
+
+        /* Efectos de fondo animados */
+        .waiting-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(255, 165, 38, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 152, 0, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(255, 193, 7, 0.15) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-15px) rotate(2deg); }
+            66% { transform: translateY(8px) rotate(-2deg); }
+        }
+
+        .waiting-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 24px;
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.15),
+                0 10px 30px rgba(255, 152, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            padding: 3rem 2.5rem;
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+            z-index: 10;
+            animation: slideUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .waiting-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 2rem;
+            background: linear-gradient(135deg, var(--warning-color), var(--secondary-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(255, 152, 0, 0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 10px 30px rgba(255, 152, 0, 0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 15px 40px rgba(255, 152, 0, 0.5); }
+        }
+
+        .waiting-icon .material-icons {
+            font-size: 60px;
+            color: white;
+        }
+
+        .waiting-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--warning-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .waiting-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            font-weight: 500;
+        }
+
+        .status-card {
+            background: rgba(255, 152, 0, 0.1);
+            border: 2px solid rgba(255, 152, 0, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 2rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 152, 0, 0.1), transparent);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .status-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .info-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .info-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-value {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .next-steps {
+            text-align: left;
+            background: rgba(25, 118, 210, 0.05);
+            border: 1px solid rgba(25, 118, 210, 0.2);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .next-steps h3 {
+            color: var(--primary-color);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .next-steps ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .next-steps li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 8px;
+        }
+
+        .next-steps .material-icons {
+            color: var(--primary-color);
+            font-size: 20px;
+            margin-top: 2px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--text-primary);
+            border: 2px solid rgba(0, 0, 0, 0.12);
+        }
+
+        .btn-secondary:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #d32f2f;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(244, 67, 54, 0.3);
+            text-decoration: none;
+            color: white;
+        }
+
+        .contact-info {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .contact-info h4 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .contact-info p {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .contact-info a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .contact-info a:hover {
+            text-decoration: underline;
+        }
+
+        /* Auto-refresh indicator */
+        .refresh-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 50px;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            z-index: 1000;
+        }
+
+        .refresh-indicator .material-icons {
+            font-size: 16px;
+            animation: rotate 2s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .waiting-card {
+                margin: 1rem;
+                padding: 2rem 1.5rem;
+                max-width: none;
+            }
+
+            .waiting-title {
+                font-size: 2rem;
+            }
+
+            .waiting-icon {
+                width: 100px;
+                height: 100px;
+            }
+
+            .waiting-icon .material-icons {
+                font-size: 50px;
+            }
+
+            .status-info {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="waiting-container">
+        <div class="waiting-card">
+            <!-- Icono principal -->
+            <div class="waiting-icon">
+                <span class="material-icons">hourglass_empty</span>
+            </div>
+
+            <!-- Título y subtítulo -->
+            <h1 class="waiting-title">Cuenta Pendiente</h1>
+            <p class="waiting-subtitle">Tu cuenta está siendo revisada por nuestro equipo</p>
+
+            <!-- Estado actual -->
+            <div class="status-card">
+                <h2 style="margin-bottom: 1rem; color: var(--warning-color); font-size: 1.5rem;">
+                    ⏳ Estado: Pendiente de Aprobación
+                </h2>
+                <p style="color: var(--text-secondary); font-size: 1.1rem;">
+                    Tu registro se ha completado exitosamente. Ahora nuestro equipo revisará tu información
+                    para activar tu cuenta lo más pronto posible.
+                </p>
+            </div>
+
+            <!-- Información de estado -->
+            <div class="status-info">
+                <div class="info-item">
+                    <div class="info-label">Usuario</div>
+                    <div class="info-value">{{ user.get_full_name }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">{{ user.email }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Registrado</div>
+                    <div class="info-value">{{ created_at|date:"d/m/Y H:i" }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Tiempo de espera</div>
+                    <div class="info-value">
+                        {% if waiting_time.days > 0 %}
+                            {{ waiting_time.days }} día{{ waiting_time.days|pluralize }}
+                        {% else %}
+{% widthratio waiting_time.seconds 3600 1 %} hora{% if waiting_time.seconds >= 7200 %}s{% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Próximos pasos -->
+            <div class="next-steps">
+                <h3>
+                    <span class="material-icons">info</span>
+                    ¿Qué sigue ahora?
+                </h3>
+                <ul>
+                    <li>
+                        <span class="material-icons">check_circle</span>
+                        <div>
+                            <strong>Revisión automática:</strong> Nuestro sistema ya verificó tu información básica.
+                        </div>
+                    </li>
+                    <li>
+                        <span class="material-icons">person_search</span>
+                        <div>
+                            <strong>Revisión manual:</strong> Un administrador verificará tu cuenta manualmente.
+                        </div>
+                    </li>
+                    <li>
+                        <span class="material-icons">email</span>
+                        <div>
+                            <strong>Notificación:</strong> Te enviaremos un email cuando tu cuenta sea aprobada.
+                        </div>
+                    </li>
+                    <li>
+                        <span class="material-icons">login</span>
+                        <div>
+                            <strong>Acceso completo:</strong> Podrás acceder a todas las funciones del sistema.
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="action-buttons">
+                <a href="javascript:location.reload()" class="btn btn-secondary">
+                    <span class="material-icons">refresh</span>
+                    Actualizar Estado
+                </a>
+                <a href="/users/logout/" class="btn btn-danger">
+                    <span class="material-icons">logout</span>
+                    Cerrar Sesión
+                </a>
+            </div>
+
+            <!-- Información de contacto -->
+            <div class="contact-info">
+                <h4>
+                    <span class="material-icons">support</span>
+                    ¿Necesitas ayuda?
+                </h4>
+                <p>Si tienes alguna pregunta o tu cuenta no ha sido activada en 24 horas, contáctanos:</p>
+                <p>
+                    📧 Email: <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>
+                </p>
+                <p>
+                    ⏰ Horario de atención: Lunes a Viernes, 9:00 AM - 6:00 PM
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Indicador de auto-refresh -->
+    <div class="refresh-indicator">
+        <span class="material-icons">sync</span>
+        Se actualiza cada 30s
+    </div>
+
+    <script>
+        // Auto-refresh cada 30 segundos
+        setTimeout(function() {
+            location.reload();
+        }, 30000);
+
+        // Efectos visuales mejorados
+        document.addEventListener('DOMContentLoaded', function() {
+            // Efecto de entrada escalonado
+            const elements = document.querySelectorAll('.info-item, .next-steps li');
+            elements.forEach((el, index) => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    el.style.transition = 'all 0.6s ease';
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+
+            // Efecto de parallax sutil
+            document.addEventListener('mousemove', function(e) {
+                const container = document.querySelector('.waiting-container');
+                const x = (e.clientX / window.innerWidth) * 100;
+                const y = (e.clientY / window.innerHeight) * 100;
+                
+                container.style.background = `
+                    linear-gradient(135deg, 
+                        hsl(${230 + x * 0.1}, 70%, ${65 + y * 0.05}%) 0%, 
+                        hsl(${260 + x * 0.1}, 65%, ${55 + y * 0.05}%) 50%, 
+                        hsl(${290 + x * 0.1}, 75%, ${70 + y * 0.05}%) 100%)
+                `;
+            });
+        });
+    </script>
+</body>
+</html>

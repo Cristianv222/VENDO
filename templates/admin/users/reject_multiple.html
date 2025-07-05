@@ -1,0 +1,625 @@
+<!-- templates/admin/users/reject_multiple.html -->
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .reject-form-container {
+        background: white;
+        border-radius: 8px;
+        padding: 2rem;
+        margin: 2rem 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        max-width: 800px;
+    }
+    
+    .users-preview {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 1rem;
+        margin: 1rem 0;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .user-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 0.5rem;
+        border-bottom: 1px solid #e9ecef;
+        transition: background-color 0.2s ease;
+    }
+    
+    .user-item:last-child {
+        border-bottom: none;
+    }
+    
+    .user-item:hover {
+        background-color: rgba(0, 124, 186, 0.05);
+    }
+    
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #007cba, #0056b3);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-right: 1rem;
+        font-size: 1rem;
+        flex-shrink: 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .user-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .user-info h4 {
+        margin: 0 0 0.25rem 0;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #333;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .user-info p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: #666;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .reason-container {
+        margin: 1.5rem 0;
+    }
+    
+    .reason-textarea {
+        width: 100%;
+        min-height: 120px;
+        padding: 0.75rem;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.9rem;
+        resize: vertical;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        line-height: 1.5;
+    }
+    
+    .reason-textarea:focus {
+        border-color: #007cba;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0, 124, 186, 0.1);
+    }
+    
+    .reason-textarea.error {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+    }
+    
+    .form-actions {
+        background: #f8f9fa;
+        margin: 2rem -2rem -2rem -2rem;
+        padding: 1.5rem 2rem;
+        border-radius: 0 0 8px 8px;
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        align-items: center;
+        border-top: 1px solid #dee2e6;
+    }
+    
+    .btn {
+        padding: 0.6rem 1.2rem;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+        min-width: 120px;
+        justify-content: center;
+    }
+    
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .btn-cancel {
+        background: #6c757d;
+        color: white;
+        border: 2px solid #6c757d;
+    }
+    
+    .btn-cancel:hover:not(:disabled) {
+        background: #5a6268;
+        border-color: #5a6268;
+        color: white;
+        text-decoration: none;
+        transform: translateY(-1px);
+    }
+    
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+        border: 2px solid #dc3545;
+    }
+    
+    .btn-danger:hover:not(:disabled) {
+        background: #c82333;
+        border-color: #c82333;
+        color: white;
+        text-decoration: none;
+        transform: translateY(-1px);
+    }
+    
+    .warning-box, .tips-box {
+        border-radius: 6px;
+        padding: 1.25rem;
+        margin: 1.5rem 0;
+    }
+    
+    .warning-box {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+    }
+    
+    .warning-box h4 {
+        margin: 0 0 0.75rem 0;
+        color: #856404;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.1rem;
+    }
+    
+    .tips-box {
+        background: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+    }
+    
+    .tips-box h4 {
+        margin: 0 0 0.75rem 0;
+        color: #0c5460;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.1rem;
+    }
+    
+    .tips-box ul {
+        margin: 0.5rem 0 0 0;
+        padding-left: 1.5rem;
+    }
+    
+    .tips-box li {
+        margin-bottom: 0.5rem;
+        line-height: 1.4;
+    }
+    
+    .counter {
+        text-align: right;
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: 0.5rem;
+        font-weight: 500;
+    }
+    
+    .counter.warning {
+        color: #dc3545;
+    }
+    
+    .error-message {
+        color: #dc3545;
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+        display: none;
+    }
+    
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    }
+    
+    .loading-content {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #007cba;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    @media (max-width: 768px) {
+        .reject-form-container {
+            margin: 1rem;
+            padding: 1.5rem;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+            margin: 1.5rem -1.5rem -1.5rem -1.5rem;
+            padding: 1.5rem;
+        }
+        
+        .btn {
+            width: 100%;
+        }
+        
+        .user-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        
+        .user-avatar {
+            margin-right: 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reject-form-container">
+    <h1>🚫 Rechazar Usuarios Seleccionados</h1>
+    
+    <div class="warning-box">
+        <h4>⚠️ Advertencia Importante</h4>
+        <p>
+            Estás a punto de rechazar <strong>{{ users|length }} usuario(s)</strong>. Esta acción:
+        </p>
+        <ul>
+            <li>Marcará las cuentas como rechazadas permanentemente</li>
+            <li>Desactivará el acceso al sistema inmediatamente</li>
+            <li>Enviará notificaciones automáticas por email</li>
+            <li><strong>No se puede deshacer fácilmente</strong></li>
+        </ul>
+    </div>
+    
+    <h3>📋 Usuarios a Rechazar ({{ users|length }})</h3>
+    <div class="users-preview">
+        {% for user in users %}
+        <div class="user-item">
+            <div class="user-avatar" title="{{ user.get_full_name|default:user.username }}">
+                {{ user.first_name.0|default:user.username.0|upper }}{{ user.last_name.0|default:''|upper }}
+            </div>
+            <div class="user-info">
+                <h4>{{ user.get_full_name|default:user.username }}</h4>
+                <p>
+                    {{ user.email }}
+                    {% if user.created_at %}
+                        • Registrado: {{ user.created_at|date:"d/m/Y H:i" }}
+                    {% endif %}
+                    {% if user.last_login %}
+                        • Último acceso: {{ user.last_login|date:"d/m/Y H:i" }}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        {% empty %}
+        <p style="text-align: center; color: #666; padding: 2rem;">
+            ⚠️ No hay usuarios válidos para rechazar.
+        </p>
+        {% endfor %}
+    </div>
+    
+    {% if users %}
+    <form method="post" id="rejectForm" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="user_ids" value="{{ user_ids }}">
+        
+        <div class="reason-container">
+            <h3>📝 Motivo del Rechazo</h3>
+            <p style="color: #666; margin-bottom: 1rem; line-height: 1.5;">
+                Proporciona una explicación clara y constructiva del por qué se está rechazando la solicitud.
+                Esto ayudará al usuario a entender la decisión y mejorar para futuras solicitudes.
+            </p>
+            
+            <textarea 
+                name="reason" 
+                id="reasonTextarea"
+                class="reason-textarea" 
+                placeholder="Ejemplo: Los datos proporcionados no cumplen con los requisitos mínimos del sistema. Se requiere documentación adicional para verificar la identidad del solicitante. Para más información, contacte al administrador del sistema..."
+                required
+                maxlength="1000"
+                minlength="20"
+                aria-describedby="reasonError reasonCounter"
+                autocomplete="off"
+                spellcheck="true"></textarea>
+            
+            <div id="reasonError" class="error-message" role="alert">
+                <!-- Los errores aparecerán aquí -->
+            </div>
+            
+            <div id="reasonCounter" class="counter">
+                0/1000 caracteres
+            </div>
+        </div>
+        
+        <div class="tips-box">
+            <h4>💡 Consejos para un buen motivo de rechazo</h4>
+            <ul>
+                <li>Sé específico sobre qué requisitos no se cumplieron</li>
+                <li>Proporciona orientación sobre cómo mejorar la solicitud</li>
+                <li>Mantén un tono profesional y constructivo</li>
+                <li>Incluye información de contacto si el usuario necesita aclaraciones</li>
+                <li>Evita información sensible o confidencial</li>
+                <li>Revisa la ortografía y gramática antes de enviar</li>
+            </ul>
+        </div>
+        
+        <div class="form-actions">
+            <a href="{% url 'admin:users_user_changelist' %}" class="btn btn-cancel" id="cancelBtn">
+                ❌ Cancelar
+            </a>
+            <button type="submit" class="btn btn-danger" id="submitBtn">
+                🚫 Confirmar Rechazo
+            </button>
+        </div>
+    </form>
+    {% else %}
+    <div class="form-actions">
+        <a href="{% url 'admin:users_user_changelist' %}" class="btn btn-cancel">
+            ← Volver a la Lista
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Loading overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-content">
+        <div class="spinner"></div>
+        <h3>Procesando rechazo...</h3>
+        <p>Por favor espera mientras se procesan los usuarios.</p>
+    </div>
+</div>
+
+<!-- Datos del servidor para JavaScript -->
+{{ reject_data|json_script:"reject-data" }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Obtener datos del servidor de forma segura
+    const rejectData = JSON.parse(document.getElementById('reject-data').textContent);
+    
+    const form = document.getElementById('rejectForm');
+    const textarea = document.getElementById('reasonTextarea');
+    const counter = document.getElementById('reasonCounter');
+    const errorDiv = document.getElementById('reasonError');
+    const submitBtn = document.getElementById('submitBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    
+    const MAX_LENGTH = parseInt(textarea?.getAttribute('maxlength') || '1000');
+    const MIN_LENGTH = parseInt(textarea?.getAttribute('minlength') || '20');
+    const USER_COUNT = rejectData.user_count || 0;
+    
+    // Función para escapar HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // Función para mostrar errores
+    function showError(message) {
+        if (!errorDiv || !textarea) return;
+        
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        textarea.classList.add('error');
+        textarea.setAttribute('aria-invalid', 'true');
+    }
+    
+    // Función para ocultar errores
+    function hideError() {
+        if (!errorDiv || !textarea) return;
+        
+        errorDiv.style.display = 'none';
+        textarea.classList.remove('error');
+        textarea.setAttribute('aria-invalid', 'false');
+    }
+    
+    // Función para actualizar contador
+    function updateCounter() {
+        if (!textarea || !counter) return;
+        
+        const length = textarea.value.length;
+        const remaining = MAX_LENGTH - length;
+        
+        counter.textContent = `${length}/${MAX_LENGTH} caracteres`;
+        
+        if (remaining < 50) {
+            counter.classList.add('warning');
+        } else {
+            counter.classList.remove('warning');
+        }
+        
+        // Validación en tiempo real
+        if (length > 0 && length < MIN_LENGTH) {
+            showError(`El motivo debe tener al menos ${MIN_LENGTH} caracteres.`);
+        } else if (length === 0) {
+            showError('El motivo del rechazo es obligatorio.');
+        } else {
+            hideError();
+        }
+    }
+    
+    // Función para validar el formulario
+    function validateForm() {
+        if (!textarea) return false;
+        
+        const reason = textarea.value.trim();
+        
+        if (!reason) {
+            showError('Debes proporcionar un motivo para el rechazo.');
+            textarea.focus();
+            return false;
+        }
+        
+        if (reason.length < MIN_LENGTH) {
+            showError(`El motivo del rechazo debe tener al menos ${MIN_LENGTH} caracteres.`);
+            textarea.focus();
+            return false;
+        }
+        
+        if (reason.length > MAX_LENGTH) {
+            showError(`El motivo del rechazo no puede exceder ${MAX_LENGTH} caracteres.`);
+            textarea.focus();
+            return false;
+        }
+        
+        // Validación de contenido básico
+        if (reason.toLowerCase().includes('test') || reason === reason.toUpperCase()) {
+            showError('Por favor, proporciona un motivo profesional y bien redactado.');
+            textarea.focus();
+            return false;
+        }
+        
+        hideError();
+        return true;
+    }
+    
+    // Función para confirmar rechazo
+    function confirmReject() {
+        if (!validateForm()) {
+            return false;
+        }
+        
+        const userText = USER_COUNT === 1 ? 'usuario' : 'usuarios';
+        const confirmMessage = `¿Estás absolutamente seguro de que deseas rechazar ${USER_COUNT} ${userText}?
+
+Esta acción:
+• Marcará las cuentas como rechazadas
+• Enviará notificaciones por email automáticamente
+• Desactivará el acceso al sistema inmediatamente
+• NO se puede deshacer fácilmente
+
+Para confirmar, escribe "CONFIRMAR" en el siguiente prompt.`;
+        
+        if (!confirm(confirmMessage)) {
+            return false;
+        }
+        
+        // Segunda confirmación
+        const confirmText = prompt('Para continuar, escribe "CONFIRMAR" (en mayúsculas):');
+        if (confirmText !== 'CONFIRMAR') {
+            alert('Operación cancelada. Debes escribir "CONFIRMAR" exactamente.');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    // Función para mostrar loading
+    function showLoading() {
+        if (loadingOverlay) loadingOverlay.style.display = 'flex';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '⏳ Procesando...';
+        }
+        if (cancelBtn) cancelBtn.style.pointerEvents = 'none';
+    }
+    
+    // Event listeners
+    if (textarea) {
+        // Auto-expandir textarea
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+            updateCounter();
+        });
+        
+        // Validación al perder el foco
+        textarea.addEventListener('blur', validateForm);
+        
+        // Inicializar contador
+        updateCounter();
+    }
+    
+    // Manejar envío del formulario
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (confirmReject()) {
+                showLoading();
+                
+                // Simular delay para UX (remover en producción si no es necesario)
+                setTimeout(() => {
+                    form.submit();
+                }, 500);
+            }
+        });
+    }
+    
+    // Prevenir salida accidental
+    let hasUnsavedChanges = false;
+    
+    if (textarea) {
+        textarea.addEventListener('input', function() {
+            hasUnsavedChanges = this.value.trim().length > 0;
+        });
+    }
+    
+    window.addEventListener('beforeunload', function(e) {
+        if (hasUnsavedChanges && !submitBtn.disabled) {
+            e.preventDefault();
+            e.returnValue = '¿Estás seguro de que quieres salir? Los cambios se perderán.';
+            return e.returnValue;
+        }
+    });
+    
+    // Limpiar warning al enviar exitosamente
+    if (form) {
+        form.addEventListener('submit', function() {
+            hasUnsavedChanges = false;
+        });
+    }
+});
+</script>
+
+{% endblock %}

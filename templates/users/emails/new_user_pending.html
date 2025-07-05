@@ -1,0 +1,273 @@
+<!-- templates/users/emails/new_user_pending.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuevo usuario pendiente - VENDO</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #1976d2, #1565c0); color: white; padding: 2rem; text-align: center; }
+        .content { padding: 2rem; }
+        .user-info { background: #f8f9fa; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; }
+        .btn { display: inline-block; background: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 0.5rem; }
+        .btn-approve { background: #4caf50; }
+        .btn-reject { background: #f44336; }
+        .footer { background: #f8f9fa; padding: 1rem; text-align: center; font-size: 0.875rem; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔔 Nuevo Usuario Pendiente</h1>
+            <p>Se ha registrado un nuevo usuario que requiere aprobación</p>
+        </div>
+        
+        <div class="content">
+            <h2>Información del Usuario</h2>
+            
+            <div class="user-info">
+                <p><strong>👤 Nombre:</strong> {{ user.get_full_name }}</p>
+                <p><strong>📧 Email:</strong> {{ user.email }}</p>
+                <p><strong>📱 Teléfono:</strong> {{ user.phone|default:"No proporcionado" }}</p>
+                <p><strong>📄 Documento:</strong> {{ user.get_document_type_display }} - {{ user.document_number|default:"No proporcionado" }}</p>
+                <p><strong>🕒 Fecha de registro:</strong> {{ user.created_at|date:"d/m/Y H:i" }}</p>
+                <p><strong>👥 Usuario:</strong> {{ user.username }}</p>
+            </div>
+            
+            <h3>Acciones Disponibles</h3>
+            <p>Puedes revisar y gestionar este usuario desde el panel de administración:</p>
+            
+            <div style="text-align: center; margin: 2rem 0;">
+                <a href="{{ approval_url }}" class="btn">📋 Ver Usuarios Pendientes</a>
+                <a href="{{ admin_url }}" class="btn">⚙️ Panel de Admin</a>
+            </div>
+            
+            <div style="background: #e3f2fd; border-left: 4px solid #1976d2; padding: 1rem; margin: 1rem 0;">
+                <h4>💡 Recordatorio</h4>
+                <p>Es importante revisar las solicitudes de usuarios promptamente para mantener una buena experiencia de usuario. Se recomienda revisar las solicitudes dentro de las 24 horas.</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Sistema VENDO - Gestión de Usuarios</p>
+            <p>Este es un email automático, no responder a esta dirección.</p>
+        </div>
+    </div>
+</body>
+</html>
+
+<!-- templates/users/emails/user_approved.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¡Cuenta aprobada! - VENDO</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #4caf50, #45a049); color: white; padding: 2rem; text-align: center; }
+        .content { padding: 2rem; }
+        .welcome-box { background: #e8f5e8; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; text-align: center; }
+        .btn { display: inline-block; background: #4caf50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 1rem 0; }
+        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin: 2rem 0; }
+        .feature { background: #f8f9fa; padding: 1rem; border-radius: 6px; text-align: center; }
+        .footer { background: #f8f9fa; padding: 1rem; text-align: center; font-size: 0.875rem; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 ¡Bienvenido a VENDO!</h1>
+            <p>Tu cuenta ha sido aprobada exitosamente</p>
+        </div>
+        
+        <div class="content">
+            <div class="welcome-box">
+                <h2>¡Hola {{ user.get_full_name }}!</h2>
+                <p>Nos complace informarte que tu cuenta de VENDO ha sido <strong>aprobada</strong> y ya puedes acceder a todas las funcionalidades del sistema.</p>
+            </div>
+            
+            <h3>🚀 ¿Qué puedes hacer ahora?</h3>
+            
+            <div class="features">
+                <div class="feature">
+                    <h4>📦 Gestión de Inventario</h4>
+                    <p>Administra productos, categorías y proveedores</p>
+                </div>
+                <div class="feature">
+                    <h4>🛒 Punto de Venta</h4>
+                    <p>Procesa ventas y gestiona transacciones</p>
+                </div>
+                <div class="feature">
+                    <h4>📊 Reportes y Analytics</h4>
+                    <p>Analiza el rendimiento de tu negocio</p>
+                </div>
+                <div class="feature">
+                    <h4>🧾 Facturación SRI</h4>
+                    <p>Genera documentos fiscales válidos</p>
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="{{ login_url }}" class="btn">🔑 Iniciar Sesión Ahora</a>
+            </div>
+            
+            <div style="background: #e3f2fd; border-left: 4px solid #1976d2; padding: 1rem; margin: 2rem 0;">
+                <h4>💡 Consejos para empezar</h4>
+                <ul style="margin: 0; padding-left: 1.5rem;">
+                    <li>Configura tu perfil y preferencias</li>
+                    <li>Explora el dashboard principal</li>
+                    <li>Revisa la documentación del sistema</li>
+                    <li>Configura tu primera empresa/sucursal</li>
+                </ul>
+            </div>
+            
+            <div style="background: #fff3e0; border-left: 4px solid #ff9800; padding: 1rem; margin: 2rem 0;">
+                <h4>🔒 Mantén tu cuenta segura</h4>
+                <ul style="margin: 0; padding-left: 1.5rem;">
+                    <li>Usa una contraseña fuerte y única</li>
+                    <li>No compartas tus credenciales</li>
+                    <li>Mantén actualizada tu información de contacto</li>
+                    <li>Cierra sesión al terminar</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Sistema VENDO</strong> - Tu solución integral de gestión</p>
+            <p>¿Necesitas ayuda? Contáctanos en cualquier momento.</p>
+        </div>
+    </div>
+</body>
+</html>
+
+<!-- templates/users/emails/user_rejected.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Información sobre tu solicitud - VENDO</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #f44336, #d32f2f); color: white; padding: 2rem; text-align: center; }
+        .content { padding: 2rem; }
+        .reason-box { background: #ffebee; border-left: 4px solid #f44336; padding: 1.5rem; margin: 1rem 0; }
+        .contact-box { background: #e3f2fd; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; }
+        .btn { display: inline-block; background: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 0.5rem; }
+        .footer { background: #f8f9fa; padding: 1rem; text-align: center; font-size: 0.875rem; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Información sobre tu Solicitud</h1>
+            <p>Actualización del estado de tu cuenta VENDO</p>
+        </div>
+        
+        <div class="content">
+            <h2>Estimado/a {{ user.get_full_name }},</h2>
+            
+            <p>Gracias por tu interés en utilizar el sistema VENDO. Hemos revisado cuidadosamente tu solicitud de cuenta.</p>
+            
+            <div style="background: #fff3e0; border-left: 4px solid #ff9800; padding: 1rem; margin: 1rem 0;">
+                <p><strong>Estado de tu solicitud:</strong> No aprobada en este momento</p>
+            </div>
+            
+            {% if reason %}
+            <div class="reason-box">
+                <h3>📝 Motivo de la decisión</h3>
+                <p>{{ reason|linebreaks }}</p>
+            </div>
+            {% endif %}
+            
+            <h3>🤝 ¿Qué puedes hacer?</h3>
+            
+            <div style="background: #f8f9fa; border-radius: 8px; padding: 1.5rem; margin: 1rem 0;">
+                <ul style="margin: 0; padding-left: 1.5rem;">
+                    <li><strong>Contactar al administrador:</strong> Si tienes preguntas o crees que hay un malentendido</li>
+                    <li><strong>Proporcionar información adicional:</strong> Si falta documentación o datos</li>
+                    <li><strong>Corregir información:</strong> Si hay datos incorrectos en tu solicitud</li>
+                    <li><strong>Aplicar nuevamente:</strong> En el futuro cuando cumplas los requisitos</li>
+                </ul>
+            </div>
+            
+            <div class="contact-box">
+                <h3>📞 Información de Contacto</h3>
+                <p>Si necesitas asistencia o tienes preguntas:</p>
+                <p><strong>📧 Email:</strong> {{ contact_email }}</p>
+                <p><strong>⏰ Horario:</strong> Lunes a Viernes, 9:00 AM - 6:00 PM</p>
+                
+                <div style="text-align: center; margin-top: 1rem;">
+                    <a href="mailto:{{ contact_email }}?subject=Consulta sobre solicitud rechazada - {{ user.email }}" class="btn">✉️ Contactar Administrador</a>
+                </div>
+            </div>
+            
+            <div style="background: #e8f5e8; border-left: 4px solid #4caf50; padding: 1rem; margin: 2rem 0;">
+                <h4>💡 Para futuras solicitudes</h4>
+                <p>Las decisiones se basan en criterios específicos del sistema. Te animamos a contactar al administrador para conocer los requisitos exactos y poder aplicar exitosamente en el futuro.</p>
+            </div>
+            
+            <p>Agradecemos tu comprensión y esperamos poder asistirte en el futuro.</p>
+            
+            <p>Atentamente,<br>
+            <strong>Equipo VENDO</strong></p>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Sistema VENDO</strong></p>
+            <p>Este es un email automático, pero puedes responder para contactar al administrador.</p>
+        </div>
+    </div>
+</body>
+</html>
+
+<!-- templates/users/emails/system_notification.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - VENDO</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #1976d2, #1565c0); color: white; padding: 2rem; text-align: center; }
+        .content { padding: 2rem; }
+        .message-box { background: #f8f9fa; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; }
+        .btn { display: inline-block; background: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 1rem 0; }
+        .footer { background: #f8f9fa; padding: 1rem; text-align: center; font-size: 0.875rem; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔔 {{ title }}</h1>
+            <p>Notificación del Sistema VENDO</p>
+        </div>
+        
+        <div class="content">
+            <h2>Hola {{ user.get_full_name }},</h2>
+            
+            <div class="message-box">
+                {{ message|linebreaks }}
+            </div>
+            
+            {% if url %}
+            <div style="text-align: center;">
+                <a href="{{ url }}" class="btn">Ver Más Detalles</a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="footer">
+            <p><strong>Sistema VENDO</strong></p>
+            <p>Esta es una notificación automática del sistema.</p>
+        </div>
+    </div>
+</body>
+</html>

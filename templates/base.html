@@ -550,6 +550,75 @@
                 gap: 4px;
             }
         }
+        /* Estilos adicionales para notificaciones de usuarios pendientes */
+        .badge.pending-users {
+            background: linear-gradient(45deg, #ff9800, #f57c00);
+            animation: pulse-orange 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-orange {
+            0%, 100% { 
+                box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7);
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 0 8px rgba(255, 152, 0, 0);
+                transform: scale(1.05);
+            }
+        }
+        
+        .notification-item-pending {
+            background: rgba(255, 152, 0, 0.1);
+            border-left: 3px solid #ff9800;
+        }
+        
+        .notification-item-pending:hover {
+            background: rgba(255, 152, 0, 0.2);
+        }
+        
+        /* Indicador visual para administradores */
+        .admin-indicator {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+            z-index: 999;
+            display: none;
+            animation: slideInRight 0.3s ease;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .admin-indicator.show {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .admin-indicator {
+                top: 60px;
+                right: 10px;
+                font-size: 0.8rem;
+                padding: 6px 12px;
+            }
+        }
     </style>
     
     {% block extra_css %}{% endblock %}
@@ -850,18 +919,44 @@
             
             <div class="app-bar-right">
                 <!-- Notifications -->
+                <!-- Notifications - VERSIÓN ACTUALIZADA CON USUARIOS PENDIENTES -->
                 <div class="nav-item">
                     <button class="mdc-icon-button" onclick="toggleNotificationsMenu()" style="position: relative;">
                         <span class="material-icons">notifications</span>
-                        <span class="badge">3</span>
+                        {% if request.pending_users_count > 0 %}
+                        <span class="badge" id="pendingUsersBadge">{{ request.pending_users_count }}</span>
+                        {% endif %}
                     </button>
                     <div id="notificationsMenu" class="mdc-menu">
                         <div class="mdc-menu-item" style="font-weight: 500; pointer-events: none;">
-                            Notificaciones
+                            🔔 Notificaciones
                         </div>
                         <div class="mdc-menu-divider"></div>
-                        <div class="mdc-menu-item" style="color: var(--text-secondary); pointer-events: none;">
-                            No hay notificaciones
+                        
+                        {% if user.is_staff or user.is_superuser or user.is_system_admin %}
+                            {% if request.pending_users_count > 0 %}
+                                <a class="mdc-menu-item" href="/users/pending-approval/" style="color: #ff9800; font-weight: 600;">
+                                    <span class="material-icons">group_add</span>
+                                    {{ request.pending_users_count }} usuario{{ request.pending_users_count|pluralize }} pendiente{{ request.pending_users_count|pluralize }}
+                                </a>
+                                <div class="mdc-menu-divider"></div>
+                            {% endif %}
+                            
+                            <!-- Notificaciones específicas para administradores -->
+                            <a class="mdc-menu-item" href="/admin/users/user/?approval_status=pending">
+                                <span class="material-icons">admin_panel_settings</span>
+                                Gestionar Aprobaciones
+                            </a>
+                            <a class="mdc-menu-item" href="/admin/">
+                                <span class="material-icons">settings</span>
+                                Panel Administrativo
+                            </a>
+                            <div class="mdc-menu-divider"></div>
+                        {% endif %}
+                        
+                        <!-- Notificaciones generales -->
+                        <div class="mdc-menu-item" style="color: var(--text-secondary); pointer-events: none; font-style: italic;">
+                            No hay otras notificaciones
                         </div>
                     </div>
                 </div>
@@ -1218,8 +1313,391 @@
                 }
             }, 5000);
         }
+        // Función mejorada para notificaciones con usuarios pendientes
+function toggleNotificationsMenu() {
+    const menu = document.getElementById('notificationsMenu');
+    if (!menu) {
+        console.error('No se encontró el elemento notificationsMenu');
+        return;
+    }
+    
+    const isOpen = menu.classList.contains('open');
+    
+    // Cerrar otros menús
+    closeAllMenus();
+    
+    if (!isOpen) {
+        menu.classList.add('open');
+        
+        // Actualizar conteo de usuarios pendientes si es admin
+        if (isUserAdmin()) {
+            updatePendingUsersCount();
+        }
+    }
+}
+
+// Función para verificar si el usuario es admin
+function isUserAdmin() {
+    if (!window.userPermissions) {
+        console.warn('Permisos de usuario no disponibles');
+        return false;
+    }
+    
+    return window.userPermissions.is_staff || 
+           window.userPermissions.is_superuser || 
+           window.userPermissions.is_system_admin;
+}
+
+// Función para actualizar conteo de usuarios pendientes
+async function updatePendingUsersCount() {
+    // Solo ejecutar si el usuario es admin
+    if (!isUserAdmin()) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/users/api/pending-count/', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const badge = document.getElementById('pendingUsersBadge');
+            const menuItem = document.querySelector('#notificationsMenu .mdc-menu-item[href="/users/pending-approval/"]');
+            
+            if (data.count > 0) {
+                // Mostrar badge
+                if (badge) {
+                    badge.textContent = data.count > 99 ? '99+' : data.count;
+                    badge.style.display = 'block';
+                } else {
+                    // Crear badge si no existe
+                    const notificationButton = document.querySelector('#notificationsMenu').closest('.nav-item').querySelector('.mdc-icon-button');
+                    if (notificationButton) {
+                        const newBadge = document.createElement('span');
+                        newBadge.className = 'badge';
+                        newBadge.id = 'pendingUsersBadge';
+                        newBadge.textContent = data.count > 99 ? '99+' : data.count;
+                        newBadge.style.cssText = `
+                            position: absolute;
+                            top: -8px;
+                            right: -8px;
+                            background-color: #dc3545;
+                            color: white;
+                            border-radius: 50%;
+                            padding: 2px 6px;
+                            font-size: 12px;
+                            min-width: 16px;
+                            text-align: center;
+                            line-height: 1.2;
+                            z-index: 1001;
+                        `;
+                        notificationButton.style.position = 'relative';
+                        notificationButton.appendChild(newBadge);
+                    }
+                }
+                
+                // Actualizar texto del menú
+                if (menuItem) {
+                    const plural = data.count > 1 ? 's' : '';
+                    menuItem.innerHTML = `
+                        <span class="material-icons">group_add</span>
+                        ${data.count} usuario${plural} pendiente${plural}
+                    `;
+                    menuItem.style.display = 'flex';
+                }
+            } else {
+                // Ocultar badge
+                if (badge) {
+                    badge.style.display = 'none';
+                }
+                
+                // Ocultar item del menú
+                if (menuItem) {
+                    menuItem.style.display = 'none';
+                }
+            }
+        } else {
+            console.error('Error en la respuesta del servidor:', data.message || 'Error desconocido');
+        }
+    } catch (error) {
+        console.error('Error actualizando conteo de usuarios pendientes:', error);
+    }
+}
+
+// Función para obtener el token CSRF de Django
+function getCsrfToken() {
+    // Primero intentar desde meta tag
+    const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (metaToken) return metaToken;
+    
+    // Luego desde cookies
+    const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+    
+    // Finalmente desde input hidden
+    return cookieValue || document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+}
+
+// Variable para controlar el intervalo
+let updateInterval = null;
+
+// Función para iniciar las actualizaciones automáticas
+function startNotificationUpdates() {
+    // Solo iniciar si el usuario es admin
+    if (!isUserAdmin()) {
+        return;
+    }
+    
+    // Limpiar intervalo anterior si existe
+    if (updateInterval) {
+        clearInterval(updateInterval);
+    }
+    
+    // Actualizar inmediatamente
+    updatePendingUsersCount();
+    
+    // Auto-actualizar cada 2 minutos
+    updateInterval = setInterval(updatePendingUsersCount, 120000);
+}
+
+// Función para detener las actualizaciones automáticas
+function stopNotificationUpdates() {
+    if (updateInterval) {
+        clearInterval(updateInterval);
+        updateInterval = null;
+    }
+}
+
+// Actualizar al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    // Verificar que los permisos estén disponibles
+    if (window.userPermissions) {
+        setTimeout(startNotificationUpdates, 1000);
+    } else {
+        console.warn('Permisos de usuario no disponibles al cargar la página');
+    }
+});
+
+// Limpiar intervalo al salir de la página
+window.addEventListener('beforeunload', function() {
+    stopNotificationUpdates();
+});
+
+// Función para cerrar todos los menús
+function closeAllMenus() {
+    const menus = document.querySelectorAll('.mdc-menu');
+    menus.forEach(menu => menu.classList.remove('open'));
+    
+    // También cerrar menús tipo dropdown de Bootstrap si los hay
+    const dropdowns = document.querySelectorAll('.dropdown-menu.show');
+    dropdowns.forEach(dropdown => {
+        dropdown.classList.remove('show');
+    });
+}
+
+// Función mejorada para mostrar alertas con diferentes tipos
+function showSystemAlert(type, title, message, duration = 5000) {
+    // Validar parámetros
+    if (!type || !title || !message) {
+        console.error('showSystemAlert: faltan parámetros requeridos');
+        return null;
+    }
+    
+    const alertId = 'alert-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    
+    // Crear contenedor de alertas si no existe
+    let alertContainer = document.getElementById('alert-container');
+    if (!alertContainer) {
+        alertContainer = document.createElement('div');
+        alertContainer.id = 'alert-container';
+        alertContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            max-width: 400px;
+        `;
+        document.body.appendChild(alertContainer);
+    }
+    
+    const alert = document.createElement('div');
+    alert.id = alertId;
+    alert.className = 'alert-notification';
+    
+    const icons = {
+        'success': 'check_circle',
+        'error': 'error',
+        'warning': 'warning',
+        'info': 'info',
+        'pending': 'hourglass_empty'
+    };
+    
+    const colors = {
+        'success': '#4caf50',
+        'error': '#f44336',
+        'warning': '#ff9800',
+        'info': '#2196f3',
+        'pending': '#ff9800'
+    };
+    
+    alert.style.cssText = `
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        margin-bottom: 10px;
+        padding: 16px;
+        border-left: 4px solid ${colors[type] || '#2196f3'};
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        animation: slideInRight 0.3s ease-out;
+        transition: all 0.3s ease;
+    `;
+    
+    alert.innerHTML = `
+        <span class="material-icons" style="color: ${colors[type] || '#2196f3'}; font-size: 24px;">
+            ${icons[type] || 'info'}
+        </span>
+        <div style="flex: 1;">
+            <div style="font-weight: 500; font-size: 16px; color: #333; margin-bottom: 4px;">
+                ${escapeHtml(title)}
+            </div>
+            <div style="font-size: 14px; color: #666; line-height: 1.4;">
+                ${escapeHtml(message)}
+            </div>
+        </div>
+        <button class="close-alert-btn" onclick="closeAlert('${alertId}')" 
+                style="background: none; border: none; color: #999; cursor: pointer; padding: 4px; font-size: 18px;">
+            <span class="material-icons">close</span>
+        </button>
+    `;
+    
+    // Agregar estilos de animación si no existen
+    if (!document.getElementById('alert-animations')) {
+        const style = document.createElement('style');
+        style.id = 'alert-animations';
+        style.textContent = `
+            @keyframes slideInRight {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            
+            @keyframes slideOutRight {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    alertContainer.appendChild(alert);
+    
+    // Auto-remove
+    if (duration > 0) {
+        setTimeout(() => {
+            closeAlert(alertId);
+        }, duration);
+    }
+    
+    return alertId;
+}
+
+// Función para cerrar alertas
+function closeAlert(alertId) {
+    const alert = document.getElementById(alertId);
+    if (alert) {
+        alert.style.animation = 'slideOutRight 0.3s ease-in';
+        setTimeout(() => {
+            if (alert.parentElement) {
+                alert.remove();
+            }
+        }, 300);
+    }
+}
+
+// Función para escapar HTML y prevenir XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Función auxiliar para mostrar alertas de Django messages
+function showDjangoMessage(level, message) {
+    const typeMap = {
+        'debug': 'info',
+        'info': 'info',
+        'success': 'success',
+        'warning': 'warning',
+        'error': 'error'
+    };
+    
+    showSystemAlert(typeMap[level] || 'info', level.charAt(0).toUpperCase() + level.slice(1), message);
+}
+
+// Cerrar menús al hacer clic fuera de ellos
+document.addEventListener('click', function(event) {
+    const isMenuButton = event.target.closest('.mdc-icon-button, .dropdown-toggle');
+    const isInsideMenu = event.target.closest('.mdc-menu, .dropdown-menu');
+    
+    if (!isMenuButton && !isInsideMenu) {
+        closeAllMenus();
+    }
+});
     </script>
     
     {% block extra_js %}{% endblock %}
+    <!-- AGREGAR AL FINAL DEL BODY, ANTES DE CERRAR -->
+<!-- Solo para administradores -->
+{% if user.is_staff or user.is_superuser or user.is_system_admin %}
+    {% if request.pending_users_count > 0 %}
+        <div id="adminIndicator" class="admin-indicator">
+            <span class="material-icons" style="font-size: 16px;">admin_panel_settings</span>
+            <span>{{ request.pending_users_count }} usuario{{ request.pending_users_count|pluralize }} pendiente{{ request.pending_users_count|pluralize }}</span>
+            <button onclick="document.getElementById('adminIndicator').classList.remove('show')" style="background: none; border: none; color: white; margin-left: 8px; cursor: pointer;">
+                <span class="material-icons" style="font-size: 16px;">close</span>
+            </button>
+        </div>
+        
+        <script>
+            // Mostrar indicador después de 3 segundos
+            setTimeout(() => {
+                const indicator = document.getElementById('adminIndicator');
+                if (indicator) {
+                    indicator.classList.add('show');
+                    
+                    // Auto-ocultar después de 10 segundos
+                    setTimeout(() => {
+                        indicator.classList.remove('show');
+                    }, 10000);
+                }
+            }, 3000);
+        </script>
+    {% endif %}
+{% endif %}
 </body>
 </html>

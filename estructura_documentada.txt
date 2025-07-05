@@ -1,0 +1,577 @@
+├── .env  # Variables de entorno (credenciales seguras)
+├── .gitignore
+├── README
+├── apps  # Aplicaciones Django modulares
+│   ├── __init__.py
+│   ├── accounting
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── management
+│   │   │   ├── __init__.py
+│   │   │   ├── commands
+│   │   │   │   ├── __init__.py
+│   │   ├── migrations
+│   │   │   ├── __init__.py
+│   │   ├── models.py  # Modelos de datos
+│   │   ├── permissions.py  # Permisos personalizados
+│   │   ├── serializers.py  # Serializadores DRF
+│   │   ├── services.py
+│   │   ├── signals.py  # Señales Django
+│   │   ├── tasks.py  # Tareas asíncronas
+│   │   ├── tests  # Pruebas automáticas
+│   │   │   ├── __init__.py
+│   │   │   ├── test_models.py
+│   │   │   ├── test_serializers.py
+│   │   │   ├── test_utils.py
+│   │   │   ├── test_views.py
+│   │   ├── tests.py
+│   │   ├── urls.py  # URLs principales
+│   │   ├── utils.py  # Funciones utilitarias
+│   │   ├── validators.py
+│   │   ├── views.py  # Vistas Django
+│   ├── api
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── migrations
+│   │   │   ├── __init__.py
+│   │   ├── models.py  # Modelos de datos
+│   │   ├── tests.py
+│   │   ├── urls.py  # URLs principales
+│   │   ├── views.py  # Vistas Django
+│   ├── core
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── context_processors.py
+│   │   ├── exceptions.py
+│   │   ├── management
+│   │   │   ├── __init__.py
+│   │   │   ├── commands
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── backup_schemas.py
+│   │   │   │   ├── create_schemas.py
+│   │   │   │   ├── init_company.py
+│   │   │   │   ├── init_system.py
+│   │   ├── middleware.py
+│   │   ├── migrations
+│   │   │   ├── 0001_initial.py
+│   │   │   ├── 0002_initial.py
+│   │   │   ├── __init__.py
+│   │   ├── models.py  # Modelos de datos
+│   │   ├── permissions.py  # Permisos personalizados
+│   │   ├── serializers.py  # Serializadores DRF
+│   │   ├── services.py
+│   │   ├── signals.py  # Señales Django
+│   │   ├── static  # Archivos estáticos (CSS, JS, imágenes)
+│   │   ├── tasks.py  # Tareas asíncronas
+│   │   ├── tests  # Pruebas automáticas
+│   │   │   ├── __init__.py
+│   │   │   ├── test_models.py
+│   │   │   ├── test_serializers.py
+│   │   │   ├── test_utils.py
+│   │   │   ├── test_views.py
+│   │   ├── tests.py
+│   │   ├── urls.py  # URLs principales
+│   │   ├── utils.py  # Funciones utilitarias
+│   │   ├── validators.py
+│   │   ├── views.py  # Vistas Django
+│   ├── inventory
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── filters.py
+│   │   ├── forms.py
+│   │   ├── management
+│   │   │   ├── __init__.py
+│   │   │   ├── commands
+│   │   │   │   ├── __init__.py
+│   │   ├── migrations
+│   │   │   ├── 0001_initial.py
+│   │   │   ├── __init__.py
+│   │   ├── models.py  # Modelos de datos
+│   │   ├── permissions.py  # Permisos personalizados
+│   │   ├── serializers.py  # Serializadores DRF
+│   │   ├── services.py
+│   │   ├── signals.py  # Señales Django
+│   │   ├── tasks.py  # Tareas asíncronas
+│   │   ├── tests  # Pruebas automáticas
+│   │   │   ├── __init__.py
+│   │   │   ├── test_models.py
+│   │   │   ├── test_serializers.py
+│   │   │   ├── test_utils.py
+│   │   │   ├── test_views.py
+│   │   ├── tests.py
+│   │   ├── urls.py  # URLs principales
+│   │   ├── utils.py  # Funciones utilitarias
+│   │   ├── validators.py
+│   │   ├── views.py  # Vistas Django
+│   ├── invoicing
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── api_views.py
+│   │   ├── apps.py
+│   │   ├── certificates
+│   │   │   ├── .gitignore
+│   │   ├── email_service.py
+│   │   ├── exceptions.py
+│   │   ├── forms.py
+│   │   ├── management
+│   │   │   ├── __init__.py
+│   │   │   ├── commands
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── generate_test_invoice.py
+│   │   │   │   ├── process_pending_invoices.py
+│   │   │   │   ├── sri_health_check.py
+│   │   ├── middleware.py
+│   │   ├── migrations
+│   │   │   ├── 0001_initial.py
+│   │   │   ├── __init__.py
+│   │   ├── models.py  # Modelos de datos
+│   │   ├── pdf_generators.py
+│   │   ├── permissions.py  # Permisos personalizados
+│   │   ├── serializers.py  # Serializadores DRF
+│   │   ├── services.py
+│   │   ├── signals.py  # Señales Django
+│   │   ├── sri_client.py
+│   │   ├── sri_direct
+│   │   │   ├── __init__.py
+│   │   ├── tasks.py  # Tareas asíncronas
+│   │   ├── tests  # Pruebas automáticas
+│   │   │   ├── __init__.py
+│   │   │   ├── test_models.py
+│   │   │   ├── test_serializers.py
+│   │   │   ├── test_utils.py
+│   │   │   ├── test_views.py
+│   │   ├── tests.py
+│   │   ├── urls.py  # URLs principales
+│   │   ├── utils.py  # Funciones utilitarias
+│   │   ├── validators.py
+│   │   ├── views.py  # Vistas Django
+│   │   ├── xml_generators.py
+│   ├── pos
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── consumers.py
+│   │   ├── management
+│   │   │   ├── __init__.py
+│   │   │   ├── commands
+│   │   │   │   ├── __init__.py
+│   │   ├── migrations
+│   │   │   ├── __init__.py
+│   │   ├── models.py  # Modelos de datos
+│   │   ├── permissions.py  # Permisos personalizados
+│   │   ├── routing.py
+│   │   ├── serializers.py  # Serializadores DRF
+│   │   ├── services.py
+│   │   ├── signals.py  # Señales Django
+│   │   ├── tasks.py  # Tareas asíncronas
+│   │   ├── tests  # Pruebas automáticas
+│   │   │   ├── __init__.py
+│   │   │   ├── test_models.py
+│   │   │   ├── test_serializers.py
+│   │   │   ├── test_utils.py
+│   │   │   ├── test_views.py
+│   │   ├── tests.py
+│   │   ├── urls.py  # URLs principales
+│   │   ├── utils.py  # Funciones utilitarias
+│   │   ├── validators.py
+│   │   ├── views.py  # Vistas Django
+│   ├── purchases
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── management
+│   │   │   ├── __init__.py
+│   │   │   ├── commands
+│   │   │   │   ├── __init__.py
+│   │   ├── migrations
+│   │   │   ├── __init__.py
+│   │   ├── models.py  # Modelos de datos
+│   │   ├── permissions.py  # Permisos personalizados
+│   │   ├── serializers.py  # Serializadores DRF
+│   │   ├── services.py
+│   │   ├── signals.py  # Señales Django
+│   │   ├── tasks.py  # Tareas asíncronas
+│   │   ├── tests  # Pruebas automáticas
+│   │   │   ├── __init__.py
+│   │   │   ├── test_models.py
+│   │   │   ├── test_serializers.py
+│   │   │   ├── test_utils.py
+│   │   │   ├── test_views.py
+│   │   ├── tests.py
+│   │   ├── urls.py  # URLs principales
+│   │   ├── utils.py  # Funciones utilitarias
+│   │   ├── validators.py
+│   │   ├── views.py  # Vistas Django
+│   ├── quotations
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── management
+│   │   │   ├── __init__.py
+│   │   │   ├── commands
+│   │   │   │   ├── __init__.py
+│   │   ├── migrations
+│   │   │   ├── __init__.py
+│   │   ├── models.py  # Modelos de datos
+│   │   ├── pdf_generators.py
+│   │   ├── permissions.py  # Permisos personalizados
+│   │   ├── serializers.py  # Serializadores DRF
+│   │   ├── services.py
+│   │   ├── signals.py  # Señales Django
+│   │   ├── tasks.py  # Tareas asíncronas
+│   │   ├── tests  # Pruebas automáticas
+│   │   │   ├── __init__.py
+│   │   │   ├── test_models.py
+│   │   │   ├── test_serializers.py
+│   │   │   ├── test_utils.py
+│   │   │   ├── test_views.py
+│   │   ├── tests.py
+│   │   ├── urls.py  # URLs principales
+│   │   ├── utils.py  # Funciones utilitarias
+│   │   ├── validators.py
+│   │   ├── views.py  # Vistas Django
+│   ├── reports
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── analytics.py
+│   │   ├── apps.py
+│   │   ├── exporters.py
+│   │   ├── generators.py
+│   │   ├── management
+│   │   │   ├── __init__.py
+│   │   │   ├── commands
+│   │   │   │   ├── __init__.py
+│   │   ├── migrations
+│   │   │   ├── __init__.py
+│   │   ├── models.py  # Modelos de datos
+│   │   ├── permissions.py  # Permisos personalizados
+│   │   ├── serializers.py  # Serializadores DRF
+│   │   ├── services.py
+│   │   ├── signals.py  # Señales Django
+│   │   ├── tasks.py  # Tareas asíncronas
+│   │   ├── tests  # Pruebas automáticas
+│   │   │   ├── __init__.py
+│   │   │   ├── test_models.py
+│   │   │   ├── test_serializers.py
+│   │   │   ├── test_utils.py
+│   │   │   ├── test_views.py
+│   │   ├── tests.py
+│   │   ├── urls.py  # URLs principales
+│   │   ├── utils.py  # Funciones utilitarias
+│   │   ├── validators.py
+│   │   ├── views.py  # Vistas Django
+│   ├── settings
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── management
+│   │   │   ├── __init__.py
+│   │   │   ├── commands
+│   │   │   │   ├── __init__.py
+│   │   ├── migrations
+│   │   │   ├── __init__.py
+│   │   ├── models.py  # Modelos de datos
+│   │   ├── permissions.py  # Permisos personalizados
+│   │   ├── serializers.py  # Serializadores DRF
+│   │   ├── services.py
+│   │   ├── signals.py  # Señales Django
+│   │   ├── tasks.py  # Tareas asíncronas
+│   │   ├── tests  # Pruebas automáticas
+│   │   │   ├── __init__.py
+│   │   │   ├── test_models.py
+│   │   │   ├── test_serializers.py
+│   │   │   ├── test_utils.py
+│   │   │   ├── test_views.py
+│   │   ├── tests.py
+│   │   ├── urls.py  # URLs principales
+│   │   ├── utils.py  # Funciones utilitarias
+│   │   ├── validators.py
+│   │   ├── views.py  # Vistas Django
+│   ├── users
+│   │   ├── __init__.py
+│   │   ├── adapters.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── authentication.py
+│   │   ├── forms.py
+│   │   ├── management
+│   │   │   ├── __init__.py
+│   │   │   ├── commands
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── approve_user.py
+│   │   │   │   ├── assign_roles.py
+│   │   │   │   ├── cleanup_pending_users.py
+│   │   │   │   ├── cleanup_users.py
+│   │   │   │   ├── create_default_users.py
+│   │   │   │   ├── create_superuser.py
+│   │   │   │   ├── list_pending_users.py
+│   │   │   │   ├── reject_user.py
+│   │   │   │   ├── setup_oauth.py
+│   │   │   │   ├── setup_permissions.py
+│   │   ├── middleware.py
+│   │   ├── migrations
+│   │   │   ├── 0001_initial.py
+│   │   │   ├── 0003_add_approval_status.py
+│   │   │   ├── __init__.py
+│   │   ├── models.py  # Modelos de datos
+│   │   ├── permissions.py  # Permisos personalizados
+│   │   ├── serializers.py  # Serializadores DRF
+│   │   ├── services.py
+│   │   ├── signals.py  # Señales Django
+│   │   ├── tasks.py  # Tareas asíncronas
+│   │   ├── tests  # Pruebas automáticas
+│   │   │   ├── __init__.py
+│   │   │   ├── test_models.py
+│   │   │   ├── test_serializers.py
+│   │   │   ├── test_utils.py
+│   │   │   ├── test_views.py
+│   │   ├── tests.py
+│   │   ├── urls.py  # URLs principales
+│   │   ├── utils.py  # Funciones utilitarias
+│   │   ├── validators.py
+│   │   ├── views.py  # Vistas Django
+├── backups
+├── config
+│   ├── __init__.py
+│   ├── asgi.py  # Servidor ASGI
+│   ├── celery.py  # Configuración Celery
+│   ├── db_router.py  # Router de esquemas PostgreSQL
+│   ├── settings.py  # Configuración de Django
+│   ├── urls.py  # URLs principales
+│   ├── wsgi.py  # Servidor WSGI
+├── estructura_documentada.txt
+├── fixtures  # Datos iniciales para carga
+│   ├── demo_data.json
+│   ├── initial_data.json
+│   ├── test_data.json
+├── generar_estructura_documentada.py
+├── logs  # Registros del sistema
+│   ├── admin.log
+│   ├── audit.log
+│   ├── celery.log
+│   ├── error.log
+│   ├── sri_api.log
+│   ├── user_approval.log
+│   ├── vendo.log
+│   ├── waiting_room.log
+├── manage.py  # Script de gestión Django
+├── media  # Archivos subidos por usuarios
+│   ├── avatars
+│   ├── company
+│   ├── invoices
+│   ├── logos
+│   │   ├── Horizon_Forbidden_West_Complete_Edition_v1.5.80.0_12_5_2025_20_17_12.png
+│   │   ├── Horizon_Forbidden_West_Complete_Edition_v1_x8QhOHz.5.80.0_12_5_2025_20_17_12.png
+│   ├── products
+│   ├── reports
+├── requirements.txt  # Dependencias del proyecto
+├── services  # Servicios compartidos del sistema
+│   ├── __init__.py
+│   ├── backup_service.py
+│   ├── cache_service.py
+│   ├── email_service.py
+│   ├── export_service.py
+│   ├── notification_service.py
+│   ├── pdf_service.py
+│   ├── sms_service.py
+├── static  # Archivos estáticos (CSS, JS, imágenes)
+│   ├── css
+│   │   ├── base.css
+│   │   ├── inventory.css
+│   │   ├── invoicing.css
+│   │   ├── pos.css
+│   │   ├── reports.css
+│   ├── js
+│   │   ├── base.js
+│   │   ├── inventory.js
+│   │   ├── invoicing.js
+│   │   ├── pos.js
+│   │   ├── reports.js
+├── templates  # Plantillas HTML
+│   ├── accounting
+│   │   ├── accounts_payable.html
+│   │   ├── accounts_receivable.html
+│   │   ├── balance_sheet.html
+│   │   ├── create.html
+│   │   ├── detail.html
+│   │   ├── edit.html
+│   │   ├── income_statement.html
+│   │   ├── list.html
+│   │   ├── transactions.html
+│   ├── admin
+│   │   ├── users
+│   │   │   ├── reject_multiple.html
+│   ├── auth
+│   │   ├── login.html
+│   │   ├── logout.html
+│   │   ├── password_reset.html
+│   │   ├── password_reset_complete.html
+│   │   ├── password_reset_confirm.html
+│   │   ├── password_reset_done.html
+│   ├── base.html
+│   ├── company
+│   ├── core
+│   │   ├── dashboard.html
+│   │   ├── errors
+│   │   │   ├── 403.html
+│   │   │   ├── 404.html
+│   │   │   ├── 500.html
+│   │   ├── profile.html
+│   │   ├── select_company.html
+│   ├── emails
+│   ├── includes
+│   │   ├── breadcrumbs.html
+│   │   ├── footer.html
+│   │   ├── header.html
+│   │   ├── messages.html
+│   │   ├── sidebar.html
+│   ├── inventory
+│   │   ├── base_inventory.html
+│   │   ├── brands
+│   │   │   ├── create.html
+│   │   │   ├── list.html
+│   │   ├── categories
+│   │   │   ├── create.html
+│   │   │   ├── detail.html
+│   │   │   ├── edit.html
+│   │   │   ├── list.html
+│   │   ├── dashboard.html
+│   │   ├── products
+│   │   │   ├── create.html
+│   │   │   ├── detail.html
+│   │   │   ├── edit.html
+│   │   │   ├── list.html
+│   │   ├── stock
+│   │   │   ├── alerts.html
+│   │   │   ├── movements.html
+│   │   ├── suppliers
+│   │   │   ├── create.html
+│   │   │   ├── list.html
+│   │   ├── suppliers.html
+│   │   ├── zebra_config.html
+│   ├── invoicing
+│   │   ├── create.html
+│   │   ├── credit_notes.html
+│   │   ├── dashboard.html
+│   │   ├── debit_notes.html
+│   │   ├── detail.html
+│   │   ├── edit.html
+│   │   ├── invoice_preview.html
+│   │   ├── invoices.html
+│   │   ├── list.html
+│   │   ├── print_invoice.html
+│   │   ├── retentions.html
+│   │   ├── waybills.html
+│   ├── pos
+│   │   ├── cash_register.html
+│   │   ├── create.html
+│   │   ├── dashboard.html
+│   │   ├── detail.html
+│   │   ├── edit.html
+│   │   ├── list.html
+│   │   ├── payments.html
+│   │   ├── receipt.html
+│   │   ├── sales.html
+│   │   ├── session_close.html
+│   │   ├── session_open.html
+│   ├── purchases
+│   │   ├── create.html
+│   │   ├── detail.html
+│   │   ├── edit.html
+│   │   ├── expenses.html
+│   │   ├── list.html
+│   │   ├── orders.html
+│   │   ├── purchase_order.html
+│   │   ├── settlements.html
+│   │   ├── suppliers.html
+│   ├── quotations
+│   │   ├── create.html
+│   │   ├── detail.html
+│   │   ├── edit.html
+│   │   ├── list.html
+│   │   ├── print_quotation.html
+│   │   ├── quotation_form.html
+│   │   ├── quotation_preview.html
+│   ├── reports
+│   │   ├── create.html
+│   │   ├── custom_reports.html
+│   │   ├── dashboard.html
+│   │   ├── detail.html
+│   │   ├── edit.html
+│   │   ├── financial_report.html
+│   │   ├── inventory_report.html
+│   │   ├── list.html
+│   │   ├── sales_report.html
+│   │   ├── tax_report.html
+│   ├── settings
+│   │   ├── backup.html
+│   │   ├── company.html
+│   │   ├── create.html
+│   │   ├── detail.html
+│   │   ├── edit.html
+│   │   ├── integrations.html
+│   │   ├── list.html
+│   │   ├── system.html
+│   │   ├── taxes.html
+│   ├── socialaccount
+│   │   ├── authentication_error.html
+│   ├── users
+│   │   ├── account_rejected.html
+│   │   ├── base_users.html
+│   │   ├── create.html
+│   │   ├── dashboard.html
+│   │   ├── edit.html
+│   │   ├── emails
+│   │   │   ├── new_user_credentials.html
+│   │   │   ├── new_user_pending.html
+│   │   │   ├── password_reset.html
+│   │   │   ├── welcome.html
+│   │   │   ├── welcome_pending.html
+│   │   ├── includes
+│   │   │   ├── permission_list.html
+│   │   │   ├── role_badge.html
+│   │   │   ├── session_info.html
+│   │   │   ├── user_card.html
+│   │   ├── login.html
+│   │   ├── password_change.html
+│   │   ├── password_reset.html
+│   │   ├── password_reset_complete.html
+│   │   ├── password_reset_confirm.html
+│   │   ├── password_reset_done.html
+│   │   ├── pending_users.html
+│   │   ├── permissions.html
+│   │   ├── profile.html
+│   │   ├── profile_form.html
+│   │   ├── role_confirm_delete.html
+│   │   ├── role_detail.html
+│   │   ├── role_form.html
+│   │   ├── role_list.html
+│   │   ├── session_list.html
+│   │   ├── user_company_form.html
+│   │   ├── user_confirm_delete.html
+│   │   ├── user_detail.html
+│   │   ├── user_form.html
+│   │   ├── user_list.html
+│   │   ├── user_management.html
+│   │   ├── waiting_room.html
+├── tests  # Pruebas automáticas
+│   ├── __init__.py
+│   ├── test_api.py
+│   ├── test_integration.py
+│   ├── test_sri_integration.py
+├── utils
+│   ├── __init__.py
+│   ├── constants.py
+│   ├── decorators.py
+│   ├── email_utils.py
+│   ├── excel_utils.py
+│   ├── exceptions.py
+│   ├── helpers.py
+│   ├── mixins.py
+│   ├── pdf_utils.py
+│   ├── sri_api.py
+│   ├── validators.py

@@ -40,6 +40,8 @@ urlpatterns = [
     
     # Admin de Django
     path('admin/', admin.site.urls),
+    path('admin/users/user/reject-multiple/', reject_multiple_users_view, name='admin_reject_multiple_users'),
+
     
     # Redirección inteligente de la raíz
     path('', smart_redirect, name='home'),

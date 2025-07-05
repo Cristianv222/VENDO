@@ -1,0 +1,766 @@
+<!-- templates/users/pending_users.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Usuarios Pendientes de Aprobación - VENDO{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pending-users-container {
+        padding: 2rem 0;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        text-align: center;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card.pending {
+        border-left: 4px solid #ff9800;
+    }
+
+    .stat-card.approved {
+        border-left: 4px solid #4caf50;
+    }
+
+    .stat-card.rejected {
+        border-left: 4px solid #f44336;
+    }
+
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-number.pending {
+        color: #ff9800;
+    }
+
+    .stat-number.approved {
+        color: #4caf50;
+    }
+
+    .stat-number.rejected {
+        color: #f44336;
+    }
+
+    .stat-label {
+        color: var(--text-secondary);
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .users-header {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .users-header h1 {
+        margin: 0;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .refresh-btn {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+
+    .refresh-btn:hover {
+        background: #1565c0;
+        transform: translateY(-1px);
+    }
+
+    .users-table-container {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+
+    .users-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .users-table th {
+        background: #f8f9fa;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-primary);
+        border-bottom: 2px solid #e9ecef;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .users-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #f1f3f4;
+        vertical-align: middle;
+    }
+
+    .users-table tr:hover {
+        background: #f8f9fa;
+    }
+
+    .user-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 1.2rem;
+        margin-right: 1rem;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+    }
+
+    .user-details h4 {
+        margin: 0 0 0.25rem 0;
+        color: var(--text-primary);
+        font-size: 1rem;
+    }
+
+    .user-details p {
+        margin: 0;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .status-badge.pending {
+        background: rgba(255, 152, 0, 0.1);
+        color: #ff9800;
+        border: 1px solid rgba(255, 152, 0, 0.3);
+    }
+
+    .waiting-time {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+    }
+
+    .actions-cell {
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .btn-approve {
+        background: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 16px;
+        margin: 0 4px;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .btn-approve:hover {
+        background: #45a049;
+        transform: translateY(-1px);
+    }
+
+    .btn-reject {
+        background: #f44336;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 16px;
+        margin: 0 4px;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .btn-reject:hover {
+        background: #d32f2f;
+        transform: translateY(-1px);
+    }
+
+    .btn-view {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin: 0 4px;
+        cursor: pointer;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+
+    .btn-view:hover {
+        background: #1565c0;
+        transform: translateY(-1px);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-secondary);
+    }
+
+    .empty-state .material-icons {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+
+    .pagination a,
+    .pagination span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 12px;
+        margin: 0 4px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+
+    .pagination a {
+        background: white;
+        color: var(--primary-color);
+        border: 1px solid #e0e0e0;
+    }
+
+    .pagination a:hover {
+        background: var(--primary-color);
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    .pagination .current {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    /* Modal para rechazo */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(5px);
+    }
+
+    .modal-content {
+        background: white;
+        margin: 5% auto;
+        padding: 2rem;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: modalSlideIn 0.3s ease;
+    }
+
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-50px) scale(0.9);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .modal h3 {
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .modal textarea {
+        width: 100%;
+        min-height: 120px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 1rem;
+        font-family: inherit;
+        font-size: 1rem;
+        resize: vertical;
+        margin-bottom: 1rem;
+    }
+
+    .modal textarea:focus {
+        border-color: var(--primary-color);
+        outline: none;
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+    }
+
+    .btn-cancel {
+        background: #e0e0e0;
+        color: var(--text-primary);
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    .btn-cancel:hover {
+        background: #d0d0d0;
+    }
+
+    /* Loading states */
+    .loading {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    .spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+        border-top-color: transparent;
+        animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .users-table-container {
+            overflow-x: auto;
+        }
+
+        .actions-cell {
+            min-width: 200px;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .users-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pending-users-container">
+    <!-- Estadísticas -->
+    <div class="stats-grid">
+        <div class="stat-card pending">
+            <div class="stat-number pending">{{ stats.pending_count }}</div>
+            <div class="stat-label">Usuarios Pendientes</div>
+        </div>
+        <div class="stat-card approved">
+            <div class="stat-number approved">{{ stats.approved_today }}</div>
+            <div class="stat-label">Aprobados Hoy</div>
+        </div>
+        <div class="stat-card rejected">
+            <div class="stat-number rejected">{{ stats.rejected_today }}</div>
+            <div class="stat-label">Rechazados Hoy</div>
+        </div>
+    </div>
+
+    <!-- Header con título y acciones -->
+    <div class="users-header">
+        <h1>
+            <span class="material-icons">group_add</span>
+            Usuarios Pendientes de Aprobación
+        </h1>
+        <button class="refresh-btn" onclick="location.reload()">
+            <span class="material-icons">refresh</span>
+            Actualizar
+        </button>
+    </div>
+
+    <!-- Tabla de usuarios -->
+    <div class="users-table-container">
+        {% if pending_users %}
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Información</th>
+                        <th>Estado</th>
+                        <th>Tiempo de Espera</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in pending_users %}
+                    <tr id="user-row-{{ user.pk }}">
+                        <td>
+                            <div class="user-info">
+                                <div class="user-avatar">
+                                    {{ user.first_name.0|default:user.username.0|upper }}
+                                </div>
+                                <div class="user-details">
+                                    <h4>{{ user.get_full_name }}</h4>
+                                    <p>{{ user.email }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <strong>Documento:</strong> {{ user.get_document_type_display }} - {{ user.document_number|default:"No proporcionado" }}<br>
+                                <strong>Teléfono:</strong> {{ user.phone|default:"No proporcionado" }}<br>
+                                <strong>Registro:</strong> {{ user.created_at|date:"d/m/Y H:i" }}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-badge pending">
+                                <span class="material-icons" style="font-size: 16px;">hourglass_empty</span>
+                                Pendiente
+                            </span>
+                        </td>
+                        <td>
+                            <div class="waiting-time">
+                                {% with waiting_time=user.created_at|timesince %}
+                                    {{ waiting_time }}
+                                {% endwith %}
+                            </div>
+                        </td>
+                        <td class="actions-cell">
+                            <button class="btn-view" onclick="viewUserDetails('{{ user.pk }}')" title="Ver detalles">
+                                <span class="material-icons" style="font-size: 16px;">visibility</span>
+                            </button>
+                            <button class="btn-approve" onclick="approveUser('{{ user.pk }}')" title="Aprobar usuario">
+                                <span class="material-icons" style="font-size: 16px;">check</span>
+                                Aprobar
+                            </button>
+                            <button class="btn-reject" onclick="showRejectModal('{{ user.pk }}', '{{ user.get_full_name|escapejs }}')" title="Rechazar usuario">
+                                <span class="material-icons" style="font-size: 16px;">close</span>
+                                Rechazar
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Paginación -->
+            {% if is_paginated %}
+                <div class="pagination">
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1">&laquo; Primera</a>
+                        <a href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <span class="current">{{ num }}</span>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <a href="?page={{ num }}">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}">Última &raquo;</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <span class="material-icons">check_circle</span>
+                <h3>¡Excelente!</h3>
+                <p>No hay usuarios pendientes de aprobación en este momento.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal para rechazo -->
+<div id="rejectModal" class="modal">
+    <div class="modal-content">
+        <h3>
+            <span class="material-icons">block</span>
+            Rechazar Usuario
+        </h3>
+        <p>¿Estás seguro de que deseas rechazar a <strong id="rejectUserName"></strong>?</p>
+        <p>Por favor, proporciona una razón para el rechazo:</p>
+        <textarea id="rejectReason" placeholder="Explica el motivo del rechazo para que el usuario pueda entender la decisión..."></textarea>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeRejectModal()">Cancelar</button>
+            <button class="btn-reject" id="confirmRejectBtn" onclick="confirmReject()">
+                <span class="material-icons" style="font-size: 16px;">block</span>
+                Rechazar Usuario
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentUserId = null;
+
+    // Función para aprobar usuario
+    async function approveUser(userId) {
+        const button = document.querySelector(`#user-row-${userId} .btn-approve`);
+        const originalContent = button.innerHTML;
+        
+        // Mostrar loading
+        button.innerHTML = '<span class="spinner"></span> Aprobando...';
+        button.disabled = true;
+        
+        try {
+            const response = await fetch(`/users/approve/${userId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                },
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showAlert('success', data.message);
+                // Remover la fila de la tabla
+                document.getElementById(`user-row-${userId}`).style.opacity = '0.5';
+                setTimeout(() => {
+                    document.getElementById(`user-row-${userId}`).remove();
+                    updateStats();
+                }, 1000);
+            } else {
+                showAlert('error', data.message || 'Error al aprobar usuario');
+                button.innerHTML = originalContent;
+                button.disabled = false;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('error', 'Error de conexión al aprobar usuario');
+            button.innerHTML = originalContent;
+            button.disabled = false;
+        }
+    }
+
+    // Función para mostrar modal de rechazo
+    function showRejectModal(userId, userName) {
+        currentUserId = userId;
+        document.getElementById('rejectUserName').textContent = userName;
+        document.getElementById('rejectReason').value = '';
+        document.getElementById('rejectModal').style.display = 'block';
+        document.getElementById('rejectReason').focus();
+    }
+
+    // Función para cerrar modal de rechazo
+    function closeRejectModal() {
+        document.getElementById('rejectModal').style.display = 'none';
+        currentUserId = null;
+    }
+
+    // Función para confirmar rechazo
+    async function confirmReject() {
+        const reason = document.getElementById('rejectReason').value.trim();
+        
+        if (!reason) {
+            showAlert('warning', 'Debes proporcionar una razón para el rechazo');
+            return;
+        }
+        
+        const button = document.getElementById('confirmRejectBtn');
+        const originalContent = button.innerHTML;
+        
+        // Mostrar loading
+        button.innerHTML = '<span class="spinner"></span> Rechazando...';
+        button.disabled = true;
+        
+        try {
+            const response = await fetch(`/users/reject/${currentUserId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `reason=${encodeURIComponent(reason)}`
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showAlert('success', data.message);
+                closeRejectModal();
+                // Remover la fila de la tabla
+                document.getElementById(`user-row-${currentUserId}`).style.opacity = '0.5';
+                setTimeout(() => {
+                    document.getElementById(`user-row-${currentUserId}`).remove();
+                    updateStats();
+                }, 1000);
+            } else {
+                showAlert('error', data.message || 'Error al rechazar usuario');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('error', 'Error de conexión al rechazar usuario');
+        } finally {
+            button.innerHTML = originalContent;
+            button.disabled = false;
+        }
+    }
+
+    // Función para ver detalles del usuario
+    function viewUserDetails(userId) {
+        window.open(`/admin/users/user/${userId}/change/`, '_blank');
+    }
+
+    // Función para actualizar estadísticas
+    function updateStats() {
+        // Actualizar conteo de pendientes
+        const pendingRows = document.querySelectorAll('#user-row-*:not([style*="opacity"])').length;
+        document.querySelector('.stat-number.pending').textContent = pendingRows;
+    }
+
+    // Función para mostrar alertas
+    function showAlert(type, message) {
+        // Crear elemento de alerta temporal
+        const alert = document.createElement('div');
+        alert.className = `mdc-snackbar`;
+        alert.innerHTML = `
+            <div class="alert alert-${type}">
+                <span class="material-icons">${type === 'success' ? 'check_circle' : type === 'error' ? 'error' : 'warning'}</span>
+                <div>
+                    <div style="font-weight: 500;">${type === 'success' ? 'Éxito' : type === 'error' ? 'Error' : 'Advertencia'}</div>
+                    <div>${message}</div>
+                </div>
+                <button class="mdc-icon-button" onclick="this.parentElement.parentElement.remove()" style="margin-left: auto; color: inherit;">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(alert);
+        
+        // Auto-remove después de 5 segundos
+        setTimeout(() => {
+            if (alert.parentElement) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+
+    // Función para obtener CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Cerrar modal al hacer clic fuera
+    window.onclick = function(event) {
+        const modal = document.getElementById('rejectModal');
+        if (event.target === modal) {
+            closeRejectModal();
+        }
+    }
+
+    // Cerrar modal con tecla Escape
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeRejectModal();
+        }
+    });
+
+    // Auto-refresh cada 2 minutos
+    setInterval(() => {
+        location.reload();
+    }, 120000);
+</script>
+{% endblock %}

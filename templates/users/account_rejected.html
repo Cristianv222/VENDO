@@ -1,0 +1,514 @@
+<!-- templates/users/account_rejected.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Denegado - VENDO</title>
+    
+    <!-- Material UI CSS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #1976d2;
+            --danger-color: #f44336;
+            --warning-color: #ff9800;
+            --background-color: #f5f5f5;
+            --surface-color: #ffffff;
+            --text-primary: rgba(0, 0, 0, 0.87);
+            --text-secondary: rgba(0, 0, 0, 0.6);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #f44336 0%, #e57373 50%, #ffcdd2 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .rejected-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            position: relative;
+        }
+
+        .rejected-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(244, 67, 54, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(229, 115, 115, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(255, 205, 210, 0.15) 0%, transparent 50%);
+            animation: float 25s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-10px) rotate(1deg); }
+            66% { transform: translateY(5px) rotate(-1deg); }
+        }
+
+        .rejected-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 24px;
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.15),
+                0 10px 30px rgba(244, 67, 54, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            padding: 3rem 2.5rem;
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+            z-index: 10;
+            animation: slideUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .rejected-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 2rem;
+            background: linear-gradient(135deg, var(--danger-color), #e57373);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(244, 67, 54, 0.4);
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 20%, 40%, 60%, 80%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        }
+
+        .rejected-icon .material-icons {
+            font-size: 60px;
+            color: white;
+        }
+
+        .rejected-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--danger-color), #e57373);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .rejected-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            font-weight: 500;
+        }
+
+        .status-card {
+            background: rgba(244, 67, 54, 0.1);
+            border: 2px solid rgba(244, 67, 54, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 2rem 0;
+            text-align: left;
+        }
+
+        .status-card h2 {
+            color: var(--danger-color);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .rejection-details {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            text-align: left;
+        }
+
+        .rejection-details h4 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .rejection-reason {
+            background: rgba(244, 67, 54, 0.05);
+            border-left: 4px solid var(--danger-color);
+            padding: 1rem;
+            border-radius: 8px;
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+
+        .user-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .info-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .info-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .next-steps {
+            text-align: left;
+            background: rgba(25, 118, 210, 0.05);
+            border: 1px solid rgba(25, 118, 210, 0.2);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .next-steps h3 {
+            color: var(--primary-color);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .next-steps ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .next-steps li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 8px;
+        }
+
+        .next-steps .material-icons {
+            color: var(--primary-color);
+            font-size: 20px;
+            margin-top: 2px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1565c0;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(25, 118, 210, 0.3);
+            text-decoration: none;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--text-primary);
+            border: 2px solid rgba(0, 0, 0, 0.12);
+        }
+
+        .btn-secondary:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .contact-info {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .contact-info h4 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .contact-info p {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .contact-info a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .contact-info a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .rejected-card {
+                margin: 1rem;
+                padding: 2rem 1.5rem;
+                max-width: none;
+            }
+
+            .rejected-title {
+                font-size: 2rem;
+            }
+
+            .rejected-icon {
+                width: 100px;
+                height: 100px;
+            }
+
+            .rejected-icon .material-icons {
+                font-size: 50px;
+            }
+
+            .user-info {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="rejected-container">
+        <div class="rejected-card">
+            <!-- Icono principal -->
+            <div class="rejected-icon">
+                <span class="material-icons">block</span>
+            </div>
+
+            <!-- Título y subtítulo -->
+            <h1 class="rejected-title">Acceso Denegado</h1>
+            <p class="rejected-subtitle">Tu solicitud de cuenta no ha sido aprobada</p>
+
+            <!-- Estado actual -->
+            <div class="status-card">
+                <h2>
+                    ❌ Estado: Cuenta Rechazada
+                </h2>
+                <p style="color: var(--text-secondary); font-size: 1.1rem;">
+                    Lamentamos informarte que tu solicitud de cuenta no cumple con los requisitos necesarios
+                    para acceder al sistema VENDO en este momento.
+                </p>
+            </div>
+
+            <!-- Información del usuario -->
+            <div class="user-info">
+                <div class="info-item">
+                    <div class="info-label">Usuario</div>
+                    <div class="info-value">{{ user.get_full_name }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">{{ user.email }}</div>
+                </div>
+                {% if rejected_at %}
+                <div class="info-item">
+                    <div class="info-label">Fecha de revisión</div>
+                    <div class="info-value">{{ rejected_at|date:"d/m/Y H:i" }}</div>
+                </div>
+                {% endif %}
+                {% if rejected_by %}
+                <div class="info-item">
+                    <div class="info-label">Revisado por</div>
+                    <div class="info-value">{{ rejected_by.get_full_name }}</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Detalles del rechazo -->
+            {% if rejection_reason %}
+            <div class="rejection-details">
+                <h4>
+                    <span class="material-icons">info</span>
+                    Motivo del rechazo
+                </h4>
+                <div class="rejection-reason">
+                    {{ rejection_reason|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Próximos pasos -->
+            <div class="next-steps">
+                <h3>
+                    <span class="material-icons">help</span>
+                    ¿Qué puedes hacer ahora?
+                </h3>
+                <ul>
+                    <li>
+                        <span class="material-icons">contact_support</span>
+                        <div>
+                            <strong>Contactar al administrador:</strong> Solicita una revisión adicional o aclara cualquier malentendido.
+                        </div>
+                    </li>
+                    <li>
+                        <span class="material-icons">edit</span>
+                        <div>
+                            <strong>Corregir información:</strong> Si hay datos incorrectos, proporciona la información correcta.
+                        </div>
+                    </li>
+                    <li>
+                        <span class="material-icons">schedule</span>
+                        <div>
+                            <strong>Esperar y reintentar:</strong> Puedes intentar nuevamente en el futuro cuando cumplas los requisitos.
+                        </div>
+                    </li>
+                    <li>
+                        <span class="material-icons">info</span>
+                        <div>
+                            <strong>Obtener más información:</strong> Conoce mejor los requisitos para acceder al sistema.
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="action-buttons">
+                <a href="mailto:{{ contact_email }}?subject=Revisión de cuenta rechazada - {{ user.email }}&body=Hola,%0D%0A%0D%0AMi cuenta ha sido rechazada y me gustaría solicitar una revisión.%0D%0A%0D%0AUsuario: {{ user.get_full_name }}%0D%0AEmail: {{ user.email }}%0D%0A%0D%0AGracias." class="btn btn-primary">
+                    <span class="material-icons">email</span>
+                    Contactar Administrador
+                </a>
+                <a href="/users/logout/" class="btn btn-secondary">
+                    <span class="material-icons">logout</span>
+                    Cerrar Sesión
+                </a>
+            </div>
+
+            <!-- Información de contacto -->
+            <div class="contact-info">
+                <h4>
+                    <span class="material-icons">support</span>
+                    Información de contacto
+                </h4>
+                <p>Si necesitas asistencia o tienes preguntas sobre el proceso:</p>
+                <p>
+                    📧 Email: <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>
+                </p>
+                <p>
+                    ⏰ Horario de atención: Lunes a Viernes, 9:00 AM - 6:00 PM
+                </p>
+                <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
+                    <strong>Nota:</strong> Las decisiones de acceso se basan en criterios específicos del sistema.
+                    Contacta al administrador para obtener más detalles sobre los requisitos.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Efecto de entrada escalonado
+            const elements = document.querySelectorAll('.info-item, .next-steps li');
+            elements.forEach((el, index) => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    el.style.transition = 'all 0.6s ease';
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>

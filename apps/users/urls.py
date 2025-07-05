@@ -79,6 +79,20 @@ urlpatterns = [
     path('api/users/', views.UserAPIView.as_view(), name='api_users'),
     path('api/roles/', views.RoleAPIView.as_view(), name='api_roles'),
     path('api/permissions/', views.PermissionAPIView.as_view(), name='api_permissions'),
+     path('waiting-room/', views.WaitingRoomView.as_view(), name='waiting_room'),
+    
+    # Vista para usuarios rechazados
+    path('account-rejected/', views.AccountRejectedView.as_view(), name='account_rejected'),
+    
+    # Vista para administradores - gestionar usuarios pendientes
+    path('pending-approval/', views.PendingUsersView.as_view(), name='pending_users'),
+    
+    # APIs AJAX para aprobación/rechazo
+    path('approve/<uuid:user_id>/', views.approve_user_ajax, name='approve_user'),
+    path('reject/<uuid:user_id>/', views.reject_user_ajax, name='reject_user'),
+    
+    # API para obtener conteo de usuarios pendientes
+    path('api/pending-count/', views.pending_users_count_ajax, name='pending_count'),
 ]
 
 # NOTA: Se eliminó la línea problemática:
